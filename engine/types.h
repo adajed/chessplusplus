@@ -69,6 +69,18 @@ enum Castling : uint32_t
     ALL_CASTLING = W_CASTLING | B_CASTLING
 };
 
+struct Move
+{
+    Square from;
+    Square to;
+    PieceKind capture;
+    PieceKind promotion;
+    Castling castling;
+    Castling last_castling;
+    Square last_enpassant;
+    bool enpassant;
+};
+
 extern Castling CASTLING_RIGHTS[COLOR_NUM];
 extern Square KING_SIDE_ROOK_SQUARE[COLOR_NUM];
 extern Square QUEEN_SIDE_ROOK_SQUARE[COLOR_NUM];
@@ -145,17 +157,11 @@ constexpr PieceKind get_piece_kind(Piece piece)
     return PieceKind((piece - 1) % 6 + 1);
 }
 
-struct Move
+constexpr bool is_piece_slider(Piece piece)
 {
-    Square from;
-    Square to;
-    PieceKind capture;
-    PieceKind promotion;
-    Castling castling;
-    Castling last_castling;
-    Square last_enpassant;
-    bool enpassant;
-};
+    PieceKind piece_kind = get_piece_kind(piece);
+    return piece_kind == BISHOP || piece_kind == ROOK || piece_kind == QUEEN;
+}
 
 inline std::ostream& operator<< (std::ostream& stream, const Move& move)
 {
