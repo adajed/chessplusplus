@@ -40,7 +40,7 @@ extern Bitboard KNIGHT_MOVES[SQUARE_NUM];
 //  from a given sqare
 extern Bitboard KING_MOVES[SQUARE_NUM];
 
-extern Bitboard CASTLING_PATHS[4];
+extern Bitboard CASTLING_PATHS[1 << 4];
 
 extern Bitboard LINES[SQUARE_NUM][SQUARE_NUM];
 

@@ -50,22 +50,26 @@ enum Rank : uint32_t
     RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8,
 };
 constexpr uint32_t RANK_NUM = 8;
+extern Bitboard RANKS_BB[RANK_NUM];
 
 enum File : uint32_t
 {
     FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H,
 };
 constexpr uint32_t FILE_NUM = 8;
+extern Bitboard FILES_BB[FILE_NUM];
 
 enum Castling : uint32_t
 {
     NO_CASTLING = 0,
-    W_OO = 1,
-    W_OOO = 2,
-    B_OO = 4,
-    B_OOO = 8,
+    W_OO  = 1 << 0,
+    W_OOO = 1 << 1,
+    B_OO  = 1 << 2,
+    B_OOO = 1 << 3,
     W_CASTLING = W_OO | W_OOO,
-    B_CASTLING = B_OO | B_OOO, KING_CASTLING = W_OO | B_OO, QUEEN_CASTLING = W_OOO | B_OOO,
+    B_CASTLING = B_OO | B_OOO,
+    KING_CASTLING = W_OO | B_OO,
+    QUEEN_CASTLING = W_OOO | B_OOO,
     ALL_CASTLING = W_CASTLING | B_CASTLING
 };
 
@@ -168,8 +172,22 @@ inline std::ostream& operator<< (std::ostream& stream, const Move& move)
     const std::string files = "abcdefgh";
     const std::string ranks = "12345678";
 
+    if (move.castling & KING_CASTLING)
+        return stream << "OO";
+    else if (move.castling & QUEEN_CASTLING)
+        return stream << "OOO";
+
     stream << files[file(move.from)] << ranks[rank(move.from)] << "-"
            << files[file(move.to)] << ranks[rank(move.to)];
+
+    if (move.promotion == KNIGHT)
+        return stream << "-N";
+    if (move.promotion == BISHOP)
+        return stream << "-B";
+    if (move.promotion == ROOK)
+        return stream << "-R";
+    if (move.promotion == QUEEN)
+        return stream << "-Q";
 
     return stream;
 

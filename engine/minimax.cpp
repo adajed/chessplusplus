@@ -70,13 +70,13 @@ int32_t score(const Position& pos)
 
 ScoredMove minimax(Position& pos, int depth)
 {
-    /* std::cout << "[" << depth << "] enter" << std::endl; */
-    /* std::cout << pos; */
+    std::cout << "[" << depth << "] enter" << std::endl;
+    std::cout << pos;
     Color side = pos.current_side;
 
     if (depth == 0)
     {
-        /* std::cout << "[" << depth << "] leave with score " << score(pos) << std::endl; */
+        std::cout << "[" << depth << "] leave with score " << score(pos) << std::endl;
         return {{}, score(pos)};
     }
 
@@ -85,7 +85,7 @@ ScoredMove minimax(Position& pos, int depth)
 
     if (begin == end)
     {
-        /* std::cout << "[" << depth << "] leave with score " << (1 << 16) * (side == WHITE ? -1 : 1) << std::endl; */
+        std::cout << "[" << depth << "] leave with score " << (1 << 16) * (side == WHITE ? -1 : 1) << std::endl;
         return {{}, (1 << 16) * (side == WHITE ? -1 : 1)};
     }
 
@@ -97,7 +97,7 @@ ScoredMove minimax(Position& pos, int depth)
         best_value = -100;
         for (Move* it = begin; it != end; ++it)
         {
-            /* std::cout << "[" << depth << "] " << "do move = " << *it << std::endl; */
+            std::cout << "[" << depth << "] " << "do move = " << *it << std::endl;
             do_move(pos, *it);
             int32_t value = minimax(pos, depth - 1).score;
             if (value > best_value)
@@ -105,8 +105,10 @@ ScoredMove minimax(Position& pos, int depth)
                 best_value = value;
                 best_move = *it;
             }
-            /* std::cout << "[" << depth << "] " << "undo move = " << *it << std::endl; */
+            std::cout << "[" << depth << "] " << "undo move = " << *it << std::endl;
             undo_move(pos, *it);
+
+            std::cout << pos;
         }
     }
     else
@@ -114,7 +116,7 @@ ScoredMove minimax(Position& pos, int depth)
         best_value = 100;
         for (Move* it = begin; it != end; ++it)
         {
-            /* std::cout << "[" << depth << "] " << "do move = " << *it << std::endl; */
+            std::cout << "[" << depth << "] " << "do move = " << *it << std::endl;
             do_move(pos, *it);
             int32_t value = minimax(pos, depth - 1).score;
             if (value < best_value)
@@ -122,12 +124,14 @@ ScoredMove minimax(Position& pos, int depth)
                 best_value = value;
                 best_move = *it;
             }
-            /* std::cout << "[" << depth << "] " << "undo move = " << *it << std::endl; */
+            std::cout << "[" << depth << "] " << "undo move = " << *it << std::endl;
             undo_move(pos, *it);
+
+            std::cout << pos;
         }
     }
 
-    /* std::cout << "[" << depth << "] leave with score " << best_value << std::endl; */
+    std::cout << "[" << depth << "] leave with score " << best_value << std::endl;
     return {best_move, best_value};
 }
 

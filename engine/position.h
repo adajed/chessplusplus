@@ -104,6 +104,61 @@ class Position
 
         }
 
+        std::string to_fen() const
+        {
+            const std::string piece_to_char = " PNBRQKpnbrqk";
+            std::string result = "";
+
+            int counter = 0;
+            for (int rank = 7; rank >= 0; rank--)
+            {
+                for (int file = 0; file < 8; file++)
+                {
+                    Piece p = board[make_square(Rank(rank), File(file))];
+                    if (p == NO_PIECE)
+                        counter++;
+                    else
+                    {
+                        if (counter > 0)
+                        {
+                            result += char('0' + counter);
+                            counter = 0;
+                        }
+                        result += piece_to_char[uint32_t(p)];
+                    }
+                }
+                if (counter > 0)
+                {
+                    result += char('0' + counter);
+                    counter = 0;
+                }
+                if (rank > 0)
+                    result += "/";
+            }
+            result += " ";
+            result += (current_side == WHITE) ? "w" : "b";
+            result += " ";
+            if (castling_rights != NO_CASTLING)
+            {
+                if (castling_rights & W_OO) result += "K";
+                if (castling_rights & W_OOO) result += "Q";
+                if (castling_rights & B_OO) result += "k";
+                if (castling_rights & B_OOO) result += "q";
+            }
+            else
+                result += "-";
+            result += " ";
+            if (enpassant != NO_SQUARE)
+            {
+                result += char('a' + file(enpassant));
+                result += char('1' + rank(enpassant));
+            }
+            else
+                result += "-";
+
+            return result;
+        }
+
         Bitboard pieces() const {
             return by_color_bb[WHITE] | by_color_bb[BLACK];
         }
@@ -183,7 +238,8 @@ inline std::ostream& operator<< (std::ostream& stream, const Position& position)
 {
     const std::string piece_to_char = " PNBRQKpnbrqk";
 
-    stream << "\n +---+---+---+---+---+---+---+---+\n";
+    stream << position.to_fen() << std::endl;
+    stream << " +---+---+---+---+---+---+---+---+\n";
     for (int rank = 7; rank >= 0; rank--)
     {
         for (int file = 0; file < 8; ++file)
@@ -208,7 +264,7 @@ inline void do_move(Position& pos, Move& move)
 
     if (move.castling != NO_CASTLING)
     {
-        Rank rank = pos.current_side == WHITE ? RANK_1 : RANK_8;
+        Rank rank = side == WHITE ? RANK_1 : RANK_8;
         if (move.castling & KING_CASTLING)
         {
             pos.remove_piece(make_square(rank, FILE_E));
@@ -246,13 +302,14 @@ inline void do_move(Position& pos, Move& move)
 
     if (get_piece_kind(moved_piece) == KING)
         pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side]);
-    if (get_piece_kind(moved_piece) == KING && move.from == KING_SIDE_ROOK_SQUARE[side])
+    if (get_piece_kind(moved_piece) == ROOK && move.from == KING_SIDE_ROOK_SQUARE[side])
         pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side] & ~KING_CASTLING);
-    if (get_piece_kind(moved_piece) == KING && move.from == QUEEN_SIDE_ROOK_SQUARE[side])
+    if (get_piece_kind(moved_piece) == ROOK && move.from == QUEEN_SIDE_ROOK_SQUARE[side])
         pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side] & ~QUEEN_CASTLING);
 
     Rank enpassant_rank = (side == WHITE) ? RANK_4 : RANK_5;
-    if (get_piece_kind(moved_piece) == PAWN && rank(move.to) == enpassant_rank)
+    Rank rank2 = (side == WHITE) ? RANK_2 : RANK_7;
+    if (get_piece_kind(moved_piece) == PAWN && rank(move.from) == rank2 && rank(move.to) == enpassant_rank)
         pos.enpassant = Square(move.to + (side == WHITE ? -8 : 8));
     else
         pos.enpassant = NO_SQUARE;
@@ -264,6 +321,8 @@ inline void undo_move(Position& pos, Move& move)
     Color side = pos.current_side;
 
     Piece moved_piece = pos.board[move.to];
+    if (move.promotion != NO_PIECE_KIND)
+        moved_piece = make_piece(side, PAWN);
     Piece captured_piece = make_piece(!side, move.capture);
 
     pos.castling_rights = move.last_castling;
@@ -271,7 +330,7 @@ inline void undo_move(Position& pos, Move& move)
 
     if (move.castling != NO_CASTLING)
     {
-        Rank rank = pos.current_side == WHITE ? RANK_1 : RANK_8;
+        Rank rank = side == WHITE ? RANK_1 : RANK_8;
         if (move.castling & KING_CASTLING)
         {
             pos.remove_piece(make_square(rank, FILE_G));
