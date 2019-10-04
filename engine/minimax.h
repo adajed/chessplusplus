@@ -14,7 +14,7 @@ struct ScoredMove
 
 int32_t score(const Position& position);
 
-ScoredMove minimax(Position& position, int depth);
+ScoredMove minimax(Position& position, int alpha, int beta, int depth, bool verbose);
 
 } // namespace engine
 

@@ -293,14 +293,15 @@ Move* generate_king_moves(Square from, Bitboard not_allowed, Move* list)
 template <Color side>
 Pin* generate_pins(const Position& pos, Pin* list, Bitboard* pinned_bb)
 {
+
     const Piece C_KING = side == WHITE ? W_KING : B_KING;
-    const Piece O_BISHOP = side == WHITE ? B_KNIGHT : W_KNIGHT;
+    const Piece O_BISHOP = side == WHITE ? B_BISHOP : W_BISHOP;
     const Piece O_ROOK = side == WHITE ? B_ROOK : W_ROOK;
     const Piece O_QUEEN = side == WHITE ? B_QUEEN : W_QUEEN;
 
     Square king_sq = pos.piece_position[C_KING][0];
 
-    RayDirection rays[] = {RAY_NW, RAY_N, RAY_NE, RAY_E, RAY_SE, RAY_S, RAY_SW, RAY_W};
+    const RayDirection rays[] = {RAY_NW, RAY_N, RAY_NE, RAY_E, RAY_SE, RAY_S, RAY_SW, RAY_W};
 
     *pinned_bb = 0ULL;
 
@@ -325,7 +326,8 @@ Pin* generate_pins(const Position& pos, Pin* list, Bitboard* pinned_bb)
         {
             assert(popcount(pinned) == 1);
             Square pinned_sq = Square(lsb(pinned));
-            PieceKind pinned_piece = PieceKind((pos.board[pinned_sq] - 1) % 6 + 1);
+            PieceKind pinned_piece = make_piece_kind(pos.board[pinned_sq]);
+            assert(pinned_piece != KING);
 
             *list++ = Pin{pinned_sq, pinned_piece, RayDirection(dir)};
             *pinned_bb |= square_bb(pinned_sq);
@@ -341,19 +343,21 @@ Move* generate_pinned_pawn_moves(Square from, RayDirection ray, const Position& 
     const Direction UP = side == WHITE ? NORTH : SOUTH;
     const Direction UPRIGHT = side == WHITE ? NORTHEAST : SOUTHWEST;
     const Direction UPLEFT = side == WHITE ? NORTHWEST : SOUTHEAST;
+    const Bitboard rank3_bb = side == WHITE ? RANKS_BB[RANK_3] : RANKS_BB[RANK_6];
 
 
     Bitboard bb = 0ULL;
     switch (ray & 3)
     {
     case 0:
-        bb = shift<UPLEFT>(square_bb(from)) & pos.pieces(Color(1 - side));
+        bb = shift<UPLEFT>(square_bb(from)) & pos.pieces(!side);
         break;
     case 1:
         bb = shift<UP>(square_bb(from)) & ~pos.pieces();
+        bb |= shift<UP>(bb & rank3_bb) & ~pos.pieces();
         break;
     case 2:
-        bb = shift<UPRIGHT>(square_bb(from)) & pos.pieces(Color(1 - side));
+        bb = shift<UPRIGHT>(square_bb(from)) & pos.pieces(!side);
         break;
     }
 
@@ -399,8 +403,6 @@ Move* generate_legal_moves(const Position& pos, Move* list)
     Bitboard attacked = attacked_squares<side>(pos);
 
     Square king_sq = pos.piece_position[C_KING][0];
-    list = generate_king_moves(king_sq, attacked | pos.pieces(side), list);
-
     if (!checkers_bb)
     {
         push_mask = ~pos.pieces();
@@ -409,31 +411,27 @@ Move* generate_legal_moves(const Position& pos, Move* list)
         for (Pin* iter = pins_start; iter != pins_end; ++iter)
             list = generate_pinned_piece_moves<side>(iter->square, iter->piece_kind, iter->direction, pos, push_mask | capture_mask, list);
 
+        Bitboard taken_for_castling = attacked | pos.pieces();
         if (side == WHITE)
         {
-            if ((pos.castling_rights & W_OO) && !((attacked | pos.pieces()) & CASTLING_PATHS[W_OO]))
+            if ((pos.castling_rights & W_OO) && !(taken_for_castling & CASTLING_PATHS[W_OO]))
                 *list++ = create_castling(W_OO);
-        }
-        else
-        {
-            if ((pos.castling_rights & B_OO) && !((attacked | pos.pieces()) & CASTLING_PATHS[B_OO]))
-                *list++ = create_castling(B_OO);
-        }
-
-        if (side == WHITE)
-        {
-            if ((pos.castling_rights & W_OOO) && !((attacked | pos.pieces()) & CASTLING_PATHS[W_OOO]))
+            if ((pos.castling_rights & W_OOO) && !(taken_for_castling & CASTLING_PATHS[W_OOO]))
                 *list++ = create_castling(W_OOO);
         }
         else
         {
-            if ((pos.castling_rights & B_OOO) && !((attacked | pos.pieces()) & CASTLING_PATHS[B_OOO]))
+            if ((pos.castling_rights & B_OO) && !(taken_for_castling & CASTLING_PATHS[B_OO]))
+                *list++ = create_castling(B_OO);
+            if ((pos.castling_rights & B_OOO) && !(taken_for_castling & CASTLING_PATHS[B_OOO]))
                 *list++ = create_castling(B_OOO);
         }
     }
     else
     {
-        if (popcount(checkers_bb) > 1) return list;
+        if (popcount(checkers_bb) > 1)
+            return generate_king_moves(king_sq, attacked | pos.pieces(side), list);
+
 
         capture_mask = checkers_bb;
         Square checker_square = Square(lsb(checkers_bb));
@@ -464,6 +462,8 @@ Move* generate_legal_moves(const Position& pos, Move* list)
 
     if (pos.enpassant != NO_SQUARE)
         list = generate_enpassant<side>(pos, not_pinned_pawns, push_mask, capture_mask, pos.enpassant, list);
+
+    list = generate_king_moves(king_sq, attacked | pos.pieces(side), list);
 
     return list;
 }

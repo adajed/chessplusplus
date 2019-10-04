@@ -23,7 +23,7 @@ class Position
         {
         }
 
-        Position(std::string fen)
+        Position(std::string fen) : move_history()
         {
             for (int i = 0; i < SQUARE_NUM; ++i)
                 board[i] = NO_PIECE;
@@ -180,14 +180,7 @@ class Position
 
         void add_piece(Color side, PieceKind piece_kind, Square square)
         {
-            Piece piece = make_piece(side, piece_kind);
-            assert(board[square] == NO_PIECE);
-
-            board[square] = piece;
-            by_color_bb[side] |= square_bb(square);
-            by_piece_kind_bb[piece_kind] |= square_bb(square);
-            piece_position[piece][piece_count[piece]] = square;
-            piece_count[piece] += 1;
+            add_piece(make_piece(side, piece_kind), square);
         }
 
         void add_piece(Piece piece, Square square)
@@ -214,8 +207,8 @@ class Position
             {
                 if (piece_position[piece][i] == square)
                 {
-                    int pos = piece_count[piece] - 1;
-                    piece_position[piece][i] = piece_position[piece][pos];
+                    int last_pos = piece_count[piece] - 1;
+                    piece_position[piece][i] = piece_position[piece][last_pos];
                 }
             }
             piece_count[piece] -= 1;
@@ -225,13 +218,14 @@ class Position
         Color current_side;
         Piece board[SQUARE_NUM];
         Square piece_position[PIECE_NUM][16];
-        int piece_count[PIECE_NUM + 1];
+        int piece_count[PIECE_NUM];
 
         Bitboard by_piece_kind_bb[PIECE_KIND_NUM];
         Bitboard by_color_bb[COLOR_NUM];
 
         Castling castling_rights;
         Square enpassant;
+        std::vector<Move> move_history;
 };
 
 inline std::ostream& operator<< (std::ostream& stream, const Position& position)
@@ -255,9 +249,8 @@ inline void do_move(Position& pos, Move& move)
     Color side = pos.current_side;
     pos.current_side = !pos.current_side;
 
-    Piece moved_piece = pos.board[move.from];
-    Piece captured_piece = pos.board[move.to];
-    move.capture = make_piece_kind(captured_piece);
+    assert(pos.piece_count[make_piece(side, KING)] == 1 && "START");
+    assert(pos.piece_count[make_piece(!side, KING)] == 1  && "START");
 
     move.last_castling = pos.castling_rights;
     move.last_enpassant = pos.enpassant;
@@ -281,9 +274,41 @@ inline void do_move(Position& pos, Move& move)
         }
 
         pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side]);
+        pos.enpassant = NO_SQUARE;
 
+        pos.move_history.push_back(move);
         return;
     }
+
+    Piece moved_piece = pos.board[move.from];
+    Piece captured_piece = pos.board[move.to];
+    if (captured_piece != NO_PIECE)
+    {
+        if (get_piece_kind(captured_piece) == KING)
+        {
+            std::cout << pos << std::endl;
+
+            std::cout << "MOVES:" << std::endl;
+            for (Move& m : pos.move_history)
+                std::cout << m << " capture=" << m.capture << " promotion=" << m.promotion << " captured_piece=" << captured_piece << std::endl;
+            std::cout << std::endl;
+
+        }
+        assert(get_piece_kind(captured_piece) != KING);
+
+        if (get_color(captured_piece) == side)
+        {
+            pos.move_history.push_back(move);
+            std::cout << pos << std::endl;
+
+            std::cout << "MOVES:" << std::endl;
+            for (Move& m : pos.move_history)
+                std::cout << m << " capture=" << m.capture << " promotion=" << m.promotion << " captured_piece=" << captured_piece << std::endl;
+
+        }
+        assert(get_color(captured_piece) != side);
+    }
+    move.capture = make_piece_kind(captured_piece);
 
     pos.remove_piece(move.from);
 
@@ -306,6 +331,10 @@ inline void do_move(Position& pos, Move& move)
         pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side] & ~KING_CASTLING);
     if (get_piece_kind(moved_piece) == ROOK && move.from == QUEEN_SIDE_ROOK_SQUARE[side])
         pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side] & ~QUEEN_CASTLING);
+    if (make_piece_kind(captured_piece) == ROOK && move.to == KING_SIDE_ROOK_SQUARE[!side])
+        pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[!side] & ~KING_CASTLING);
+    if (make_piece_kind(captured_piece) == ROOK && move.to == QUEEN_SIDE_ROOK_SQUARE[!side])
+        pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[!side] & ~QUEEN_CASTLING);
 
     Rank enpassant_rank = (side == WHITE) ? RANK_4 : RANK_5;
     Rank rank2 = (side == WHITE) ? RANK_2 : RANK_7;
@@ -313,10 +342,15 @@ inline void do_move(Position& pos, Move& move)
         pos.enpassant = Square(move.to + (side == WHITE ? -8 : 8));
     else
         pos.enpassant = NO_SQUARE;
+
+    assert(pos.piece_count[make_piece(side, KING)] == 1 && "END");
+    assert(pos.piece_count[make_piece(!side, KING)] == 1 && "END");
+    pos.move_history.push_back(move);
 }
 
 inline void undo_move(Position& pos, Move& move)
 {
+    pos.move_history.pop_back();
     pos.current_side = !pos.current_side;
     Color side = pos.current_side;
 

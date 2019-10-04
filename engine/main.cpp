@@ -1,4 +1,5 @@
 #include <iostream>
+#include <chrono>
 
 #include "position.h"
 #include "movegen.h"
@@ -7,19 +8,33 @@
 
 using namespace engine;
 
+const unsigned long long MOVE_TIME = 15ULL * 1000000ULL;
+
 int main()
 {
     init_move_bitboards();
 
-    /* Position position = Position("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - "); */
-    /* Position position("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - "); */
-    Position position("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ -");
+    Position position;
 
-    for (int i = 0; i < 1; ++i)
+    for (int i = 0; i < 80; ++i)
     {
         std::cout << position;
-        ScoredMove move = minimax(position, 2);
 
+        auto start_time = std::chrono::steady_clock::now();
+        auto end_time = start_time;
+
+        ScoredMove move;
+
+        int depth = 2;
+        while (std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() < MOVE_TIME)
+        {
+            depth += 2;
+            move = minimax(position, -(1 << 16), 1 << 16, depth, true);
+            end_time = std::chrono::steady_clock::now();
+        }
+
+        std::cout << "Finished at depth " << depth << std::endl;
+        std::cout << "Time " << std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count() << std::endl;
         std::cout << move.move << std::endl;
 
         do_move(position, move.move);
