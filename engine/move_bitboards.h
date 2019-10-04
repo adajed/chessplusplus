@@ -44,8 +44,6 @@ extern Bitboard CASTLING_PATHS[1 << 4];
 
 extern Bitboard LINES[SQUARE_NUM][SQUARE_NUM];
 
-void init_move_bitboards();
-
 }
 
 #endif  // CHESS_ENGINE_MOVE_BITBOARDS_H_

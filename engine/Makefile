@@ -1,43 +1,24 @@
 include ../makes/defines.makefile
 
-ENGINE_RELEASE=$(OUTDIR)/engine
-ENGINE_DEBUG=$(OUTDIR)/engine_debug
-
-PERFT_RELEASE=$(OUTDIR)/perft
-PERFT_DEBUG=$(OUTDIR)/perft_debug
-
 CPP_SOURCES=$(wildcard *.cpp)
 CPP_HEADERS=$(wildcard *.h)
 
 OBJS_RELEASE=$(patsubst %.cpp,$(OUTDIR_ENGINE)/%.r.o,$(CPP_SOURCES))
 OBJS_DEBUG  =$(patsubst %.cpp,$(OUTDIR_ENGINE)/%.d.o,$(CPP_SOURCES))
 
-OBJS_ENGINE_RELEASE=$(filter-out $(OUTDIR_ENGINE)/perft.r.o,$(OBJS_RELEASE))
-OBJS_ENGINE_DEBUG  =$(filter-out $(OUTDIR_ENGINE)/perft.d.o,$(OBJS_DEBUG))
+release: $(LIB_STATIC_RELEASE)
+debug: $(LIB_STATIC_DEBUG)
 
-OBJS_PERFT_RELEASE=$(filter-out $(OUTDIR_ENGINE)/main.r.o,$(OBJS_RELEASE))
-OBJS_PERFT_DEBUG  =$(filter-out $(OUTDIR_ENGINE)/main.d.o,$(OBJS_DEBUG))
-
-release: $(ENGINE_RELEASE) $(PERFT_RELEASE)
-debug: $(ENGINE_DEBUG) $(PERFT_DEBUG)
 
 #### linking
 
-$(ENGINE_RELEASE): $(OBJS_ENGINE_RELEASE)
+$(LIB_STATIC_RELEASE): $(OBJS_RELEASE)
 	@echo "Linking $@"
-	@$(CC) $^ -o $@ $(LFLAGS_COMMON)
+	@ar rs $@ $^
 
-$(ENGINE_DEBUG): $(OBJS_ENGINE_DEBUG)
+$(LIB_STATIC_DEBUG): $(OBJS_DEBUG)
 	@echo "Linking $@"
-	@$(CC) $^ -o $@ $(LFLAGS_COMMON)
-
-$(PERFT_RELEASE): $(OBJS_PERFT_RELEASE)
-	@echo "Linking $@"
-	@$(CC) $^ -o $@ $(LFLAGS_COMMON)
-
-$(PERFT_DEBUG): $(OBJS_PERFT_DEBUG)
-	@echo "Linking $@"
-	@$(CC) $^ -o $@ $(LFLAGS_COMMON)
+	@ar rs $@ $^
 
 
 #### compling

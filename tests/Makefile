@@ -8,8 +8,6 @@ CPP_HEADERS=$(wildcard *.h)
 
 OBJS_RELEASE=$(patsubst %.cpp,$(OUTDIR_TESTS)/%.r.o,$(CPP_SOURCES))
 OBJS_DEBUG=$(patsubst %.cpp,$(OUTDIR_TESTS)/%.d.o,$(CPP_SOURCES))
-OBJS_ENGINE_RELEASE=$(filter-out $(OUTDIR_ENGINE)/main.r.o $(OUTDIR_ENGINE)/perft.r.o,$(wildcard $(OUTDIR_ENGINE)/*.r.o))
-OBJS_ENGINE_DEBUG  =$(filter-out $(OUTDIR_ENGINE)/main.d.o $(OUTDIR_ENGINE)/perft.d.o,$(wildcard $(OUTDIR_ENGINE)/*.d.o))
 
 CFLAGS_RELEASE += -I$(ROOTDIR)/engine
 CFLAGS_DEBUG += -I$(ROOTDIR)/engine
@@ -24,11 +22,11 @@ debug: $(PROGRAM_DEBUG)
 
 $(PROGRAM_RELEASE): $(OBJS_RELEASE)
 	@echo "Linking $@"
-	@$(CC) $^ $(OBJS_ENGINE_RELEASE) -o $@ $(LFLAGS_COMMON)
+	@$(CC) $^ $(OBJS_ENGINE_RELEASE) -o $@ $(LIB_STATIC_RELEASE) $(LFLAGS_COMMON)
 
 $(PROGRAM_DEBUG): $(OBJS_DEBUG)
 	@echo "Linking $@"
-	@$(CC) $^ $(OBJS_ENGINE_DEBUG) -o $@ $(LFLAGS_COMMON)
+	@$(CC) $^ $(OBJS_ENGINE_DEBUG) -o $@ $(LIB_STATIC_DEBUG) $(LFLAGS_COMMON)
 
 
 #### compling

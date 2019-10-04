@@ -70,13 +70,17 @@ int32_t score(const Position& pos)
 
 ScoredMove minimax(Position& pos, int depth)
 {
+#ifdef DEBUG
     std::cout << "[" << depth << "] enter" << std::endl;
     std::cout << pos;
+#endif
     Color side = pos.current_side;
 
     if (depth == 0)
     {
+#ifdef DEBUG
         std::cout << "[" << depth << "] leave with score " << score(pos) << std::endl;
+#endif
         return {{}, score(pos)};
     }
 
@@ -85,7 +89,9 @@ ScoredMove minimax(Position& pos, int depth)
 
     if (begin == end)
     {
+#ifdef DEBUG
         std::cout << "[" << depth << "] leave with score " << (1 << 16) * (side == WHITE ? -1 : 1) << std::endl;
+#endif
         return {{}, (1 << 16) * (side == WHITE ? -1 : 1)};
     }
 
@@ -97,7 +103,9 @@ ScoredMove minimax(Position& pos, int depth)
         best_value = -100;
         for (Move* it = begin; it != end; ++it)
         {
+#ifdef DEBUG
             std::cout << "[" << depth << "] " << "do move = " << *it << std::endl;
+#endif
             do_move(pos, *it);
             int32_t value = minimax(pos, depth - 1).score;
             if (value > best_value)
@@ -105,10 +113,14 @@ ScoredMove minimax(Position& pos, int depth)
                 best_value = value;
                 best_move = *it;
             }
+#ifdef DEBUG
             std::cout << "[" << depth << "] " << "undo move = " << *it << std::endl;
+#endif
             undo_move(pos, *it);
 
+#ifdef DEBUG
             std::cout << pos;
+#endif
         }
     }
     else
@@ -116,7 +128,9 @@ ScoredMove minimax(Position& pos, int depth)
         best_value = 100;
         for (Move* it = begin; it != end; ++it)
         {
+#ifdef DEBUG
             std::cout << "[" << depth << "] " << "do move = " << *it << std::endl;
+#endif
             do_move(pos, *it);
             int32_t value = minimax(pos, depth - 1).score;
             if (value < best_value)
@@ -124,15 +138,44 @@ ScoredMove minimax(Position& pos, int depth)
                 best_value = value;
                 best_move = *it;
             }
+#ifdef DEBUG
             std::cout << "[" << depth << "] " << "undo move = " << *it << std::endl;
+#endif
             undo_move(pos, *it);
 
+#ifdef DEBUG
             std::cout << pos;
+#endif
         }
     }
 
+#ifdef DEBUG
     std::cout << "[" << depth << "] leave with score " << best_value << std::endl;
+#endif
     return {best_move, best_value};
+}
+
+uint32_t perft(Position& position, int depth)
+{
+    if (depth == 0)
+        return 0;
+
+    Move* begin = MOVE_LIST[depth];
+    Move* end = generate_moves(position, begin);
+
+    if (depth == 1)
+        return end - begin;
+
+
+    uint32_t sum = 0;
+    for (Move* it = begin; it != end; ++it)
+    {
+        do_move(position, *it);
+        sum += perft(position, depth - 1);
+        undo_move(position, *it);
+    }
+
+    return sum;
 }
 
 }  // namespace engine

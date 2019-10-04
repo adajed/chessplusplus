@@ -1,13 +1,11 @@
 #ifndef CHESS_ENGINE_BITBOARD_H_
 #define CHESS_ENGINE_BITBOARD_H_
 
-#include <cinttypes>
+#include "engine.h"
 
 
 namespace engine
 {
-
-using Bitboard = uint64_t;
 
 constexpr Bitboard all_squares_bb = ~Bitboard(0);
 constexpr Bitboard white_squares_bb = 0x55aa55aa55aa55aaULL;

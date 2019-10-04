@@ -2,8 +2,8 @@ include ./makes/defines.makefile
 
 all: release debug
 
-release: engine_release tests_release
-debug: engine_debug tests_debug
+release: engine_release programs_release tests_release
+debug: engine_debug programs_debug tests_debug
 
 #### engine
 
@@ -12,6 +12,15 @@ engine_release:
 
 engine_debug:
 	@+make -C engine debug
+
+
+#### programs
+
+programs_release:
+	@+make -C programs release
+
+programs_debug:
+	@+make -C programs debug
 
 
 #### tests
