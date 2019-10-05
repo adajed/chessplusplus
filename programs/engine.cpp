@@ -4,16 +4,17 @@
 
 using namespace engine;
 
-int main()
+int main(int argc, char** argv)
 {
     init_move_bitboards();
 
-    Position position = initial_position();
+    std::string fen(argv[1]);
+    Position position = from_fen(fen);
 
     for (int i = 0; i < 20; ++i)
     {
         std::cout << position;
-        ScoredMove move = minimax(position, 5);
+        ScoredMove move = minimax(position, 6, false);
 
         std::cout << move.move << std::endl;
 

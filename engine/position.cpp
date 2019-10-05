@@ -1,4 +1,5 @@
 #include "position.h"
+#include "movegen.h"
 
 namespace engine
 {
@@ -270,9 +271,13 @@ void do_move(Position& pos, Move& move)
     if (get_piece_kind(moved_piece) == KING)
         pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side]);
     if (get_piece_kind(moved_piece) == ROOK && move.from == KING_SIDE_ROOK_SQUARE[side])
-        pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side] & ~KING_CASTLING);
+        pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[side] & KING_CASTLING));
     if (get_piece_kind(moved_piece) == ROOK && move.from == QUEEN_SIDE_ROOK_SQUARE[side])
-        pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side] & ~QUEEN_CASTLING);
+        pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[side] & QUEEN_CASTLING));
+    if (make_piece_kind(captured_piece) == ROOK && move.to == KING_SIDE_ROOK_SQUARE[!side])
+        pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[!side] & KING_CASTLING));
+    if (make_piece_kind(captured_piece) == ROOK && move.to == QUEEN_SIDE_ROOK_SQUARE[!side])
+        pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[!side] & QUEEN_CASTLING));
 
     Rank enpassant_rank = (side == WHITE) ? RANK_4 : RANK_5;
     Rank rank2 = (side == WHITE) ? RANK_2 : RANK_7;
@@ -327,5 +332,18 @@ void undo_move(Position& pos, Move& move)
     if (captured_piece != NO_PIECE)
         add_piece(pos, captured_piece, move.to);
 }
+
+bool is_in_check(const Position& position)
+{
+    Color side = position.current_side;
+    Bitboard attacked = attacked_squares(position);
+    /* std::cout << "attacked" << std::endl; */
+    /* print_bb(attacked); */
+    /* std::cout << "king" << std::endl; */
+    /* print_bb(pieces_bb(position, side, KING)); */
+    /* std::cout << std::endl; */
+    return bool(attacked & pieces_bb(position, side, KING));
+}
+
 
 }

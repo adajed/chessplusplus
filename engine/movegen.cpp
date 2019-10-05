@@ -92,7 +92,7 @@ Bitboard checkers(const Position& pos)
 }
 
 template <Color side>
-Bitboard attacked_squares(const Position& pos)
+Bitboard forbidden_squares(const Position& pos)
 {
     const Color opponent = Color(1 - side);
     const Direction UPLEFT = side == BLACK ? NORTHWEST : SOUTHEAST;
@@ -294,14 +294,15 @@ Move* generate_king_moves(Square from, Bitboard not_allowed, Move* list)
 template <Color side>
 Pin* generate_pins(const Position& pos, Pin* list, Bitboard* pinned_bb)
 {
+
     const Piece C_KING = side == WHITE ? W_KING : B_KING;
-    const Piece O_BISHOP = side == WHITE ? B_KNIGHT : W_KNIGHT;
+    const Piece O_BISHOP = side == WHITE ? B_BISHOP : W_BISHOP;
     const Piece O_ROOK = side == WHITE ? B_ROOK : W_ROOK;
     const Piece O_QUEEN = side == WHITE ? B_QUEEN : W_QUEEN;
 
     Square king_sq = pos.piece_position[C_KING][0];
 
-    RayDirection rays[] = {RAY_NW, RAY_N, RAY_NE, RAY_E, RAY_SE, RAY_S, RAY_SW, RAY_W};
+    const RayDirection rays[] = {RAY_NW, RAY_N, RAY_NE, RAY_E, RAY_SE, RAY_S, RAY_SW, RAY_W};
 
     *pinned_bb = 0ULL;
 
@@ -326,7 +327,8 @@ Pin* generate_pins(const Position& pos, Pin* list, Bitboard* pinned_bb)
         {
             assert(popcount(pinned) == 1);
             Square pinned_sq = Square(lsb(pinned));
-            PieceKind pinned_piece = PieceKind((pos.board[pinned_sq] - 1) % 6 + 1);
+            PieceKind pinned_piece = make_piece_kind(pos.board[pinned_sq]);
+            assert(pinned_piece != KING);
 
             *list++ = Pin{pinned_sq, pinned_piece, RayDirection(dir)};
             *pinned_bb |= square_bb(pinned_sq);
@@ -342,19 +344,21 @@ Move* generate_pinned_pawn_moves(Square from, RayDirection ray, const Position& 
     const Direction UP = side == WHITE ? NORTH : SOUTH;
     const Direction UPRIGHT = side == WHITE ? NORTHEAST : SOUTHWEST;
     const Direction UPLEFT = side == WHITE ? NORTHWEST : SOUTHEAST;
+    const Bitboard rank3_bb = side == WHITE ? RANKS_BB[RANK_3] : RANKS_BB[RANK_6];
 
 
     Bitboard bb = 0ULL;
     switch (ray & 3)
     {
     case 0:
-        bb = shift<UPLEFT>(square_bb(from)) & pieces_bb(pos, Color(1 - side));
+        bb = shift<UPLEFT>(square_bb(from)) & pieces_bb(pos, !side);
         break;
     case 1:
         bb = shift<UP>(square_bb(from)) & ~pieces_bb(pos);
+        bb |= shift<UP>(bb & rank3_bb) & ~pieces_bb(pos);
         break;
     case 2:
-        bb = shift<UPRIGHT>(square_bb(from)) & pieces_bb(pos, Color(1 - side));
+        bb = shift<UPRIGHT>(square_bb(from)) & pieces_bb(pos, !side);
         break;
     }
 
@@ -397,11 +401,9 @@ Move* generate_legal_moves(const Position& pos, Move* list)
 
     Bitboard push_mask;
     Bitboard capture_mask;
-    Bitboard attacked = attacked_squares<side>(pos);
+    Bitboard attacked = forbidden_squares<side>(pos);
 
     Square king_sq = pos.piece_position[C_KING][0];
-    list = generate_king_moves(king_sq, attacked | pieces_bb(pos, side), list);
-
     if (!checkers_bb)
     {
         push_mask = ~pieces_bb(pos);
@@ -410,31 +412,38 @@ Move* generate_legal_moves(const Position& pos, Move* list)
         for (Pin* iter = pins_start; iter != pins_end; ++iter)
             list = generate_pinned_piece_moves<side>(iter->square, iter->piece_kind, iter->direction, pos, push_mask | capture_mask, list);
 
+        Bitboard taken_for_castling = attacked | pieces_bb(pos);
+
         if (side == WHITE)
         {
-            if ((pos.castling_rights & W_OO) && !((attacked | pieces_bb(pos)) & CASTLING_PATHS[W_OO]))
+            if ((pos.castling_rights & W_OO) && !(taken_for_castling & CASTLING_PATHS[W_OO]))
                 *list++ = create_castling(W_OO);
         }
         else
         {
-            if ((pos.castling_rights & B_OO) && !((attacked | pieces_bb(pos)) & CASTLING_PATHS[B_OO]))
+            if ((pos.castling_rights & B_OO) && !(taken_for_castling & CASTLING_PATHS[B_OO]))
                 *list++ = create_castling(B_OO);
         }
-
         if (side == WHITE)
         {
-            if ((pos.castling_rights & W_OOO) && !((attacked | pieces_bb(pos)) & CASTLING_PATHS[W_OOO]))
+            if ((pos.castling_rights & W_OOO) &&
+                    !(taken_for_castling & CASTLING_PATHS[W_OOO]) &&
+                    !(QUEEN_CASTLING_BLOCK[WHITE] & pieces_bb(pos)))
                 *list++ = create_castling(W_OOO);
         }
         else
         {
-            if ((pos.castling_rights & B_OOO) && !((attacked | pieces_bb(pos)) & CASTLING_PATHS[B_OOO]))
+            if ((pos.castling_rights & B_OOO) &&
+                    !(taken_for_castling & CASTLING_PATHS[B_OOO]) &&
+                    !(QUEEN_CASTLING_BLOCK[BLACK] & pieces_bb(pos)))
                 *list++ = create_castling(B_OOO);
         }
     }
     else
     {
-        if (popcount(checkers_bb) > 1) return list;
+        if (popcount(checkers_bb) > 1)
+            return generate_king_moves(king_sq, attacked | pieces_bb(pos, side), list);
+
 
         capture_mask = checkers_bb;
         Square checker_square = Square(lsb(checkers_bb));
@@ -466,6 +475,8 @@ Move* generate_legal_moves(const Position& pos, Move* list)
     if (pos.enpassant != NO_SQUARE)
         list = generate_enpassant<side>(pos, not_pinned_pawns, push_mask, capture_mask, pos.enpassant, list);
 
+    list = generate_king_moves(king_sq, attacked | pieces_bb(pos, side), list);
+
     return list;
 }
 
@@ -476,6 +487,40 @@ Move* generate_moves(const Position& position, Move* list)
     return position.current_side == WHITE ?
             generate_legal_moves<WHITE>(position, list) :
             generate_legal_moves<BLACK>(position, list);
+}
+
+Bitboard attacked_squares(const Position& position)
+{
+    const Color side = position.current_side;
+    const Color opponent = !side;
+    const Direction UPLEFT  = side == BLACK ? NORTHWEST : SOUTHEAST;
+    const Direction UPRIGHT = side == BLACK ? NORTHEAST : SOUTHWEST;
+
+    const Piece OPPONENT_KNIGHT = side == WHITE ? B_KNIGHT : W_KNIGHT;
+    const Piece OPPONENT_BISHOP = side == WHITE ? B_BISHOP : W_BISHOP;
+    const Piece OPPONENT_ROOK = side == WHITE ? B_ROOK : W_ROOK;
+    const Piece OPPONENT_QUEEN = side == WHITE ? B_QUEEN : W_QUEEN;
+    const Piece OPPONENT_KING = side == WHITE ? B_KING : W_KING;
+
+    Bitboard bb = 0ULL;
+
+    Bitboard pawns = pieces_bb(position, opponent, PAWN);
+    bb |= shift(pawns, UPLEFT) | shift(pawns, UPRIGHT);
+
+    for (int i = 0; i < position.piece_count[OPPONENT_KNIGHT]; ++i)
+        bb |= KNIGHT_MOVES[position.piece_position[OPPONENT_KNIGHT][i]];
+
+    Bitboard blockers = pieces_bb(position);
+    for (int i = 0 ; i < position.piece_count[OPPONENT_BISHOP]; ++i)
+        bb |= slider_attack<BISHOP>(position.piece_position[OPPONENT_BISHOP][i], blockers);
+    for (int i = 0 ; i < position.piece_count[OPPONENT_ROOK]; ++i)
+        bb |= slider_attack<ROOK>(position.piece_position[OPPONENT_ROOK][i], blockers);
+    for (int i = 0 ; i < position.piece_count[OPPONENT_QUEEN]; ++i)
+        bb |= slider_attack<QUEEN>(position.piece_position[OPPONENT_QUEEN][i], blockers);
+
+    bb |= KING_MOVES[position.piece_position[OPPONENT_KING][0]];
+
+    return bb;
 }
 
 };

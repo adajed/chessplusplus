@@ -23,7 +23,7 @@ int main(int argc, char** argv)
     std::cout << position;
 
     auto start = std::chrono::steady_clock::now();
-    uint32_t score = perft(position, depth);
+    uint32_t score = perft(position, depth, true);
     auto end = std::chrono::steady_clock::now();
 
     auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();

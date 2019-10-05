@@ -41,6 +41,7 @@ extern Bitboard KNIGHT_MOVES[SQUARE_NUM];
 extern Bitboard KING_MOVES[SQUARE_NUM];
 
 extern Bitboard CASTLING_PATHS[1 << 4];
+extern Bitboard QUEEN_CASTLING_BLOCK[COLOR_NUM];
 
 extern Bitboard LINES[SQUARE_NUM][SQUARE_NUM];
 

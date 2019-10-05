@@ -27,6 +27,8 @@ extern Pin PINS[MAX_PINS];
 
 Move* generate_moves(const Position& position, Move* list);
 
+Bitboard attacked_squares(const Position& position);
+
 }
 
 #endif  // CHESS_ENGINE_MOVEGEN_H_

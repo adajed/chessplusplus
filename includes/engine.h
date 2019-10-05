@@ -87,7 +87,7 @@ struct Move
 struct ScoredMove
 {
     Move move;
-    int32_t score;
+    int64_t score;
 };
 
 struct Position
@@ -114,9 +114,9 @@ void do_move(Position& position, Move& move);
 
 void undo_move(Position& position, Move& move);
 
-int32_t score(const Position& position);
+int64_t score(const Position& position);
 
-ScoredMove minimax(Position& position, int depth);
+ScoredMove minimax(Position& position, int depth, bool use_alpha_beta_prunning);
 
 std::ostream& operator<< (std::ostream& stream, const Position& position);
 
@@ -124,7 +124,10 @@ std::ostream& operator<< (std::ostream& stream, const Move& move);
 
 void init_move_bitboards();
 
-uint32_t perft(Position& position, int depth);
+uint64_t perft(Position& position, int depth, bool print_moves);
+
+bool is_in_check(const Position& position);
+
 }
 
 #endif  // CHESS_ENGINE_H_
