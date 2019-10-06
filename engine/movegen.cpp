@@ -39,23 +39,17 @@ Bitboard slider_attack(Square sq, Bitboard blockers)
 template <>
 Bitboard slider_attack<BISHOP>(Square sq, Bitboard blockers)
 {
-    Bitboard bb = 0ULL;
-    bb |= attack_in_ray(sq, RAY_NW, blockers);
-    bb |= attack_in_ray(sq, RAY_NE, blockers);
-    bb |= attack_in_ray(sq, RAY_SW, blockers);
-    bb |= attack_in_ray(sq, RAY_SE, blockers);
-    return bb;
+    blockers &= BISHOP_MASK[sq];
+    uint64_t key = (blockers * BISHOP_MAGICS[sq]) >> (64 - BISHOP_INDEX_BITS[sq]);
+    return BISHOP_TABLE[sq][key];
 }
 
 template <>
 Bitboard slider_attack<ROOK>(Square sq, Bitboard blockers)
 {
-    Bitboard bb = 0ULL;
-    bb |= attack_in_ray(sq, RAY_N, blockers);
-    bb |= attack_in_ray(sq, RAY_S, blockers);
-    bb |= attack_in_ray(sq, RAY_W, blockers);
-    bb |= attack_in_ray(sq, RAY_E, blockers);
-    return bb;
+    blockers &= ROOK_MASK[sq];
+    uint64_t key = (blockers * ROOK_MAGICS[sq]) >> (64 - ROOK_INDEX_BITS[sq]);
+    return ROOK_TABLE[sq][key];
 }
 
 template <>
@@ -80,7 +74,7 @@ Bitboard checkers(const Position& pos)
 
     bb |= (shift<UPLEFT>(square_bb(king_sq)) | shift<UPRIGHT>(square_bb(king_sq)))
             & pieces_bb(pos, opponent, PAWN);
-    bb |= KNIGHT_MOVES[king_sq] & pieces_bb(pos, opponent, KNIGHT);
+    bb |= KNIGHT_MASK[king_sq] & pieces_bb(pos, opponent, KNIGHT);
     bb |= slider_attack<BISHOP>(king_sq, pieces_bb(pos))
             & pieces_bb(pos, opponent, BISHOP);
     bb |= slider_attack<ROOK>(king_sq, pieces_bb(pos))
@@ -114,7 +108,7 @@ Bitboard forbidden_squares(const Position& pos)
     bb |= shift<UPLEFT>(pawns) | shift<UPRIGHT>(pawns);
 
     for (int i = 0; i < pos.piece_count[OPPONENT_KNIGHT]; ++i)
-        bb |= KNIGHT_MOVES[pos.piece_position[OPPONENT_KNIGHT][i]];
+        bb |= KNIGHT_MASK[pos.piece_position[OPPONENT_KNIGHT][i]];
 
     Bitboard blockers = pieces_bb(pos) ^ square_bb(king_sq);
     for (int i = 0 ; i < pos.piece_count[OPPONENT_BISHOP]; ++i)
@@ -124,7 +118,7 @@ Bitboard forbidden_squares(const Position& pos)
     for (int i = 0 ; i < pos.piece_count[OPPONENT_QUEEN]; ++i)
         bb |= slider_attack<QUEEN>(pos.piece_position[OPPONENT_QUEEN][i], blockers);
 
-    bb |= KING_MOVES[pos.piece_position[OPPONENT_KING][0]];
+    bb |= KING_MASK[pos.piece_position[OPPONENT_KING][0]];
 
     return bb;
 }
@@ -173,25 +167,9 @@ Move* generate_pawn_moves(Bitboard pawns, Bitboard empty, Bitboard push_mask, Bi
     Bitboard pawnsOn7 = pawns & rank7;
     Bitboard pawnsNotOn7 = pawns & ~rank7;
 
-    //// pawns not on 7
-    // captures to the right
-    Bitboard bb = shift<UPRIGHT>(pawnsNotOn7) & capture_mask;
-    FOR_EACH_BIT(bb, *list++ = create_move(Square(sq - upright), sq))
-
-    // captures to the left
-    bb = shift<UPLEFT>(pawnsNotOn7) & capture_mask;
-    FOR_EACH_BIT(bb, *list++ = create_move(Square(sq - upleft), sq))
-
-    // moves
-    Bitboard pushed_pawns = shift<UP>(pawnsNotOn7) & empty;
-    bb = pushed_pawns & push_mask;
-    FOR_EACH_BIT(bb, *list++ = create_move(Square(sq - up), sq))
-    bb = shift<UP>(pushed_pawns & rank3) & push_mask & empty;
-    FOR_EACH_BIT(bb, *list++ = create_move(Square(sq - 2 * up), sq))
-
     //// pawns on 7
     // captures to the right
-    bb = shift<UPRIGHT>(pawnsOn7) & capture_mask;
+    Bitboard bb = shift<UPRIGHT>(pawnsOn7) & capture_mask;
     FOR_EACH_BIT(bb,
             *list++ = create_promotion<QUEEN >(Square(sq - upright), sq);
             *list++ = create_promotion<ROOK  >(Square(sq - upright), sq);
@@ -216,6 +194,22 @@ Move* generate_pawn_moves(Bitboard pawns, Bitboard empty, Bitboard push_mask, Bi
             *list++ = create_promotion<BISHOP>(Square(sq - up), sq);
             *list++ = create_promotion<KNIGHT>(Square(sq - up), sq);
             )
+
+    //// pawns not on 7
+    // captures to the right
+    bb = shift<UPRIGHT>(pawnsNotOn7) & capture_mask;
+    FOR_EACH_BIT(bb, *list++ = create_move(Square(sq - upright), sq))
+
+    // captures to the left
+    bb = shift<UPLEFT>(pawnsNotOn7) & capture_mask;
+    FOR_EACH_BIT(bb, *list++ = create_move(Square(sq - upleft), sq))
+
+    // moves
+    Bitboard pushed_pawns = shift<UP>(pawnsNotOn7) & empty;
+    bb = pushed_pawns & push_mask;
+    FOR_EACH_BIT(bb, *list++ = create_move(Square(sq - up), sq))
+    bb = shift<UP>(pushed_pawns & rank3) & push_mask & empty;
+    FOR_EACH_BIT(bb, *list++ = create_move(Square(sq - 2 * up), sq))
 
     return list;
 }
@@ -275,7 +269,7 @@ Move* generate_piece_moves(Square from, const Position& pos, Bitboard target, Mo
     assert(piece != PAWN && piece != KING);
 
     Bitboard bb = piece == KNIGHT
-                ? KNIGHT_MOVES[from]
+                ? KNIGHT_MASK[from]
                 : slider_attack<piece>(from, pieces_bb(pos));
     bb &= target;
 
@@ -286,7 +280,7 @@ Move* generate_piece_moves(Square from, const Position& pos, Bitboard target, Mo
 
 Move* generate_king_moves(Square from, Bitboard not_allowed, Move* list)
 {
-    Bitboard bb = KING_MOVES[from] & ~not_allowed;
+    Bitboard bb = KING_MASK[from] & ~not_allowed;
     FOR_EACH_BIT(bb, *list++ = create_move(from, sq));
     return list;
 }
@@ -404,11 +398,52 @@ Move* generate_legal_moves(const Position& pos, int id, Move* list)
     Bitboard attacked = forbidden_squares<side>(pos);
 
     Square king_sq = pos.piece_position[C_KING][0];
-    if (!checkers_bb)
+
+    if (checkers_bb)
+    {
+        if (popcount(checkers_bb) > 1)
+            return generate_king_moves(king_sq, attacked | pieces_bb(pos, side), list);
+
+        capture_mask = checkers_bb;
+        Square checker_square = Square(lsb(checkers_bb));
+
+        if (is_piece_slider(pos.board[checker_square]))
+            push_mask = LINES[king_sq][checker_square] ^ square_bb(king_sq) ^ square_bb(checker_square);
+        else
+            push_mask = 0ULL;
+    }
+    else
     {
         push_mask = ~pieces_bb(pos);
         capture_mask = pieces_bb(pos, !side);
+    }
 
+    Bitboard not_pinned_pawns = pieces_bb(pos, side, PAWN) & ~pinned;
+    list = generate_pawn_moves<side>(not_pinned_pawns, ~pieces_bb(pos), push_mask, capture_mask, list);
+
+    for (Bitboard target : {capture_mask, push_mask})
+    {
+        Bitboard not_pinned_knights = pieces_bb(pos, side, KNIGHT) & ~pinned;
+        FOR_EACH_BIT(not_pinned_knights, list = generate_piece_moves<KNIGHT>(sq, pos, target, list));
+
+        Bitboard not_pinned_bishops = pieces_bb(pos, side, BISHOP) & ~pinned;
+        FOR_EACH_BIT(not_pinned_bishops, list = generate_piece_moves<BISHOP>(sq, pos, target, list));
+
+        Bitboard not_pinned_rooks = pieces_bb(pos, side, ROOK) & ~pinned;
+        FOR_EACH_BIT(not_pinned_rooks, list = generate_piece_moves<ROOK>(sq, pos, target, list));
+
+        Bitboard not_pinned_queens = pieces_bb(pos, side, QUEEN) & ~pinned;
+        FOR_EACH_BIT(not_pinned_queens, list = generate_piece_moves<QUEEN>(sq, pos, target, list));
+
+    }
+
+    if (pos.enpassant != NO_SQUARE)
+        list = generate_enpassant<side>(pos, not_pinned_pawns, push_mask, capture_mask, pos.enpassant, list);
+
+    list = generate_king_moves(king_sq, attacked | pieces_bb(pos, side), list);
+
+    if (!checkers_bb)
+    {
         for (Pin* iter = pins_start; iter != pins_end; ++iter)
             list = generate_pinned_piece_moves<side>(iter->square, iter->piece_kind, iter->direction, pos, push_mask | capture_mask, list);
 
@@ -439,43 +474,6 @@ Move* generate_legal_moves(const Position& pos, int id, Move* list)
                 *list++ = create_castling(B_OOO);
         }
     }
-    else
-    {
-        if (popcount(checkers_bb) > 1)
-            return generate_king_moves(king_sq, attacked | pieces_bb(pos, side), list);
-
-
-        capture_mask = checkers_bb;
-        Square checker_square = Square(lsb(checkers_bb));
-
-        if (is_piece_slider(pos.board[checker_square]))
-            push_mask = LINES[king_sq][checker_square] ^ square_bb(king_sq) ^ square_bb(checker_square);
-        else
-            push_mask = 0ULL;
-
-    }
-
-    Bitboard target = push_mask | capture_mask;
-
-    Bitboard not_pinned_pawns = pieces_bb(pos, side, PAWN) & ~pinned;
-    list = generate_pawn_moves<side>(not_pinned_pawns, ~pieces_bb(pos), push_mask, capture_mask, list);
-
-    Bitboard not_pinned_knights = pieces_bb(pos, side, KNIGHT) & ~pinned;
-    FOR_EACH_BIT(not_pinned_knights, list = generate_piece_moves<KNIGHT>(sq, pos, target, list));
-
-    Bitboard not_pinned_bishops = pieces_bb(pos, side, BISHOP) & ~pinned;
-    FOR_EACH_BIT(not_pinned_bishops, list = generate_piece_moves<BISHOP>(sq, pos, target, list));
-
-    Bitboard not_pinned_rooks = pieces_bb(pos, side, ROOK) & ~pinned;
-    FOR_EACH_BIT(not_pinned_rooks, list = generate_piece_moves<ROOK>(sq, pos, target, list));
-
-    Bitboard not_pinned_queens = pieces_bb(pos, side, QUEEN) & ~pinned;
-    FOR_EACH_BIT(not_pinned_queens, list = generate_piece_moves<QUEEN>(sq, pos, target, list));
-
-    if (pos.enpassant != NO_SQUARE)
-        list = generate_enpassant<side>(pos, not_pinned_pawns, push_mask, capture_mask, pos.enpassant, list);
-
-    list = generate_king_moves(king_sq, attacked | pieces_bb(pos, side), list);
 
     return list;
 }
@@ -508,7 +506,7 @@ Bitboard attacked_squares(const Position& position)
     bb |= shift(pawns, UPLEFT) | shift(pawns, UPRIGHT);
 
     for (int i = 0; i < position.piece_count[OPPONENT_KNIGHT]; ++i)
-        bb |= KNIGHT_MOVES[position.piece_position[OPPONENT_KNIGHT][i]];
+        bb |= KNIGHT_MASK[position.piece_position[OPPONENT_KNIGHT][i]];
 
     Bitboard blockers = pieces_bb(position);
     for (int i = 0 ; i < position.piece_count[OPPONENT_BISHOP]; ++i)
@@ -518,7 +516,7 @@ Bitboard attacked_squares(const Position& position)
     for (int i = 0 ; i < position.piece_count[OPPONENT_QUEEN]; ++i)
         bb |= slider_attack<QUEEN>(position.piece_position[OPPONENT_QUEEN][i], blockers);
 
-    bb |= KING_MOVES[position.piece_position[OPPONENT_KING][0]];
+    bb |= KING_MASK[position.piece_position[OPPONENT_KING][0]];
 
     return bb;
 }

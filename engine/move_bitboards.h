@@ -32,18 +32,31 @@ ENABLE_INCREMENT_OPERATIONS(RayDirection)
 
 extern Bitboard RAYS[RAYS_NUM][SQUARE_NUM];
 
-// contains all squares that a knight can move to
-//  from a given sqare
-extern Bitboard KNIGHT_MOVES[SQUARE_NUM];
-
 // contains all squares that a king can move to
 //  from a given sqare
-extern Bitboard KING_MOVES[SQUARE_NUM];
+extern Bitboard KING_MASK[SQUARE_NUM];
+
+// contains all squares that a knight can move to
+//  from a given sqare
+extern Bitboard KNIGHT_MASK[SQUARE_NUM];
+
+extern Bitboard BISHOP_MASK[SQUARE_NUM];
+
+extern Bitboard ROOK_MASK[SQUARE_NUM];
 
 extern Bitboard CASTLING_PATHS[1 << 4];
 extern Bitboard QUEEN_CASTLING_BLOCK[COLOR_NUM];
 
 extern Bitboard LINES[SQUARE_NUM][SQUARE_NUM];
+
+extern uint64_t ROOK_MAGICS[SQUARE_NUM];
+extern uint64_t BISHOP_MAGICS[SQUARE_NUM];
+
+extern int ROOK_INDEX_BITS[SQUARE_NUM];
+extern int BISHOP_INDEX_BITS[SQUARE_NUM];
+
+extern Bitboard ROOK_TABLE[SQUARE_NUM][4096];
+extern Bitboard BISHOP_TABLE[SQUARE_NUM][4096];
 
 }
 
