@@ -342,6 +342,8 @@ ScoredMove minimax(const Position& position, int depth)
     std::vector<std::future<ScoredMove>> futures;
     std::vector<std::thread> threads;
 
+    counter = 0;
+
     for (int tid = 0; tid < NUM_THREADS; ++tid)
     {
         std::promise<ScoredMove> & result = results[tid];

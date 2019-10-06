@@ -87,9 +87,9 @@ int main(int argc, char** argv)
     {
         std::cout << position;
 
-        int depth = 2;
+        int depth = 8;
         TimePoint start_time = std::chrono::steady_clock::now();
-        scored_move = minimax(position, 8);
+        scored_move = minimax(position, depth);
         TimePoint end_time = std::chrono::steady_clock::now();
 
         uint64_t time = duration(start_time, end_time);
