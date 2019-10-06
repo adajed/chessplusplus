@@ -7,12 +7,11 @@ using namespace engine;
 
 using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
-const unsigned long long MOVE_TIME = 30ULL * 1000000ULL;
+const unsigned long long MOVE_TIME = 60ULL * 1000000ULL;
 
-double duration(TimePoint start, TimePoint end)
+uint64_t duration(TimePoint start, TimePoint end)
 {
-    uint64_t t = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-    return double(t) * 10e-6;
+    return std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 }
 
 Move parse_move(std::string move_str)
@@ -88,31 +87,17 @@ int main(int argc, char** argv)
     {
         std::cout << position;
 
-        auto start_time = std::chrono::steady_clock::now();
-        auto end_time = start_time;
+        int depth = 2;
+        TimePoint start_time = std::chrono::steady_clock::now();
+        scored_move = minimax(position, 8);
+        TimePoint end_time = std::chrono::steady_clock::now();
 
-        int depth = 0;
-        while (duration(start_time, end_time) < 20.)
-        {
-            depth += 1;
-            scored_move = minimax(position, depth, true);
-            end_time = std::chrono::steady_clock::now();
-
-            double time = duration(start_time, end_time);
-            std::cout << "depth=" << depth
-                      << ", score=" << scored_move.score
-                      << ", time=" << time << "s"
-                      << std::endl;
-
-            if (scored_move.score == (1ULL << 16) ||
-                    scored_move.score == -(1ULL << 16))
-                break;
-        }
-
-        double time = duration(start_time, end_time);
-        std::cout << "move " << scored_move.move << std::endl;
-        std::cout << "score " << scored_move.score << std::endl;
-        std::cout << "time " << time << "s" << std::endl;
+        uint64_t time = duration(start_time, end_time);
+        std::cout << "depth = " << depth << std::endl;
+        std::cout << "score = " << scored_move.score << std::endl;
+        std::cout << "time = " << time << " microseconds" << std::endl;
+        std::cout << "move = " << scored_move.move << std::endl;
+        std::cout << std::endl;
 
         do_move(position, scored_move.move);
 

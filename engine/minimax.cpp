@@ -14,47 +14,59 @@ const int64_t INIT_ALPHA = -(1ULL << 32);
 const int64_t INIT_BETA = 1ULL << 32;
 
 const int64_t PAWN_POSITION_VALUE[] = {
-    0,  0,  0,  0,  0,  0,  0,  0,
-    60, 70, 80, 90, 90, 80, 70, 60,
-    50, 60, 70, 80, 80, 70, 60, 50,
-    35, 45, 50, 60, 60, 50, 45, 35,
-    20, 20, 40, 60, 60, 40, 20, 20,
-    20, 20, 20, 40, 40, 20, 20, 20,
-    30, 30, 30, 10, 10, 30, 30, 30,
+     0,  0,  0,  0,  0,  0,  0,  0,
+    10, 10, 10,  0,  0, 10, 10, 10,
+    5, 5, 5, 40, 40, 5, 5, 5,
+    5, 5, 5, 40, 40, 5, 5, 5,
+    15, 25, 30, 40, 40, 30, 25, 15,
+    20, 30, 40, 50, 50, 40, 30, 20,
+    30, 40, 50, 60, 60, 50, 40, 30,
     0,  0,  0,  0,  0,  0,  0,  0,
 };
 
 const int64_t KNIGHT_POSITION_VALUE[] = {
-    -50, -40, -30, -20, -20, -30, -40, -50,
-    -40, -30,  20,  20,  20,  20, -30, -40,
-    -30,  10,  30,  40,  40,  30,  10, -30,
-    -15,  20,  40,  60,  60,  40,  20, -15,
-    -15,  20,  40,  60,  60,  40,  20, -15,
-    -30,  10,  30,  40,  40,  30,  10, -30,
-    -40, -30,  20,  20,  20,  20, -30, -40,
-    -50, -40, -30  -20, -20, -30, -40, -50,
+     0,  0,  0,  0,  0,  0,  0,  0,
+     0,  0,  0,  0,  0,  0,  0,  0,
+    10, 20, 20, 20, 20, 20, 20, 10,
+    20, 30, 40, 40, 40, 40, 30, 20,
+    20, 30, 40, 40, 40, 40, 30, 20,
+    30, 40, 60, 60, 60, 60, 40, 30,
+    30, 40, 70, 60, 60, 70, 40, 30,
+    20, 30, 40, 40, 40, 40, 30, 20,
+
 };
 
 const int64_t BISHOP_POSITION_VALUE[] = {
-    -50, -40,  50, -20, -20,  50, -40, -50,
-    -40,  60,  50,  40,  40,  50,  60, -40,
-     50,  50,  40,  40,  40,  40,  50,  50,
-     30,  40,  40,  30,  30,  40,  40,  30,
-     30,  40,  40,  30,  30,  40,  40,  30,
-     50,  50,  40,  40,  40,  40,  50,  50,
-    -40,  60,  50,  40,  40,  50,  60, -40,
-    -50, -40,  50  -20, -20,  50, -40, -50,
+    40, 30, 20, 10, 10, 20, 30, 40,
+    40, 40, 30, 50, 50, 30, 40, 40,
+    40, 40, 50, 50, 50, 50, 40, 40,
+    40, 50, 60, 70, 70, 60, 50, 40,
+    30, 40, 50, 60, 60, 50, 40, 30,
+    30, 50, 60, 60, 60, 60, 50, 30,
+    30, 50, 60, 60, 60, 60, 50, 30,
+    30, 40, 50, 60, 60, 50, 40, 30,
+};
+
+const int64_t ROOK_POSITION_VALUE[] = {
+     40,  40,  40,  40,  40,  40,  40,  40,
+     40,  40,  40,  40,  40,  40,  40,  40,
+     40,  40,  40,  40,  40,  40,  40,  40,
+     40,  40,  40,  40,  40,  40,  40,  40,
+    100, 100, 100, 100, 100, 100, 100, 100,
+    100, 100, 100, 100, 100, 100, 100, 100,
+    100, 100, 100, 100, 100, 100, 100, 100,
+    100, 100, 100, 100, 100, 100, 100, 100,
 };
 
 const int64_t QUEEN_POSITION_VALUE[] = {
-    20,  20,  20,  20,  20,  20,  20, 20,
-    20,  30,  20,  20,  20,  20,  30, 20,
-    20,  10,  30,  40,  40,  30,  10, 20,
-    25,  20,  40,  60,  60,  40,  20, 25,
-    25,  20,  40,  60,  60,  40,  20, 25,
-    20,  10,  30,  40,  40,  30,  10, 20,
-    20,  30,  20,  20,  20,  20,  30, 20,
-    20,  20,  20,  20,  20,  20,  20, 20,
+    80, 70,  60,  50,  50,  60,  70,  80,
+    80, 80,  70,  90,  90,  70,  80,  80,
+    80, 80,  90,  90,  90,  90,  80,  80,
+    80, 90, 100, 110, 110, 100,  90,  80,
+    130, 140, 150, 160, 160, 150, 140, 130,
+    130, 150, 160, 160, 160, 160, 150, 130,
+    130, 150, 160, 160, 160, 160, 150, 130,
+    130, 140, 150, 160, 160, 150, 140, 130,
 };
 
 const int64_t KING_POSITION_VALUE[] = {
@@ -96,6 +108,10 @@ Bitboard double_pawn_attack(const Position& pos)
     return shift<UPRIGHT>(pawns) & shift<UPLEFT>(pawns);
 }
 
+Square mirror(Square sq)
+{
+    return make_square(RANK_8 - rank(sq), file(sq));
+}
 
 template <Color side>
 int64_t score_side(const Position& pos, int tid)
@@ -118,41 +134,48 @@ int64_t score_side(const Position& pos, int tid)
     {
         Square sq = pos.piece_position[PAWN_][i];
         assert(sq != NO_SQUARE);
-        value += PAWN_POSITION_VALUE[side == WHITE ? 63 - sq : sq];
+        value += PAWN_POSITION_VALUE[side == BLACK ? mirror(sq) : sq];
     }
 
     for (int i = 0; i < pos.piece_count[KNIGHT_]; ++i)
     {
         Square sq = pos.piece_position[KNIGHT_][i];
         assert(sq != NO_SQUARE);
-        value += KNIGHT_POSITION_VALUE[side == WHITE ? 63 - sq : sq];
+        value += KNIGHT_POSITION_VALUE[side == BLACK ? mirror(sq) : sq];
     }
 
     for (int i = 0; i < pos.piece_count[BISHOP_]; ++i)
     {
         Square sq = pos.piece_position[BISHOP_][i];
         assert(sq != NO_SQUARE);
-        value += BISHOP_POSITION_VALUE[side == WHITE ? 63 - sq : sq];
+        value += BISHOP_POSITION_VALUE[side == BLACK ? mirror(sq) : sq];
+    }
+
+    for (int i = 0; i < pos.piece_count[ROOK_]; ++i)
+    {
+        Square sq = pos.piece_position[ROOK_][i];
+        assert(sq != NO_SQUARE);
+        value += ROOK_POSITION_VALUE[side == BLACK ? mirror(sq) : sq];
     }
 
     for (int i = 0; i < pos.piece_count[QUEEN_]; ++i)
     {
         Square sq = pos.piece_position[QUEEN_][i];
         assert(sq != NO_SQUARE);
-        value += QUEEN_POSITION_VALUE[side == WHITE ? 63 - sq : sq];
+        value += QUEEN_POSITION_VALUE[side == BLACK ? mirror(sq) : sq];
     }
 
     for (int i = 0; i < pos.piece_count[KING_]; ++i)
     {
         Square sq = pos.piece_position[KING_][i];
         assert(sq != NO_SQUARE);
-        value += QUEEN_POSITION_VALUE[side == WHITE ? 63 - sq : sq];
+        value += KING_POSITION_VALUE[side == BLACK ? mirror(sq) : sq];
     }
 
 
+    // bonus for pawns covering multiple squares
     Bitboard single_attack = single_pawn_attack<side>(pos);
-    value += 20 * popcount(single_attack);
-
+    value += 10 * popcount(single_attack);
     Bitboard double_attack = single_pawn_attack<side>(pos);
     value += 20 * popcount(double_attack);
 

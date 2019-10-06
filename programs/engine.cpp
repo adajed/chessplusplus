@@ -11,12 +11,14 @@ int main(int argc, char** argv)
     std::string fen(argv[1]);
     Position position = from_fen(fen);
 
-    for (int i = 0; i < 20; ++i)
+    for (int i = 0; i < 60; ++i)
     {
         std::cout << position;
-        ScoredMove move = minimax(position, 6, false);
+        ScoredMove move = minimax(position, 8);
 
-        std::cout << move.move << std::endl;
+        std::cout << "score = " << move.score << std::endl;
+        std::cout << "move = " << move.move << std::endl;
+        std::cout << std::endl;
 
         do_move(position, move.move);
     }

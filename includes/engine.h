@@ -84,6 +84,10 @@ struct Move
     bool enpassant;
 };
 
+constexpr Move NO_MOVE = {
+    NO_SQUARE, NO_SQUARE, NO_PIECE_KIND, NO_PIECE_KIND,
+    NO_CASTLING, NO_CASTLING, NO_SQUARE, false};
+
 struct ScoredMove
 {
     Move move;

@@ -26,11 +26,12 @@ int main(int argc, char** argv)
     uint32_t score = perft(position, depth, true);
     auto end = std::chrono::steady_clock::now();
 
-    auto time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
-    double time_d = double(time) * 1e-6;
-    uint64_t speed = uint64_t(double(score) / time_d);
+    uint64_t time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
-    std::cout << "[depth " << depth << "] score=" << score << ", time=" << time_d << "s, speed=" << speed << " nodes/s" << std::endl;
+    double time_d = double(time) * 1e-6;
+    double speed = double(score) / time_d;
+
+    std::cout << "[depth " << depth << "] score=" << score << ", time=" << time_d << "s, speed = " << speed << std::endl;
 
     return 0;
 }
