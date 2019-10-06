@@ -14,7 +14,7 @@ LIB_STATIC_DEBUG   = $(OUTDIR)/libengine_static_debug.a
 CC=g++
 
 CFLAGS_COMMON = -Wall -std=c++17 -I$(ROOTDIR)/includes
-LFLAGS_COMMON = -DDEBUG
+LFLAGS_COMMON = -pthread
 
 CFLAGS_RELEASE = $(CFLAGS_COMMON) -Ofast
 CFLAGS_DEBUG = $(CFLAGS_COMMON) -g -DDEBUG

@@ -1,10 +1,17 @@
 #include "minimax.h"
 
+#include <vector>
+#include <thread>
+#include <future>
+
 namespace engine
 {
 
 const int64_t MIN_VALUE = -(1ULL << 16);
 const int64_t MAX_VALUE = 1ULL << 16;
+
+const int64_t INIT_ALPHA = -(1ULL << 32);
+const int64_t INIT_BETA = 1ULL << 32;
 
 const int64_t PAWN_POSITION_VALUE[] = {
     0,  0,  0,  0,  0,  0,  0,  0,
@@ -91,7 +98,7 @@ Bitboard double_pawn_attack(const Position& pos)
 
 
 template <Color side>
-int64_t score_side(const Position& pos)
+int64_t score_side(const Position& pos, int tid)
 {
     const Piece PAWN_ = make_piece(side, PAWN);
     const Piece KNIGHT_ = make_piece(side, KNIGHT);
@@ -152,34 +159,25 @@ int64_t score_side(const Position& pos)
     return value;
 }
 
-int64_t score(const Position& pos)
+int64_t score(const Position& pos, int tid)
 {
-    return score_side<WHITE>(pos) - score_side<BLACK>(pos);
+    return score_side<WHITE>(pos, tid) - score_side<BLACK>(pos, tid);
 }
 
 namespace
 {
 
-ScoredMove minimax_with_alpha_beta_prunning(
-        Position& position, int64_t alpha, int64_t beta, int depth)
+std::atomic<int> counter;
+
+ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t beta, int depth)
 {
     Color side = position.current_side;
 
     if (depth == 0)
-        return {{}, score(position)};
+        return {{}, score(position, tid)};
 
-    Move* begin = MOVE_LIST[depth];
-    Move* end = generate_moves(position, begin);
-
-#ifdef DEBUG
-    std::cout << "depth " << depth << std::endl;
-    std::cout << position << std::endl;
-
-    std::cout << "Availables moves (" << end - begin << "):" << std::endl;
-    for (Move* it = begin; it != end; ++it)
-        std::cout << *it << std::endl;
-    std::cout << std::endl;
-#endif
+    Move* begin = MOVE_LIST[tid][depth];
+    Move* end = generate_moves(position, tid, begin);
 
     if (begin == end)
     {
@@ -194,13 +192,12 @@ ScoredMove minimax_with_alpha_beta_prunning(
 
     if (side == WHITE)
     {
-        best_value = MIN_VALUE;
+        best_value = 2LL * MIN_VALUE;
         for (Move* it = begin; it != end; ++it)
         {
             Move move = *it;
             do_move(position, move);
-            int64_t value = minimax_with_alpha_beta_prunning(
-                    position, alpha, beta, depth - 1).score;
+            int64_t value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
             if (value > best_value)
             {
                 best_value = value;
@@ -215,13 +212,12 @@ ScoredMove minimax_with_alpha_beta_prunning(
     }
     else
     {
-        best_value = MAX_VALUE;
+        best_value = 2LL * MAX_VALUE;
         for (Move* it = begin; it != end; ++it)
         {
             Move move = *it;
             do_move(position, move);
-            int64_t value = minimax_with_alpha_beta_prunning(
-                    position, alpha, beta, depth - 1).score;
+            int64_t value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
             if (value < best_value)
             {
                 best_value = value;
@@ -239,32 +235,27 @@ ScoredMove minimax_with_alpha_beta_prunning(
 
 }
 
-ScoredMove minimax_without_alpha_beta_prunning(
-        Position& position, int depth)
+void run_minimax(std::promise<ScoredMove> && result, Position position, int tid, int64_t alpha, int64_t beta, int depth)
 {
     Color side = position.current_side;
 
     if (depth == 0)
-        return {{}, score(position)};
+    {
+        result.set_value({{}, score(position, tid)});
+        return;
+    }
 
-    Move* begin = MOVE_LIST[depth];
-    Move* end = generate_moves(position, begin);
+    Move* begin = MOVE_LIST[tid][depth];
+    Move* end = generate_moves(position, tid, begin);
 
-#ifdef DEBUG
-    std::cout << "depth " << depth << std::endl;
-    std::cout << position << std::endl;
-
-    std::cout << "Availables moves (" << end - begin << "):" << std::endl;
-    for (Move* it = begin; it != end; ++it)
-        std::cout << *it << std::endl;
-    std::cout << std::endl;
-#endif
 
     if (begin == end)
     {
         if (!is_in_check(position))
-            return {{}, 0};
-        return {{}, side == WHITE ? MIN_VALUE : MAX_VALUE};
+            result.set_value({{}, 0});
+        else
+            result.set_value({{}, side == WHITE ? MIN_VALUE : MAX_VALUE});
+        return;
     }
 
     Move best_move;
@@ -272,12 +263,13 @@ ScoredMove minimax_without_alpha_beta_prunning(
 
     if (side == WHITE)
     {
-        best_value = MIN_VALUE;
-        for (Move* it = begin; it != end; ++it)
+        best_value = 2LL * MIN_VALUE;
+        int i = counter++;
+        while (i < end - begin)
         {
-            Move move = *it;
+            Move move = begin[i];
             do_move(position, move);
-            int64_t value = minimax_without_alpha_beta_prunning(position, depth - 1).score;
+            int64_t value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
             if (value > best_value)
             {
                 best_value = value;
@@ -285,37 +277,83 @@ ScoredMove minimax_without_alpha_beta_prunning(
             }
             undo_move(position, move);
 
+            alpha = alpha > value ? alpha : value;
+            if (alpha >= beta)
+                break;
+
+            i = counter++;
         }
     }
     else
     {
-        best_value = MAX_VALUE;
-        for (Move* it = begin; it != end; ++it)
+        best_value = 2LL * MAX_VALUE;
+        int i = counter++;
+        while (i < end - begin)
         {
-            Move move = *it;
+            Move move = begin[i];
             do_move(position, move);
-            int64_t value = minimax_without_alpha_beta_prunning(position, depth - 1).score;
+            int64_t value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
             if (value < best_value)
             {
                 best_value = value;
                 best_move = move;
             }
             undo_move(position, move);
+
+            beta = beta < value ? beta : value;
+            if (alpha >= beta)
+                break;
+
+            i = counter++;
         }
     }
 
-    return {best_move, best_value};
+    result.set_value({best_move, best_value});
 }
 
 }
 
-ScoredMove minimax(Position& position, int depth, bool use_alpha_beta_prunning)
+ScoredMove minimax(const Position& position, int depth)
 {
-    if (use_alpha_beta_prunning)
-        return minimax_with_alpha_beta_prunning(
-                position, -(1ULL << 32), 1ULL << 32, depth);
-    return minimax_without_alpha_beta_prunning(
-            position, depth);
+    std::vector<std::promise<ScoredMove>> results(NUM_THREADS);
+    std::vector<std::future<ScoredMove>> futures;
+    std::vector<std::thread> threads;
+
+    for (int tid = 0; tid < NUM_THREADS; ++tid)
+    {
+        std::promise<ScoredMove> & result = results[tid];
+        futures.push_back(result.get_future());
+
+        Position pos = position;
+
+        threads.push_back(std::thread(
+                    &run_minimax, std::move(result), pos, tid, INIT_ALPHA, INIT_BETA, depth));
+    }
+
+    for (int tid = 0; tid < NUM_THREADS; ++tid)
+        threads[tid].join();
+
+    ScoredMove best_move = futures[0].get();
+    for (int tid = 1; tid < NUM_THREADS; ++tid)
+    {
+        ScoredMove move = futures[tid].get();
+
+        if (move.score == 2LL * MIN_VALUE ||
+                move.score == 2LL * MAX_VALUE)
+            continue;
+
+        if (position.current_side == WHITE)
+        {
+            if (move.score > best_move.score)
+                best_move = move;
+        }
+        else
+        {
+            if (move.score < best_move.score)
+                best_move = move;
+        }
+    }
+    return best_move;
 }
 
 uint64_t perft(Position& position, int depth, bool print_moves)
@@ -323,16 +361,14 @@ uint64_t perft(Position& position, int depth, bool print_moves)
     if (depth == 0)
         return 1;
 
-    Move* begin = MOVE_LIST[depth];
-    Move* end = generate_moves(position, begin);
+    Move* begin = MOVE_LIST[0][depth];
+    Move* end = generate_moves(position, 0, begin);
 
     if (depth == 1)
     {
         if (print_moves)
-        {
             for (Move* it = begin; it != end; ++it)
                 std::cout << *it << " 1" << std::endl;
-        }
         return end - begin;
     }
 
@@ -346,10 +382,7 @@ uint64_t perft(Position& position, int depth, bool print_moves)
         sum += nodes;
 
         if (print_moves)
-        {
             std::cout << move << " " << nodes << std::endl;
-            /* std::cout << position << std::endl; */
-        }
 
         undo_move(position, move);
     }

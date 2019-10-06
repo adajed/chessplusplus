@@ -19,6 +19,9 @@ PLAY_OBJ_DEBUG=$(OUTDIR_PROGRAMS)/play.d.o
 CPP_SOURCES=$(wildcard *.cpp)
 CPP_HEADERS=$(wildcard *.h) $(wildcard ../engine/*.h)
 
+LFLAGS_RELEASE = $(LFLAGS_COMMON)
+LFLAGS_DEBUG = $(LFLAGS_COMMON)
+
 release: $(ENGINE_RELEASE) $(PERFT_RELEASE) $(PLAY_RELEASE)
 debug: $(ENGINE_DEBUG) $(PERFT_DEBUG) $(PLAY_DEBUG)
 

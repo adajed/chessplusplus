@@ -116,7 +116,7 @@ void undo_move(Position& position, Move& move);
 
 int64_t score(const Position& position);
 
-ScoredMove minimax(Position& position, int depth, bool use_alpha_beta_prunning);
+ScoredMove minimax(const Position& position, int depth);
 
 std::ostream& operator<< (std::ostream& stream, const Position& position);
 
