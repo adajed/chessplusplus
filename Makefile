@@ -16,10 +16,10 @@ engine_debug:
 
 #### programs
 
-programs_release:
+programs_release: engine_release
 	@+make -C programs release
 
-programs_debug:
+programs_debug: engine_debug
 	@+make -C programs debug
 
 
