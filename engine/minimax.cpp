@@ -209,8 +209,7 @@ ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t
         return {{}, side == WHITE ? MIN_VALUE : MAX_VALUE};
     }
 
-    Move best_move{NO_SQUARE, NO_SQUARE, NO_PIECE_KIND, NO_PIECE_KIND,
-                    NO_CASTLING, NO_CASTLING, NO_SQUARE, false};
+    Move best_move = NO_MOVE;
     int64_t best_value;
 
     if (side == WHITE)
@@ -219,14 +218,14 @@ ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t
         for (Move* it = begin; it != end; ++it)
         {
             Move move = *it;
-            do_move(position, move);
+            MoveInfo moveinfo = do_move(position, move);
             int64_t value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
             if (value > best_value)
             {
                 best_value = value;
                 best_move = move;
             }
-            undo_move(position, move);
+            undo_move(position, move, moveinfo);
 
             alpha = alpha > value ? alpha : value;
             if (alpha >= beta)
@@ -239,14 +238,14 @@ ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t
         for (Move* it = begin; it != end; ++it)
         {
             Move move = *it;
-            do_move(position, move);
+            MoveInfo moveinfo = do_move(position, move);
             int64_t value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
             if (value < best_value)
             {
                 best_value = value;
                 best_move = move;
             }
-            undo_move(position, move);
+            undo_move(position, move, moveinfo);
 
             beta = beta < value ? beta : value;
             if (alpha >= beta)
@@ -281,7 +280,7 @@ void run_minimax(std::promise<ScoredMove> && result, Position position, int tid,
         return;
     }
 
-    Move best_move;
+    Move best_move = NO_MOVE;
     int64_t best_value;
 
     if (side == WHITE)
@@ -291,14 +290,14 @@ void run_minimax(std::promise<ScoredMove> && result, Position position, int tid,
         while (i < end - begin)
         {
             Move move = begin[i];
-            do_move(position, move);
+            MoveInfo moveinfo = do_move(position, move);
             int64_t value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
             if (value > best_value)
             {
                 best_value = value;
                 best_move = move;
             }
-            undo_move(position, move);
+            undo_move(position, move, moveinfo);
 
             alpha = alpha > value ? alpha : value;
             if (alpha >= beta)
@@ -314,14 +313,14 @@ void run_minimax(std::promise<ScoredMove> && result, Position position, int tid,
         while (i < end - begin)
         {
             Move move = begin[i];
-            do_move(position, move);
+            MoveInfo moveinfo = do_move(position, move);
             int64_t value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
             if (value < best_value)
             {
                 best_value = value;
                 best_move = move;
             }
-            undo_move(position, move);
+            undo_move(position, move, moveinfo);
 
             beta = beta < value ? beta : value;
             if (alpha >= beta)
@@ -363,8 +362,7 @@ ScoredMove minimax(const Position& position, int depth)
     {
         ScoredMove move = futures[tid].get();
 
-        if (move.score == 2LL * MIN_VALUE ||
-                move.score == 2LL * MAX_VALUE)
+        if (move.move == NO_MOVE)
             continue;
 
         if (position.current_side == WHITE)
@@ -393,7 +391,10 @@ uint64_t perft(Position& position, int depth, bool print_moves)
     {
         if (print_moves)
             for (Move* it = begin; it != end; ++it)
-                std::cout << *it << " 1" << std::endl;
+            {
+                print_move(*it);
+                std::cout << " 1" << std::endl;
+            }
         return end - begin;
     }
 
@@ -401,15 +402,18 @@ uint64_t perft(Position& position, int depth, bool print_moves)
     for (Move* it = begin; it != end; ++it)
     {
         Move move = *it;
-        do_move(position, move);
+        MoveInfo moveinfo = do_move(position, move);
 
         uint64_t nodes = perft(position, depth - 1, false);
         sum += nodes;
 
         if (print_moves)
-            std::cout << move << " " << nodes << std::endl;
+        {
+            print_move(move);
+            std::cout << " " << nodes << std::endl;
+        }
 
-        undo_move(position, move);
+        undo_move(position, move, moveinfo);
     }
 
     return sum;

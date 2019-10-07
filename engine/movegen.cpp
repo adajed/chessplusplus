@@ -7,6 +7,28 @@ namespace engine
 Move MOVE_LIST[NUM_THREADS][MAX_DEPTH][MAX_MOVES];
 Pin PINS[NUM_THREADS][MAX_PINS];
 
+Move create_move(Square from, Square to)
+{
+    assert(from != NO_SQUARE);
+    assert(to != NO_SQUARE);
+    return to << 6 | from;
+}
+
+Move create_promotion(Square from, Square to, PieceKind promotion)
+{
+    assert(from != NO_SQUARE);
+    assert(to != NO_SQUARE);
+    assert(promotion != PAWN);
+    assert(promotion != KING);
+    return promotion << 12 | to << 6 | from;
+}
+
+Move create_castling(Castling castling)
+{
+    assert(castling == KING_CASTLING || castling == QUEEN_CASTLING);
+    return (castling == KING_CASTLING ? 1 : 2) << 15;
+}
+
 namespace
 {
 
@@ -123,27 +145,6 @@ Bitboard forbidden_squares(const Position& pos)
     return bb;
 }
 
-Move create_move(Square from, Square to)
-{
-    return Move{from, to, NO_PIECE_KIND, NO_PIECE_KIND, NO_CASTLING, NO_CASTLING, NO_SQUARE, false};
-}
-
-template <PieceKind piece>
-Move create_promotion(Square from, Square to)
-{
-    return Move{from, to, NO_PIECE_KIND, piece, NO_CASTLING, NO_CASTLING, NO_SQUARE, false};
-}
-
-Move create_castling(Castling castling)
-{
-    return Move{NO_SQUARE, NO_SQUARE, NO_PIECE_KIND, NO_PIECE_KIND, castling, NO_CASTLING, NO_SQUARE, false};
-}
-
-Move create_enpassant(Square from, Square enpassant_square)
-{
-    return Move{from, enpassant_square, NO_PIECE_KIND, NO_PIECE_KIND, NO_CASTLING, NO_CASTLING, NO_SQUARE, true};
-}
-
 #define FOR_EACH_BIT(bitboard, code)        \
 while (bitboard)                           \
 {                                           \
@@ -171,28 +172,28 @@ Move* generate_pawn_moves(Bitboard pawns, Bitboard empty, Bitboard push_mask, Bi
     // captures to the right
     Bitboard bb = shift<UPRIGHT>(pawnsOn7) & capture_mask;
     FOR_EACH_BIT(bb,
-            *list++ = create_promotion<QUEEN >(Square(sq - upright), sq);
-            *list++ = create_promotion<ROOK  >(Square(sq - upright), sq);
-            *list++ = create_promotion<BISHOP>(Square(sq - upright), sq);
-            *list++ = create_promotion<KNIGHT>(Square(sq - upright), sq);
+            *list++ = create_promotion(Square(sq - upright), sq, QUEEN);
+            *list++ = create_promotion(Square(sq - upright), sq, ROOK);
+            *list++ = create_promotion(Square(sq - upright), sq, BISHOP);
+            *list++ = create_promotion(Square(sq - upright), sq, KNIGHT);
             )
 
     // captures to the left
     bb = shift<UPLEFT>(pawnsOn7) & capture_mask;
     FOR_EACH_BIT(bb,
-            *list++ = create_promotion<QUEEN >(Square(sq - upleft), sq);
-            *list++ = create_promotion<ROOK  >(Square(sq - upleft), sq);
-            *list++ = create_promotion<BISHOP>(Square(sq - upleft), sq);
-            *list++ = create_promotion<KNIGHT>(Square(sq - upleft), sq);
+            *list++ = create_promotion(Square(sq - upleft), sq, QUEEN);
+            *list++ = create_promotion(Square(sq - upleft), sq, ROOK);
+            *list++ = create_promotion(Square(sq - upleft), sq, BISHOP);
+            *list++ = create_promotion(Square(sq - upleft), sq, KNIGHT);
             )
 
     // moves
     bb = shift<UP>(pawnsOn7) & push_mask & empty;
     FOR_EACH_BIT(bb,
-            *list++ = create_promotion<QUEEN >(Square(sq - up), sq);
-            *list++ = create_promotion<ROOK  >(Square(sq - up), sq);
-            *list++ = create_promotion<BISHOP>(Square(sq - up), sq);
-            *list++ = create_promotion<KNIGHT>(Square(sq - up), sq);
+            *list++ = create_promotion(Square(sq - up), sq, QUEEN);
+            *list++ = create_promotion(Square(sq - up), sq, ROOK);
+            *list++ = create_promotion(Square(sq - up), sq, BISHOP);
+            *list++ = create_promotion(Square(sq - up), sq, KNIGHT);
             )
 
     //// pawns not on 7
@@ -238,24 +239,18 @@ Move* generate_enpassant(const Position& pos, Bitboard not_pinned_pawns, Bitboar
             attacking_bb = square_bb(Square(enpassant_square - upright));
         if (left_bb)
             attacking_bb = square_bb(Square(enpassant_square - upleft));
-        /* Bitboard rank_bb = pieces_bb(pos) & RANKS_BB[rank(captured_square)]; */
-        /* if (popcount(rank_bb) >= 4) */
-        /* { */
-            Bitboard blockers = pieces_bb(pos) ^ (square_bb(captured_square) | attacking_bb);
-            /* print_bb(blockers); */
-            Square king_square = pos.piece_position[make_piece(side, KING)][0];
-            Bitboard attacked_bb = attack_in_line(king_square, RAY_E, blockers);
-            /* print_bb(attacked_bb); */
+        Bitboard blockers = pieces_bb(pos) ^ (square_bb(captured_square) | attacking_bb);
+        Square king_square = pos.piece_position[make_piece(side, KING)][0];
+        Bitboard attacked_bb = attack_in_line(king_square, RAY_E, blockers);
 
-            if (attacked_bb & (pieces_bb(pos, !side, ROOK) | pieces_bb(pos, !side, QUEEN)))
-                return list;
-        /* } */
+        if (attacked_bb & (pieces_bb(pos, !side, ROOK) | pieces_bb(pos, !side, QUEEN)))
+            return list;
     }
 
     if (right_bb)
-        *list++ = create_enpassant(Square(enpassant_square - upright), enpassant_square);
+        *list++ = create_move(Square(enpassant_square - upright), enpassant_square);
     if (left_bb)
-        *list++ = create_enpassant(Square(enpassant_square - upleft), enpassant_square);
+        *list++ = create_move(Square(enpassant_square - upleft), enpassant_square);
 
     return list;
 }
@@ -452,26 +447,26 @@ Move* generate_legal_moves(const Position& pos, int id, Move* list)
         if (side == WHITE)
         {
             if ((pos.castling_rights & W_OO) && !(taken_for_castling & CASTLING_PATHS[W_OO]))
-                *list++ = create_castling(W_OO);
+                *list++ = create_castling(KING_CASTLING);
         }
         else
         {
             if ((pos.castling_rights & B_OO) && !(taken_for_castling & CASTLING_PATHS[B_OO]))
-                *list++ = create_castling(B_OO);
+                *list++ = create_castling(KING_CASTLING);
         }
         if (side == WHITE)
         {
             if ((pos.castling_rights & W_OOO) &&
                     !(taken_for_castling & CASTLING_PATHS[W_OOO]) &&
                     !(QUEEN_CASTLING_BLOCK[WHITE] & pieces_bb(pos)))
-                *list++ = create_castling(W_OOO);
+                *list++ = create_castling(QUEEN_CASTLING);
         }
         else
         {
             if ((pos.castling_rights & B_OOO) &&
                     !(taken_for_castling & CASTLING_PATHS[B_OOO]) &&
                     !(QUEEN_CASTLING_BLOCK[BLACK] & pieces_bb(pos)))
-                *list++ = create_castling(B_OOO);
+                *list++ = create_castling(QUEEN_CASTLING);
         }
     }
 

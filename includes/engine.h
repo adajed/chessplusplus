@@ -72,21 +72,38 @@ enum Castling : uint32_t
     ALL_CASTLING = W_CASTLING | B_CASTLING
 };
 
-struct Move
-{
-    Square from;
-    Square to;
-    PieceKind capture;
-    PieceKind promotion;
-    Castling castling;
-    Castling last_castling;
-    Square last_enpassant;
-    bool enpassant;
-};
+// encoded move
+// 0-5 - from
+// 6-11 - to
+// 12-14 - promotion
+// 15-16 - castling
+using Move = uint32_t;
 
-constexpr Move NO_MOVE = {
-    NO_SQUARE, NO_SQUARE, NO_PIECE_KIND, NO_PIECE_KIND,
-    NO_CASTLING, NO_CASTLING, NO_SQUARE, false};
+Square from(Move move);
+Square to(Move move);
+PieceKind promotion(Move move);
+Castling castling(Move move);
+
+constexpr Move NO_MOVE = 0;
+
+Move create_move(Square from, Square to);
+Move create_promotion(Square from, Square to, PieceKind promotion);
+Move create_castling(Castling castling);
+
+// encoded move information
+// 0-2 - captured piece
+// 3-6 - last castling rights
+// 7-12 - last enpassant
+// 13-13 - enpassant
+using MoveInfo = uint32_t;
+
+MoveInfo create_moveinfo(PieceKind captured, Castling last_castling,
+                         Square last_enpassant, bool enpassant);
+
+PieceKind captured_piece(MoveInfo moveinfo);
+Castling last_castling(MoveInfo moveinfo);
+Square last_enpassant(MoveInfo moveinfo);
+bool enpassant(MoveInfo moveinfo);
 
 struct ScoredMove
 {
@@ -114,9 +131,9 @@ Position from_fen(std::string fen);
 
 std::string to_fen(const Position& position);
 
-void do_move(Position& position, Move& move);
+MoveInfo do_move(Position& position, Move move);
 
-void undo_move(Position& position, Move& move);
+void undo_move(Position& position, Move move, MoveInfo moveinfo);
 
 int64_t score(const Position& position);
 
@@ -124,7 +141,7 @@ ScoredMove minimax(const Position& position, int depth);
 
 std::ostream& operator<< (std::ostream& stream, const Position& position);
 
-std::ostream& operator<< (std::ostream& stream, const Move& move);
+void print_move(Move move);
 
 void init_move_bitboards();
 

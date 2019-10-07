@@ -23,12 +23,12 @@ Move parse_move(std::string move_str)
     {
         if (move_str == "OO")
         {
-            move = Move{NO_SQUARE, NO_SQUARE, NO_PIECE_KIND, NO_PIECE_KIND, KING_CASTLING, NO_CASTLING, NO_SQUARE, false};
+            move = create_castling(KING_CASTLING);
             correct = true;
         }
         else if (move_str == "OOO")
         {
-            move = Move{NO_SQUARE, NO_SQUARE, NO_PIECE_KIND, NO_PIECE_KIND, QUEEN_CASTLING, NO_CASTLING, NO_SQUARE, false};
+            move = create_castling(QUEEN_CASTLING);
             correct = true;
         }
         else
@@ -42,16 +42,16 @@ Move parse_move(std::string move_str)
 
                 Square from = Square(8 * r1 + f1);
                 Square to   = Square(8 * r2 + f2);
-                PieceKind piece_kind = NO_PIECE_KIND;
+                PieceKind promotion = NO_PIECE_KIND;
 
                 if (move_str.size() == 5)
                 {
                     switch (move_str[4])
                     {
-                        case 'N': piece_kind = KNIGHT; correct = true; break;
-                        case 'B': piece_kind = BISHOP; correct = true; break;
-                        case 'R': piece_kind = ROOK; correct = true; break;
-                        case 'Q': piece_kind = QUEEN; correct = true; break;
+                        case 'N': promotion = KNIGHT; correct = true; break;
+                        case 'B': promotion = BISHOP; correct = true; break;
+                        case 'R': promotion = ROOK; correct = true; break;
+                        case 'Q': promotion = QUEEN; correct = true; break;
                     }
                 }
                 else
@@ -59,7 +59,9 @@ Move parse_move(std::string move_str)
                     correct = true;
                 }
 
-                move = Move{from, to, NO_PIECE_KIND, piece_kind, NO_CASTLING, NO_CASTLING, NO_SQUARE, false};
+                if (promotion == NO_PIECE_KIND)
+                    move = create_move(from, to);
+                move = create_promotion(from, to, promotion);
             }
         }
     }

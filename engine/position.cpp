@@ -4,6 +4,55 @@
 namespace engine
 {
 
+Square from(Move move)
+{
+    return Square(move & 0x3F);
+}
+
+Square to(Move move)
+{
+    return Square((move >> 6) & 0x3F);
+}
+
+PieceKind promotion(Move move)
+{
+    return PieceKind((move >> 12) & 0x7);
+}
+
+Castling castling(Move move)
+{
+    int p = (move >> 15) & 0x3;
+    return p == 0 ? NO_CASTLING :
+           p == 1 ? KING_CASTLING :
+           QUEEN_CASTLING;
+}
+
+MoveInfo create_moveinfo(PieceKind captured, Castling last_castling,
+                         Square last_enpassant, bool enpassant)
+{
+    return enpassant << 13 | last_enpassant << 7 | last_castling << 3 | captured;
+}
+
+PieceKind captured_piece(MoveInfo moveinfo)
+{
+    return PieceKind(moveinfo & 0x7);
+}
+
+Castling last_castling(MoveInfo moveinfo)
+{
+    return Castling((moveinfo >> 3) & 0xF);
+}
+
+Square last_enpassant(MoveInfo moveinfo)
+{
+    return Square((moveinfo >> 7) & 0x3F);
+}
+
+bool enpassant(MoveInfo moveinfo)
+{
+    return (moveinfo >> 13) & 0x1;
+}
+
 std::ostream& operator<< (std::ostream& stream, const Position& position)
 {
     const std::string piece_to_char = " PNBRQKpnbrqk";
@@ -211,138 +260,175 @@ void remove_piece(Position& position, Square square)
         {
             int pos = position.piece_count[piece] - 1;
             position.piece_position[piece][i] = position.piece_position[piece][pos];
+            break;
         }
     }
     position.piece_count[piece] -= 1;
 }
 
-
-void do_move(Position& pos, Move& move)
+void move_piece(Position& position, Square from, Square to)
 {
+    if (position.board[from] == NO_PIECE)
+    {
+        std::cout << position << std::endl;
+        std::cout << from << " " << to << std::endl;
+        std::cout << std::endl;
+    }
+
+    assert(position.board[from] != NO_PIECE);
+    assert(position.board[to] == NO_PIECE);
+
+    Piece piece = position.board[from];
+    position.board[from] = NO_PIECE;
+    position.board[to] = piece;
+
+    Bitboard change = square_bb(from) | square_bb(to);
+    position.by_color_bb[get_color(piece)] ^= change;
+    position.by_piece_kind_bb[get_piece_kind(piece)] ^= change;
+
+    for (int i = 0; i < position.piece_count[piece]; ++i)
+    {
+        if (position.piece_position[piece][i] == from)
+        {
+            position.piece_position[piece][i] = to;
+            break;
+        }
+    }
+}
+
+
+MoveInfo do_move(Position& pos, Move move)
+{
+    PieceKind captured = NO_PIECE_KIND;
+    Castling last_castling = pos.castling_rights;
+    Square last_enpassant = pos.enpassant;
+    bool enpassant = false;
+
     Color side = pos.current_side;
     pos.current_side = !pos.current_side;
 
-    Piece moved_piece = pos.board[move.from];
-    Piece captured_piece = pos.board[move.to];
-    move.capture = make_piece_kind(captured_piece);
-
-    move.last_castling = pos.castling_rights;
-    move.last_enpassant = pos.enpassant;
-
-    if (move.castling != NO_CASTLING)
+    if (castling(move) != NO_CASTLING)
     {
         Rank rank = side == WHITE ? RANK_1 : RANK_8;
-        if (move.castling & KING_CASTLING)
+        if (castling(move) == KING_CASTLING)
         {
-            remove_piece(pos, make_square(rank, FILE_E));
-            add_piece(pos, side, KING, make_square(rank, FILE_G));
-            remove_piece(pos, make_square(rank, FILE_H));
-            add_piece(pos, side, ROOK, make_square(rank, FILE_F));
+            move_piece(pos, make_square(rank, FILE_E), make_square(rank, FILE_G));
+            move_piece(pos, make_square(rank, FILE_H), make_square(rank, FILE_F));
         }
-        else
+        else  // castling(move) == QUEEN_CASTLING
         {
-            remove_piece(pos, make_square(rank, FILE_E));
-            add_piece(pos, side, KING, make_square(rank, FILE_C));
-            remove_piece(pos, make_square(rank, FILE_A));
-            add_piece(pos, side, ROOK, make_square(rank, FILE_D));
+            move_piece(pos, make_square(rank, FILE_E), make_square(rank, FILE_C));
+            move_piece(pos, make_square(rank, FILE_A), make_square(rank, FILE_D));
         }
 
         pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side]);
         pos.enpassant = NO_SQUARE;
 
-        return;
+        return create_moveinfo(captured, last_castling, last_enpassant, enpassant);
     }
 
-    remove_piece(pos, move.from);
+    Piece moved_piece = pos.board[from(move)];
+    Piece captured_piece = pos.board[to(move)];
+    captured = make_piece_kind(captured_piece);
 
-    if (move.enpassant)
+    assert(moved_piece != NO_PIECE);
+
+    // enpassant
+    if (get_piece_kind(moved_piece) == PAWN && to(move) == pos.enpassant)
     {
-        Square enpassant_square = Square(move.to + (side == WHITE ? -8 : 8));
-        remove_piece(pos, enpassant_square);
+        move_piece(pos, from(move), to(move));
+        Square captured_square = Square(to(move) + (side == WHITE ? -8 : 8));
+        remove_piece(pos, captured_square);
     }
-    if (captured_piece != NO_PIECE)
-        remove_piece(pos, move.to);
-
-    if (move.promotion != NO_PIECE_KIND)
-        add_piece(pos, side, move.promotion, move.to);
     else
-        add_piece(pos, moved_piece, move.to);
+    {
+        if (captured_piece != NO_PIECE)
+            remove_piece(pos, to(move));
 
-    if (get_piece_kind(moved_piece) == KING)
-        pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side]);
-    if (get_piece_kind(moved_piece) == ROOK && move.from == KING_SIDE_ROOK_SQUARE[side])
-        pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[side] & KING_CASTLING));
-    if (get_piece_kind(moved_piece) == ROOK && move.from == QUEEN_SIDE_ROOK_SQUARE[side])
-        pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[side] & QUEEN_CASTLING));
-    if (make_piece_kind(captured_piece) == ROOK && move.to == KING_SIDE_ROOK_SQUARE[!side])
-        pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[!side] & KING_CASTLING));
-    if (make_piece_kind(captured_piece) == ROOK && move.to == QUEEN_SIDE_ROOK_SQUARE[!side])
-        pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[!side] & QUEEN_CASTLING));
+        if (promotion(move) != NO_PIECE_KIND)
+        {
+            remove_piece(pos, from(move));
+            add_piece(pos, side, promotion(move), to(move));
+        }
+        else
+            move_piece(pos, from(move), to(move));
+
+        if (get_piece_kind(moved_piece) == KING)
+            pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side]);
+        if (get_piece_kind(moved_piece) == ROOK && from(move) == KING_SIDE_ROOK_SQUARE[side])
+            pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[side] & KING_CASTLING));
+        if (get_piece_kind(moved_piece) == ROOK && from(move) == QUEEN_SIDE_ROOK_SQUARE[side])
+            pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[side] & QUEEN_CASTLING));
+        if (make_piece_kind(captured_piece) == ROOK && to(move) == KING_SIDE_ROOK_SQUARE[!side])
+            pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[!side] & KING_CASTLING));
+        if (make_piece_kind(captured_piece) == ROOK && to(move) == QUEEN_SIDE_ROOK_SQUARE[!side])
+            pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[!side] & QUEEN_CASTLING));
+    }
+
 
     Rank enpassant_rank = (side == WHITE) ? RANK_4 : RANK_5;
     Rank rank2 = (side == WHITE) ? RANK_2 : RANK_7;
-    if (get_piece_kind(moved_piece) == PAWN && rank(move.from) == rank2 && rank(move.to) == enpassant_rank)
-        pos.enpassant = Square(move.to + (side == WHITE ? -8 : 8));
+    if (get_piece_kind(moved_piece) == PAWN && rank(from(move)) == rank2 && rank(to(move)) == enpassant_rank)
+    {
+        pos.enpassant = Square(to(move) + (side == WHITE ? -8 : 8));
+        enpassant = true;
+    }
     else
         pos.enpassant = NO_SQUARE;
+
+    return create_moveinfo(captured, last_castling, last_enpassant, enpassant);
 }
 
-void undo_move(Position& pos, Move& move)
+void undo_move(Position& pos, Move move, MoveInfo moveinfo)
 {
     pos.current_side = !pos.current_side;
     Color side = pos.current_side;
 
-    Piece moved_piece = pos.board[move.to];
-    if (move.promotion != NO_PIECE_KIND)
-        moved_piece = make_piece(side, PAWN);
-    Piece captured_piece = make_piece(!side, move.capture);
+    pos.castling_rights = last_castling(moveinfo);
+    pos.enpassant = last_enpassant(moveinfo);
 
-    pos.castling_rights = move.last_castling;
-    pos.enpassant = move.last_enpassant;
-
-    if (move.castling != NO_CASTLING)
+    if (castling(move) != NO_CASTLING)
     {
         Rank rank = side == WHITE ? RANK_1 : RANK_8;
-        if (move.castling & KING_CASTLING)
+        if (castling(move) == KING_CASTLING)
         {
-            remove_piece(pos, make_square(rank, FILE_G));
-            add_piece(pos, side, KING, make_square(rank, FILE_E));
-            remove_piece(pos, make_square(rank, FILE_F));
-            add_piece(pos, side, ROOK, make_square(rank, FILE_H));
+            move_piece(pos, make_square(rank, FILE_G), make_square(rank, FILE_E));
+            move_piece(pos, make_square(rank, FILE_F), make_square(rank, FILE_H));
         }
-        else
+        else  // castling(move) == QUEEN_CASTLING
         {
-            remove_piece(pos, make_square(rank, FILE_C));
-            add_piece(pos, side, KING, make_square(rank, FILE_E));
-            remove_piece(pos, make_square(rank, FILE_D));
-            add_piece(pos, side, ROOK, make_square(rank, FILE_A));
+            move_piece(pos, make_square(rank, FILE_C), make_square(rank, FILE_E));
+            move_piece(pos, make_square(rank, FILE_D), make_square(rank, FILE_A));
         }
 
         return;
     }
 
-    remove_piece(pos, move.to);
-    add_piece(pos, moved_piece, move.from);
+    Piece captured = make_piece(!side, captured_piece(moveinfo));
 
-    if (move.enpassant)
+    if (enpassant(move))
     {
-        Square enpassant_square = Square(move.to + (side == WHITE ? -8 : 8));
-        add_piece(pos, !side, PAWN, enpassant_square);
+        Square captured_square = Square(to(move) + (side == WHITE ? -8 : 8));
+        add_piece(pos, !side, PAWN, captured_square);
     }
-    if (captured_piece != NO_PIECE)
-        add_piece(pos, captured_piece, move.to);
+
+    if (promotion(move) != NO_PIECE_KIND)
+    {
+        add_piece(pos, side, PAWN, from(move));
+        remove_piece(pos, to(move));
+    }
+    else
+        move_piece(pos, to(move), from(move));
+
+    if (captured != NO_PIECE)
+        add_piece(pos, captured, to(move));
 }
 
 bool is_in_check(const Position& position)
 {
     Color side = position.current_side;
     Bitboard attacked = attacked_squares(position);
-    /* std::cout << "attacked" << std::endl; */
-    /* print_bb(attacked); */
-    /* std::cout << "king" << std::endl; */
-    /* print_bb(pieces_bb(position, side, KING)); */
-    /* std::cout << std::endl; */
-    return bool(attacked & pieces_bb(position, side, KING));
+    return attacked & pieces_bb(position, side, KING);
 }
 
 

@@ -12,30 +12,33 @@ Bitboard FILES_BB[FILE_NUM] = {
     fileA_bb, fileB_bb, fileC_bb, fileD_bb, fileE_bb, fileF_bb, fileG_bb, fileH_bb
 };
 
-std::ostream& operator<< (std::ostream& stream, const Move& move)
+void print_move(Move move)
 {
     const std::string files = "abcdefgh";
     const std::string ranks = "12345678";
 
-    if (move.castling & KING_CASTLING)
-        return stream << "OO";
-    else if (move.castling & QUEEN_CASTLING)
-        return stream << "OOO";
+    if (castling(move) & KING_CASTLING)
+    {
+        std::cout << "OO";
+        return;
+    }
+    else if (castling(move) & QUEEN_CASTLING)
+    {
+        std::cout << "OOO";
+        return;
+    }
 
-    stream << files[file(move.from)] << ranks[rank(move.from)]
-           << files[file(move.to)] << ranks[rank(move.to)];
+    std::cout << files[file(from(move))] << ranks[rank(from(move))]
+           << files[file(to(move))] << ranks[rank(to(move))];
 
-    if (move.promotion == KNIGHT)
-        return stream << "N";
-    if (move.promotion == BISHOP)
-        return stream << "B";
-    if (move.promotion == ROOK)
-        return stream << "R";
-    if (move.promotion == QUEEN)
-        return stream << "Q";
-
-    return stream;
-
+    if (promotion(move) == KNIGHT)
+        std::cout << "N";
+    if (promotion(move) == BISHOP)
+        std::cout << "B";
+    if (promotion(move) == ROOK)
+        std::cout << "R";
+    if (promotion(move) == QUEEN)
+        std::cout << "Q";
 }
 
 }
