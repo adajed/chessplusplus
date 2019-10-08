@@ -11,7 +11,6 @@
 namespace engine
 {
 
-constexpr int NUM_THREADS = 1;
 constexpr int MAX_DEPTH = 40;
 constexpr int MAX_MOVES = 256;
 constexpr int MAX_PINS = 16;
