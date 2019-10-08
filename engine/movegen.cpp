@@ -285,42 +285,46 @@ Pin* generate_pins(const Position& pos, Pin* list, Bitboard* pinned_bb)
 {
 
     const Piece C_KING = side == WHITE ? W_KING : B_KING;
-    const Piece O_BISHOP = side == WHITE ? B_BISHOP : W_BISHOP;
-    const Piece O_ROOK = side == WHITE ? B_ROOK : W_ROOK;
-    const Piece O_QUEEN = side == WHITE ? B_QUEEN : W_QUEEN;
-
     Square king_sq = pos.piece_position[C_KING][0];
-
-    const RayDirection rays[] = {RAY_NW, RAY_N, RAY_NE, RAY_E, RAY_SE, RAY_S, RAY_SW, RAY_W};
 
     *pinned_bb = 0ULL;
 
     Bitboard blockers = pieces_bb(pos);
+
     for (int dir = 0; dir < 8; ++dir)
     {
-        Bitboard attacked = 0ULL;
-        for (int i = 0; i < pos.piece_count[O_QUEEN]; ++i)
-            attacked |= attack_in_ray(pos.piece_position[O_QUEEN][i], rays[dir], blockers);
+        Bitboard masked_ray = RAYS[dir][king_sq] & blockers;
 
-        if (dir & 1)
-            for (int i = 0; i < pos.piece_count[O_ROOK]; ++i)
-                attacked |= attack_in_ray(pos.piece_position[O_ROOK][i], rays[dir], blockers);
-        else
-            for (int i = 0; i < pos.piece_count[O_BISHOP]; ++i)
-                attacked |= attack_in_ray(pos.piece_position[O_BISHOP][i], rays[dir], blockers);
-
-        Bitboard king_side = attack_in_ray(king_sq, rays[(dir + 4) & 7], blockers);
-        Bitboard pinned = attacked & king_side & pieces_bb(pos, side);
-
-        if (pinned)
+        /* if (popcount(masked_ray) > 1) */
+        if (masked_ray && (masked_ray & (masked_ray - 1)))
         {
-            assert(popcount(pinned) == 1);
-            Square pinned_sq = Square(lsb(pinned));
-            PieceKind pinned_piece = make_piece_kind(pos.board[pinned_sq]);
-            assert(pinned_piece != KING);
+            Square pinned_sq, attacking_sq;
+            if (dir < 4)
+            {
+                pinned_sq = Square(pop_lsb(&masked_ray));
+                attacking_sq = Square(lsb(masked_ray));
+            }
+            else
+            {
+                pinned_sq = Square(msb(masked_ray));
+                masked_ray &= ~square_bb(pinned_sq);
+                attacking_sq = Square(msb(masked_ray));
+            }
 
-            *list++ = Pin{pinned_sq, pinned_piece, RayDirection(dir)};
-            *pinned_bb |= square_bb(pinned_sq);
+            if (square_bb(pinned_sq) & pieces_bb(pos, side))
+            {
+                Bitboard sliders = pieces_bb(pos, !side, QUEEN);
+                if (dir & 1)
+                    sliders |= pieces_bb(pos, !side, ROOK);
+                else
+                    sliders |= pieces_bb(pos, !side, BISHOP);
+
+                if (square_bb(attacking_sq) & sliders)
+                {
+                    *list++ = Pin{pinned_sq, make_piece_kind(pos.board[pinned_sq]), RayDirection(dir)};
+                    *pinned_bb |= square_bb(pinned_sq);
+                }
+            }
         }
     }
 
@@ -416,21 +420,19 @@ Move* generate_legal_moves(const Position& pos, int id, Move* list)
     Bitboard not_pinned_pawns = pieces_bb(pos, side, PAWN) & ~pinned;
     list = generate_pawn_moves<side>(not_pinned_pawns, ~pieces_bb(pos), push_mask, capture_mask, list);
 
-    for (Bitboard target : {capture_mask, push_mask})
-    {
-        Bitboard not_pinned_knights = pieces_bb(pos, side, KNIGHT) & ~pinned;
-        FOR_EACH_BIT(not_pinned_knights, list = generate_piece_moves<KNIGHT>(sq, pos, target, list));
+    Bitboard target = capture_mask | push_mask;
 
-        Bitboard not_pinned_bishops = pieces_bb(pos, side, BISHOP) & ~pinned;
-        FOR_EACH_BIT(not_pinned_bishops, list = generate_piece_moves<BISHOP>(sq, pos, target, list));
+    Bitboard not_pinned_knights = pieces_bb(pos, side, KNIGHT) & ~pinned;
+    FOR_EACH_BIT(not_pinned_knights, list = generate_piece_moves<KNIGHT>(sq, pos, target, list));
 
-        Bitboard not_pinned_rooks = pieces_bb(pos, side, ROOK) & ~pinned;
-        FOR_EACH_BIT(not_pinned_rooks, list = generate_piece_moves<ROOK>(sq, pos, target, list));
+    Bitboard not_pinned_bishops = pieces_bb(pos, side, BISHOP) & ~pinned;
+    FOR_EACH_BIT(not_pinned_bishops, list = generate_piece_moves<BISHOP>(sq, pos, target, list));
 
-        Bitboard not_pinned_queens = pieces_bb(pos, side, QUEEN) & ~pinned;
-        FOR_EACH_BIT(not_pinned_queens, list = generate_piece_moves<QUEEN>(sq, pos, target, list));
+    Bitboard not_pinned_rooks = pieces_bb(pos, side, ROOK) & ~pinned;
+    FOR_EACH_BIT(not_pinned_rooks, list = generate_piece_moves<ROOK>(sq, pos, target, list));
 
-    }
+    Bitboard not_pinned_queens = pieces_bb(pos, side, QUEEN) & ~pinned;
+    FOR_EACH_BIT(not_pinned_queens, list = generate_piece_moves<QUEEN>(sq, pos, target, list));
 
     if (pos.enpassant != NO_SQUARE)
         list = generate_enpassant<side>(pos, not_pinned_pawns, push_mask, capture_mask, pos.enpassant, list);

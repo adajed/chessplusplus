@@ -28,10 +28,9 @@ int main(int argc, char** argv)
 
     uint64_t time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
-    double time_d = double(time) * 1e-6;
-    double speed = double(score) / time_d;
+    uint64_t speed = (unsigned long long)score * 1000000ULL / time;
 
-    std::cout << "[depth " << depth << "] score=" << score << ", time=" << time_d << "s, speed = " << speed << std::endl;
+    std::cout << "[depth " << depth << "] score=" << score << ", time=" << double(time) * 1e-6  << "s, speed = " << speed << "nps" << std::endl;
 
     return 0;
 }
