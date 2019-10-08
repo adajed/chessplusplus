@@ -27,10 +27,11 @@ Castling castling(Move move)
            QUEEN_CASTLING;
 }
 
-MoveInfo create_moveinfo(PieceKind captured, Castling last_castling,
-                         Square last_enpassant, bool enpassant)
+MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant, bool enpassant)
 {
-    return enpassant << 13 | last_enpassant << 7 | last_castling << 3 | captured;
+    if (last_enpassant != NO_SQUARE)
+        return enpassant << 14 | 1 << 13 | last_enpassant << 7 | last_castling << 3 | captured;
+    return enpassant << 14 | last_castling << 3 | captured;
 }
 
 PieceKind captured_piece(MoveInfo moveinfo)
@@ -43,14 +44,19 @@ Castling last_castling(MoveInfo moveinfo)
     return Castling((moveinfo >> 3) & 0xF);
 }
 
-Square last_enpassant(MoveInfo moveinfo)
+Square last_enpassant_square(MoveInfo moveinfo)
 {
     return Square((moveinfo >> 7) & 0x3F);
 }
 
-bool enpassant(MoveInfo moveinfo)
+bool last_enpassant(MoveInfo moveinfo)
 {
     return (moveinfo >> 13) & 0x1;
+}
+
+bool enpassant(MoveInfo moveinfo)
+{
+    return (moveinfo >> 14) & 0x1;
 }
 
 std::ostream& operator<< (std::ostream& stream, const Position& position)
@@ -300,8 +306,8 @@ void move_piece(Position& position, Square from, Square to)
 MoveInfo do_move(Position& pos, Move move)
 {
     PieceKind captured = NO_PIECE_KIND;
-    Castling last_castling = pos.castling_rights;
-    Square last_enpassant = pos.enpassant;
+    Castling prev_castling = pos.castling_rights;
+    Square prev_enpassant_sq = pos.enpassant;
     bool enpassant = false;
 
     Color side = pos.current_side;
@@ -324,7 +330,7 @@ MoveInfo do_move(Position& pos, Move move)
         pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side]);
         pos.enpassant = NO_SQUARE;
 
-        return create_moveinfo(captured, last_castling, last_enpassant, enpassant);
+        return create_moveinfo(captured, prev_castling, prev_enpassant_sq, enpassant);
     }
 
     Piece moved_piece = pos.board[from(move)];
@@ -339,6 +345,7 @@ MoveInfo do_move(Position& pos, Move move)
         move_piece(pos, from(move), to(move));
         Square captured_square = Square(to(move) + (side == WHITE ? -8 : 8));
         remove_piece(pos, captured_square);
+        enpassant = true;
     }
     else
     {
@@ -369,14 +376,11 @@ MoveInfo do_move(Position& pos, Move move)
     Rank enpassant_rank = (side == WHITE) ? RANK_4 : RANK_5;
     Rank rank2 = (side == WHITE) ? RANK_2 : RANK_7;
     if (get_piece_kind(moved_piece) == PAWN && rank(from(move)) == rank2 && rank(to(move)) == enpassant_rank)
-    {
         pos.enpassant = Square(to(move) + (side == WHITE ? -8 : 8));
-        enpassant = true;
-    }
     else
         pos.enpassant = NO_SQUARE;
 
-    return create_moveinfo(captured, last_castling, last_enpassant, enpassant);
+    return create_moveinfo(captured, prev_castling, prev_enpassant_sq, enpassant);
 }
 
 void undo_move(Position& pos, Move move, MoveInfo moveinfo)
@@ -385,7 +389,10 @@ void undo_move(Position& pos, Move move, MoveInfo moveinfo)
     Color side = pos.current_side;
 
     pos.castling_rights = last_castling(moveinfo);
-    pos.enpassant = last_enpassant(moveinfo);
+    if (last_enpassant(moveinfo))
+        pos.enpassant = last_enpassant_square(moveinfo);
+    else
+        pos.enpassant = NO_SQUARE;
 
     if (castling(move) != NO_CASTLING)
     {
@@ -406,7 +413,7 @@ void undo_move(Position& pos, Move move, MoveInfo moveinfo)
 
     Piece captured = make_piece(!side, captured_piece(moveinfo));
 
-    if (enpassant(move))
+    if (enpassant(moveinfo))
     {
         Square captured_square = Square(to(move) + (side == WHITE ? -8 : 8));
         add_piece(pos, !side, PAWN, captured_square);

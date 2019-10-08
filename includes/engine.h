@@ -93,16 +93,17 @@ Move create_castling(Castling castling);
 // encoded move information
 // 0-2 - captured piece
 // 3-6 - last castling rights
-// 7-12 - last enpassant
-// 13-13 - enpassant
+// 7-12 - last enpassant square
+// 13-13 - last enpassant
+// 14-14 - enpassant
 using MoveInfo = uint32_t;
 
-MoveInfo create_moveinfo(PieceKind captured, Castling last_castling,
-                         Square last_enpassant, bool enpassant);
+MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant, bool enpassant);
 
 PieceKind captured_piece(MoveInfo moveinfo);
 Castling last_castling(MoveInfo moveinfo);
-Square last_enpassant(MoveInfo moveinfo);
+Square last_enpassant_square(MoveInfo moveinfo);
+bool last_enpassant(MoveInfo moveinfo);
 bool enpassant(MoveInfo moveinfo);
 
 struct ScoredMove
