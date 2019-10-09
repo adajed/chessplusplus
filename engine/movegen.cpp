@@ -273,9 +273,9 @@ Move* generate_piece_moves(Square from, const Position& pos, Bitboard target, Mo
     return list;
 }
 
-Move* generate_king_moves(Square from, Bitboard not_allowed, Move* list)
+Move* generate_king_moves(Square from, Bitboard target, Bitboard not_allowed, Move* list)
 {
-    Bitboard bb = KING_MASK[from] & ~not_allowed;
+    Bitboard bb = KING_MASK[from] & ~not_allowed & target;
     FOR_EACH_BIT(bb, *list++ = create_move(from, sq));
     return list;
 }
@@ -401,11 +401,11 @@ Move* generate_legal_moves(const Position& pos, int id, Move* list)
     if (checkers_bb)
     {
         if (popcount(checkers_bb) > 1)
-            return generate_king_moves(king_sq, attacked | pieces_bb(pos, side), list);
+            return generate_king_moves(king_sq, all_squares_bb, attacked | pieces_bb(pos, side), list);
 
         capture_mask = checkers_bb;
-        Square checker_square = Square(lsb(checkers_bb));
 
+        Square checker_square = Square(lsb(checkers_bb));
         if (is_piece_slider(pos.board[checker_square]))
             push_mask = LINES[king_sq][checker_square] ^ square_bb(king_sq) ^ square_bb(checker_square);
         else
@@ -437,7 +437,7 @@ Move* generate_legal_moves(const Position& pos, int id, Move* list)
     if (pos.enpassant != NO_SQUARE)
         list = generate_enpassant<side>(pos, not_pinned_pawns, push_mask, capture_mask, pos.enpassant, list);
 
-    list = generate_king_moves(king_sq, attacked | pieces_bb(pos, side), list);
+    list = generate_king_moves(king_sq, target, attacked | pieces_bb(pos, side), list);
 
     if (!checkers_bb)
     {
@@ -475,6 +475,65 @@ Move* generate_legal_moves(const Position& pos, int id, Move* list)
     return list;
 }
 
+template <Color side>
+Move* generate_quiescence(const Position& pos, int id, Move* list)
+{
+    const Piece C_KING = side == WHITE ? W_KING : B_KING;
+    Bitboard checkers_bb = checkers<side>(pos);
+
+    Bitboard pinned = 0ULL;
+    Pin* pins_start = PINS[id];
+    Pin* pins_end = generate_pins<side>(pos, pins_start, &pinned);
+
+    Bitboard attacked = forbidden_squares<side>(pos);
+
+    Bitboard push_mask = 0ULL;
+    Bitboard target;
+
+    Square king_sq = pos.piece_position[C_KING][0];
+
+    if (checkers_bb)
+    {
+        if (popcount(checkers_bb) > 1)
+            return generate_king_moves(king_sq, all_squares_bb, attacked | pieces_bb(pos, side), list);
+
+        target = checkers_bb;
+
+        Square checker_square = Square(lsb(checkers_bb));
+        if (is_piece_slider(pos.board[checker_square]))
+            push_mask = LINES[king_sq][checker_square] ^ square_bb(king_sq) ^ square_bb(checker_square);
+        else
+            push_mask = 0ULL;
+    }
+    else
+        target = pieces_bb(pos, !side) & ~pieces_bb(pos, !side, PAWN);
+
+    Bitboard not_pinned_pawns = pieces_bb(pos, side, PAWN) & ~pinned;
+    list = generate_pawn_moves<side>(not_pinned_pawns, ~pieces_bb(pos), push_mask, target, list);
+
+    Bitboard not_pinned_knights = pieces_bb(pos, side, KNIGHT) & ~pinned;
+    FOR_EACH_BIT(not_pinned_knights, list = generate_piece_moves<KNIGHT>(sq, pos, target, list));
+
+    Bitboard not_pinned_bishops = pieces_bb(pos, side, BISHOP) & ~pinned;
+    FOR_EACH_BIT(not_pinned_bishops, list = generate_piece_moves<BISHOP>(sq, pos, target, list));
+
+    Bitboard not_pinned_rooks = pieces_bb(pos, side, ROOK) & ~pinned;
+    FOR_EACH_BIT(not_pinned_rooks, list = generate_piece_moves<ROOK>(sq, pos, target, list));
+
+    Bitboard not_pinned_queens = pieces_bb(pos, side, QUEEN) & ~pinned;
+    FOR_EACH_BIT(not_pinned_queens, list = generate_piece_moves<QUEEN>(sq, pos, target, list));
+
+    list = generate_king_moves(king_sq, target, attacked | pieces_bb(pos, side), list);
+
+    if (!checkers_bb)
+    {
+        for (Pin* iter = pins_start; iter != pins_end; ++iter)
+            list = generate_pinned_piece_moves<side>(iter->square, iter->piece_kind, iter->direction, pos, target, list);
+    }
+
+    return list;
+}
+
 }  // namespace
 
 Move* generate_moves(const Position& position, int id, Move* list)
@@ -482,6 +541,13 @@ Move* generate_moves(const Position& position, int id, Move* list)
     return position.current_side == WHITE ?
             generate_legal_moves<WHITE>(position, id, list) :
             generate_legal_moves<BLACK>(position, id, list);
+}
+
+Move* generate_quiescence_moves(const Position& position, int id, Move* list)
+{
+    return position.current_side == WHITE ?
+            generate_quiescence<WHITE>(position, id, list) :
+            generate_quiescence<BLACK>(position, id, list);
 }
 
 Bitboard attacked_squares(const Position& position)
