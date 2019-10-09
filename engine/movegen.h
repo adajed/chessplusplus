@@ -23,6 +23,7 @@ struct Pin
 };
 
 extern Move MOVE_LIST[NUM_THREADS][MAX_DEPTH][MAX_MOVES];
+extern Move QUIESCENCE_MOVE_LIST[NUM_THREADS][MAX_DEPTH][MAX_MOVES];
 extern Pin PINS[NUM_THREADS][MAX_PINS];
 
 Move* generate_moves(const Position& position, int id, Move* list);

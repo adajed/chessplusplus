@@ -1,4 +1,5 @@
 #include "minimax.h"
+#include "transposition_table.h"
 
 #include <vector>
 #include <thread>
@@ -280,8 +281,41 @@ ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t
         return {{}, side == WHITE ? MIN_VALUE : MAX_VALUE};
     }
 
+    transposition::Entry entry;
     Move best_move = NO_MOVE;
     int64_t best_value;
+
+    if (transposition::contains(position.zobrist_hash))
+    {
+        entry = transposition::get(position.zobrist_hash);
+        bool move_legal = false;
+        for (Move* it = begin; it != end; ++it)
+            move_legal |= *it == entry.best_move;
+
+        if (move_legal)
+        {
+            best_move = entry.best_move;
+
+            if (entry.depth >= depth)
+            {
+                best_value = entry.value;
+            }
+            else
+            {
+                MoveInfo moveinfo = do_move(position, entry.best_move);
+                best_value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
+                undo_move(position, entry.best_move, moveinfo);
+
+                transposition::update(position.zobrist_hash, {depth, entry.best_move, best_value});
+
+                alpha = alpha > best_value ? alpha : best_value;
+                if (alpha >= beta)
+                {
+                    return {best_move, best_value};
+                }
+            }
+        }
+    }
 
     if (side == WHITE)
     {
@@ -323,6 +357,15 @@ ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t
                 break;
         }
     }
+
+    if (transposition::contains(position.zobrist_hash))
+    {
+        entry = transposition::get(position.zobrist_hash);
+        if (entry.depth < depth)
+            transposition::update(position.zobrist_hash, {depth, best_move, best_value});
+    }
+    else
+        transposition::update(position.zobrist_hash, {depth, best_move, best_value});
 
     return {best_move, best_value};
 
@@ -408,47 +451,53 @@ void run_minimax(std::promise<ScoredMove> && result, Position position, int tid,
 
 ScoredMove minimax(const Position& position, int depth)
 {
-    std::vector<std::promise<ScoredMove>> results(NUM_THREADS);
-    std::vector<std::future<ScoredMove>> futures;
-    std::vector<std::thread> threads;
-
-    counter = 0;
-
-    for (int tid = 0; tid < NUM_THREADS; ++tid)
-    {
-        std::promise<ScoredMove> & result = results[tid];
-        futures.push_back(result.get_future());
-
-        Position pos = position;
-
-        threads.push_back(std::thread(
-                    &run_minimax, std::move(result), pos, tid, INIT_ALPHA, INIT_BETA, depth));
-    }
-
-    for (int tid = 0; tid < NUM_THREADS; ++tid)
-        threads[tid].join();
-
-    ScoredMove best_move = futures[0].get();
-    for (int tid = 1; tid < NUM_THREADS; ++tid)
-    {
-        ScoredMove move = futures[tid].get();
-
-        if (move.move == NO_MOVE)
-            continue;
-
-        if (position.current_side == WHITE)
-        {
-            if (move.score > best_move.score)
-                best_move = move;
-        }
-        else
-        {
-            if (move.score < best_move.score)
-                best_move = move;
-        }
-    }
-    return best_move;
+    Position pos = position;
+    return run_minimax_inner(pos, 0, INIT_ALPHA, INIT_BETA, depth);
 }
+
+/* ScoredMove minimax(const Position& position, int depth) */
+/* { */
+/*     std::vector<std::promise<ScoredMove>> results(NUM_THREADS); */
+/*     std::vector<std::future<ScoredMove>> futures; */
+/*     std::vector<std::thread> threads; */
+
+/*     counter = 0; */
+
+/*     for (int tid = 0; tid < NUM_THREADS; ++tid) */
+/*     { */
+/*         std::promise<ScoredMove> & result = results[tid]; */
+/*         futures.push_back(result.get_future()); */
+
+/*         Position pos = position; */
+
+/*         threads.push_back(std::thread( */
+/*                     &run_minimax, std::move(result), pos, tid, INIT_ALPHA, INIT_BETA, depth)); */
+/*     } */
+
+/*     for (int tid = 0; tid < NUM_THREADS; ++tid) */
+/*         threads[tid].join(); */
+
+/*     ScoredMove best_move = futures[0].get(); */
+/*     for (int tid = 1; tid < NUM_THREADS; ++tid) */
+/*     { */
+/*         ScoredMove move = futures[tid].get(); */
+
+/*         if (move.move == NO_MOVE) */
+/*             continue; */
+
+/*         if (position.current_side == WHITE) */
+/*         { */
+/*             if (move.score > best_move.score) */
+/*                 best_move = move; */
+/*         } */
+/*         else */
+/*         { */
+/*             if (move.score < best_move.score) */
+/*                 best_move = move; */
+/*         } */
+/*     } */
+/*     return best_move; */
+/* } */
 
 uint64_t perft(Position& position, int depth, bool print_moves)
 {

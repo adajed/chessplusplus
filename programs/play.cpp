@@ -72,6 +72,7 @@ Move parse_move(std::string move_str)
 int main(int argc, char** argv)
 {
     init_move_bitboards();
+    init_zobrist_hash();
 
     std::string fen(argv[1]);
     Position position = from_fen(fen);
@@ -89,16 +90,26 @@ int main(int argc, char** argv)
     {
         std::cout << position;
 
-        int depth = 8;
-        TimePoint start_time = std::chrono::steady_clock::now();
-        scored_move = minimax(position, depth);
-        TimePoint end_time = std::chrono::steady_clock::now();
+        int depth;
+        uint64_t time;
+        for (depth = 2; depth < 11; depth += 1)
+        {
+            TimePoint start_time = std::chrono::steady_clock::now();
+            scored_move = minimax(position, depth);
+            TimePoint end_time = std::chrono::steady_clock::now();
+            time = duration(start_time, end_time);
 
-        uint64_t time = duration(start_time, end_time);
-        std::cout << "depth = " << depth << std::endl;
+            std::cout << "depth=" << depth << ", time=" << time / 1000000ULL << "s, move=";
+            print_move(scored_move.move);
+            std::cout << std::endl;
+        }
+
+        std::cout << "depth = " << depth - 1 << std::endl;
         std::cout << "score = " << scored_move.score << std::endl;
-        std::cout << "time = " << time << " microseconds" << std::endl;
-        std::cout << "move = " << scored_move.move << std::endl;
+        std::cout << "time = " << time / 1000000ULL << "s" << std::endl;
+        std::cout << "move = ";
+        print_move(scored_move.move);
+        std::cout << std::endl;
         std::cout << std::endl;
 
         do_move(position, scored_move.move);

@@ -1,5 +1,6 @@
 #include "position.h"
 #include "movegen.h"
+#include "zobrist_hash.h"
 
 namespace engine
 {
@@ -157,6 +158,8 @@ Position from_fen(std::string fen)
         position.enpassant = make_square(r, f);
     }
 
+    position.zobrist_hash = hash_position(position);
+
     return position;
 }
 
@@ -305,6 +308,8 @@ void move_piece(Position& position, Square from, Square to)
 
 MoveInfo do_move(Position& pos, Move move)
 {
+    update_hash(pos, move);
+
     PieceKind captured = NO_PIECE_KIND;
     Castling prev_castling = pos.castling_rights;
     Square prev_enpassant_sq = pos.enpassant;
@@ -429,6 +434,8 @@ void undo_move(Position& pos, Move move, MoveInfo moveinfo)
 
     if (captured != NO_PIECE)
         add_piece(pos, captured, to(move));
+
+    update_hash(pos, move);
 }
 
 bool is_in_check(const Position& position)

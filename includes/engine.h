@@ -7,6 +7,8 @@
 namespace engine
 {
 
+using HashKey = uint64_t;
+
 using Bitboard = uint64_t;
 
 enum Color : uint32_t
@@ -124,6 +126,8 @@ struct Position
 
     Castling castling_rights;
     Square enpassant;
+
+    HashKey zobrist_hash;
 };
 
 Position initial_position();
@@ -149,6 +153,8 @@ void init_move_bitboards();
 uint64_t perft(Position& position, int depth, bool print_moves);
 
 bool is_in_check(const Position& position);
+
+void init_zobrist_hash();
 
 }
 
