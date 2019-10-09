@@ -27,6 +27,8 @@ extern Pin PINS[NUM_THREADS][MAX_PINS];
 
 Move* generate_moves(const Position& position, int id, Move* list);
 
+Move* generate_quiescence_moves(const Position& position, int id, Move* list);
+
 Bitboard attacked_squares(const Position& position);
 
 }

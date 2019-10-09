@@ -192,12 +192,83 @@ namespace
 
 std::atomic<int> counter;
 
+ScoredMove run_quiescence_search(Position& position, int tid, int64_t alpha, int64_t beta, int depth)
+{
+    assert(depth >= 0 && depth < MAX_DEPTH);
+    Color side = position.current_side;
+
+    Move* begin = MOVE_LIST[tid][depth];
+    Move* end = generate_quiescence_moves(position, tid, begin);
+
+#ifdef DEBUG
+    std::cout << position << std::endl;
+    std::cout << "Quiescence moves:" << std::endl;
+    for (Move* it = begin; it != end; ++it)
+    {
+        print_move(*it);
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+#endif
+
+    if (begin == end)
+        return {{}, score(position, tid)};
+
+    Move best_move = NO_MOVE;
+    int64_t best_value;
+
+    if (side == WHITE)
+    {
+        best_value = 2LL * MIN_VALUE;
+        for (Move* it = begin; it != end; ++it)
+        {
+            Move move = *it;
+            MoveInfo moveinfo = do_move(position, move);
+            int64_t value = run_quiescence_search(position, tid, alpha, beta, depth - 1).score;
+            if (value > best_value)
+            {
+                best_value = value;
+                best_move = move;
+            }
+            undo_move(position, move, moveinfo);
+
+            alpha = alpha > value ? alpha : value;
+            if (alpha >= beta)
+                break;
+        }
+    }
+    else
+    {
+        best_value = 2LL * MAX_VALUE;
+        for (Move* it = begin; it != end; ++it)
+        {
+            Move move = *it;
+            MoveInfo moveinfo = do_move(position, move);
+            int64_t value = run_quiescence_search(position, tid, alpha, beta, depth - 1).score;
+            if (value < best_value)
+            {
+                best_value = value;
+                best_move = move;
+            }
+            undo_move(position, move, moveinfo);
+
+            beta = beta < value ? beta : value;
+            if (alpha >= beta)
+                break;
+        }
+    }
+
+    return {best_move, best_value};
+}
+
 ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t beta, int depth)
 {
+    assert(depth >= 0 && depth < MAX_DEPTH);
+
     Color side = position.current_side;
 
     if (depth == 0)
-        return {{}, score(position, tid)};
+        return run_quiescence_search(position, tid, alpha, beta, MAX_DEPTH - 1);
 
     Move* begin = MOVE_LIST[tid][depth];
     Move* end = generate_moves(position, tid, begin);
