@@ -437,7 +437,7 @@ Move* generate_legal_moves(const Position& pos, int id, Move* list)
     if (pos.enpassant != NO_SQUARE)
         list = generate_enpassant<side>(pos, not_pinned_pawns, push_mask, capture_mask, pos.enpassant, list);
 
-    list = generate_king_moves(king_sq, target, attacked | pieces_bb(pos, side), list);
+    list = generate_king_moves(king_sq, all_squares_bb, attacked | pieces_bb(pos, side), list);
 
     if (!checkers_bb)
     {
