@@ -214,7 +214,6 @@ ScoredMove run_quiescence_search(Position& position, int tid, int64_t alpha, int
     if (begin == end)
         return {{}, score(position, tid)};
 
-    transposition::Entry entry;
     Move best_move = NO_MOVE;
     int64_t best_value;
 
