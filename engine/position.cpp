@@ -277,13 +277,6 @@ void remove_piece(Position& position, Square square)
 
 void move_piece(Position& position, Square from, Square to)
 {
-    if (position.board[from] == NO_PIECE)
-    {
-        std::cout << position << std::endl;
-        std::cout << from << " " << to << std::endl;
-        std::cout << std::endl;
-    }
-
     assert(position.board[from] != NO_PIECE);
     assert(position.board[to] == NO_PIECE);
 

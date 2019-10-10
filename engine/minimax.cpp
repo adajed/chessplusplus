@@ -198,7 +198,7 @@ ScoredMove run_quiescence_search(Position& position, int tid, int64_t alpha, int
     assert(depth >= 0 && depth < MAX_DEPTH);
     Color side = position.current_side;
 
-    Move* begin = MOVE_LIST[tid][depth];
+    Move* begin = QUIESCENCE_MOVE_LIST[tid][depth];
     Move* end = generate_quiescence_moves(position, tid, begin);
 
 #ifdef DEBUG
@@ -213,15 +213,40 @@ ScoredMove run_quiescence_search(Position& position, int tid, int64_t alpha, int
 #endif
 
     if (begin == end)
+    {
+        if (is_in_check(position))
+            return {{}, side == WHITE ? MIN_VALUE : MAX_VALUE};
         return {{}, score(position, tid)};
+    }
 
     Move best_move = NO_MOVE;
-    int64_t best_value;
+    int64_t best_value = side == WHITE ? MIN_VALUE : MAX_VALUE;
 
-    if (side == WHITE)
+    transposition::Entry entry;
+    if (transposition::contains(position.zobrist_hash))
     {
-        best_value = 2LL * MIN_VALUE;
+        entry = transposition::get(position.zobrist_hash);
+        bool move_legal = false;
         for (Move* it = begin; it != end; ++it)
+            move_legal |= *it == entry.best_move;
+
+        if (move_legal)
+        {
+            best_move = entry.best_move;
+
+            MoveInfo moveinfo = do_move(position, entry.best_move);
+            best_value = run_quiescence_search(position, tid, alpha, beta, depth - 1).score;
+            undo_move(position, entry.best_move, moveinfo);
+
+            if (side == WHITE)
+                alpha = alpha > best_value ? alpha : best_value;
+            else
+                beta = beta < best_value ? beta : best_value;
+
+            if (alpha >= beta)
+                return {best_move, best_value};
+        }
+    }
         {
             Move move = *it;
             MoveInfo moveinfo = do_move(position, move);
@@ -283,43 +308,38 @@ ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t
 
     transposition::Entry entry;
     Move best_move = NO_MOVE;
-    int64_t best_value;
+    int64_t best_value = side == WHITE ? MIN_VALUE : MAX_VALUE;
 
     if (transposition::contains(position.zobrist_hash))
     {
         entry = transposition::get(position.zobrist_hash);
         bool move_legal = false;
         for (Move* it = begin; it != end; ++it)
-            move_legal |= *it == entry.best_move;
+            move_legal |= (*it) == entry.best_move;
 
         if (move_legal)
         {
             best_move = entry.best_move;
 
-            if (entry.depth >= depth)
-            {
-                best_value = entry.value;
-            }
-            else
-            {
-                MoveInfo moveinfo = do_move(position, entry.best_move);
-                best_value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
-                undo_move(position, entry.best_move, moveinfo);
+            MoveInfo moveinfo = do_move(position, entry.best_move);
+            best_value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
+            undo_move(position, entry.best_move, moveinfo);
 
-                transposition::update(position.zobrist_hash, {depth, entry.best_move, best_value});
-
+            if (side == WHITE)
                 alpha = alpha > best_value ? alpha : best_value;
-                if (alpha >= beta)
-                {
-                    return {best_move, best_value};
-                }
+            else
+                beta = beta < best_value ? beta : best_value;
+
+            if (alpha >= beta)
+            {
+                transposition::update(position.zobrist_hash, {depth, entry.best_move, best_value});
+                return {best_move, best_value};
             }
         }
     }
 
     if (side == WHITE)
     {
-        best_value = 2LL * MIN_VALUE;
         for (Move* it = begin; it != end; ++it)
         {
             Move move = *it;
@@ -339,7 +359,6 @@ ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t
     }
     else
     {
-        best_value = 2LL * MAX_VALUE;
         for (Move* it = begin; it != end; ++it)
         {
             Move move = *it;
@@ -358,14 +377,7 @@ ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t
         }
     }
 
-    if (transposition::contains(position.zobrist_hash))
-    {
-        entry = transposition::get(position.zobrist_hash);
-        if (entry.depth < depth)
-            transposition::update(position.zobrist_hash, {depth, best_move, best_value});
-    }
-    else
-        transposition::update(position.zobrist_hash, {depth, best_move, best_value});
+    transposition::update(position.zobrist_hash, {depth, best_move, best_value});
 
     return {best_move, best_value};
 

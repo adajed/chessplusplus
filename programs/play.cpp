@@ -7,7 +7,7 @@ using namespace engine;
 
 using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
-const unsigned long long MOVE_TIME = 60ULL * 1000000ULL;
+const unsigned long long MOVE_TIME = 120ULL * 1000000ULL;
 
 uint64_t duration(TimePoint start, TimePoint end)
 {
@@ -90,21 +90,24 @@ int main(int argc, char** argv)
     {
         std::cout << position;
 
-        int depth;
-        uint64_t time;
-        for (depth = 2; depth < 11; depth += 1)
+        int depth = 1;
+        TimePoint start_time = std::chrono::steady_clock::now();
+        TimePoint end_time = start_time;
+        uint64_t time = duration(start_time, end_time);
+
+        while (time < MOVE_TIME / 2)
         {
-            TimePoint start_time = std::chrono::steady_clock::now();
+            depth++;
             scored_move = minimax(position, depth);
-            TimePoint end_time = std::chrono::steady_clock::now();
+            end_time = std::chrono::steady_clock::now();
             time = duration(start_time, end_time);
 
             std::cout << "depth=" << depth << ", time=" << time / 1000000ULL << "s, move=";
             print_move(scored_move.move);
-            std::cout << std::endl;
+            std::cout << " score=" << scored_move.score << std::endl;
         }
 
-        std::cout << "depth = " << depth - 1 << std::endl;
+        std::cout << "depth = " << depth << std::endl;
         std::cout << "score = " << scored_move.score << std::endl;
         std::cout << "time = " << time / 1000000ULL << "s" << std::endl;
         std::cout << "move = ";

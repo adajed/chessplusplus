@@ -10,7 +10,7 @@ namespace transposition
 
 struct Entry
 {
-    uint32_t depth;
+    int32_t depth;
     Move best_move;
     int64_t value;
 };
