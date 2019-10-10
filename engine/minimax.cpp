@@ -1,5 +1,6 @@
 #include "minimax.h"
 #include "transposition_table.h"
+#include "move_picker.h"
 
 #include <vector>
 #include <thread>
@@ -247,8 +248,14 @@ ScoredMove run_quiescence_search(Position& position, int tid, int64_t alpha, int
                 return {best_move, best_value};
         }
     }
+
+    MovePicker movepicker(position, begin, end);
+
+    if (side == WHITE)
+    {
+        while (movepicker.has_next())
         {
-            Move move = *it;
+            Move move = movepicker.get_next();
             MoveInfo moveinfo = do_move(position, move);
             int64_t value = run_quiescence_search(position, tid, alpha, beta, depth - 1).score;
             if (value > best_value)
@@ -265,10 +272,9 @@ ScoredMove run_quiescence_search(Position& position, int tid, int64_t alpha, int
     }
     else
     {
-        best_value = 2LL * MAX_VALUE;
-        for (Move* it = begin; it != end; ++it)
+        while (movepicker.has_next())
         {
-            Move move = *it;
+            Move move = movepicker.get_next();
             MoveInfo moveinfo = do_move(position, move);
             int64_t value = run_quiescence_search(position, tid, alpha, beta, depth - 1).score;
             if (value < best_value)
@@ -338,11 +344,13 @@ ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t
         }
     }
 
+    MovePicker movepicker(position, begin, end);
+
     if (side == WHITE)
     {
-        for (Move* it = begin; it != end; ++it)
+        while (movepicker.has_next())
         {
-            Move move = *it;
+            Move move = movepicker.get_next();
             MoveInfo moveinfo = do_move(position, move);
             int64_t value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
             if (value > best_value)
@@ -359,9 +367,9 @@ ScoredMove run_minimax_inner(Position& position, int tid, int64_t alpha, int64_t
     }
     else
     {
-        for (Move* it = begin; it != end; ++it)
+        while (movepicker.has_next())
         {
-            Move move = *it;
+            Move move = movepicker.get_next();
             MoveInfo moveinfo = do_move(position, move);
             int64_t value = run_minimax_inner(position, tid, alpha, beta, depth - 1).score;
             if (value < best_value)
