@@ -14,7 +14,7 @@ LIB_STATIC_DEBUG   = $(OUTDIR)/libengine_static_debug.a
 #### compilation flags
 CC=g++
 
-CFLAGS_COMMON = -Wall -std=c++17 -I$(ROOTDIR)/includes
+CFLAGS_COMMON = -Wall -std=c++17 -I$(ROOTDIR)/engine
 LFLAGS_COMMON = -pthread
 
 CFLAGS_RELEASE = $(CFLAGS_COMMON) -Ofast -funroll-loops -march=native -DNDEBUG -DNUM_THREADS=$(NUM_THREADS)

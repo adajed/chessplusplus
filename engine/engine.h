@@ -108,12 +108,6 @@ Square last_enpassant_square(MoveInfo moveinfo);
 bool last_enpassant(MoveInfo moveinfo);
 bool enpassant(MoveInfo moveinfo);
 
-struct ScoredMove
-{
-    Move move;
-    int64_t score;
-};
-
 struct Position
 {
     Color current_side;
@@ -141,8 +135,6 @@ MoveInfo do_move(Position& position, Move move);
 void undo_move(Position& position, Move move, MoveInfo moveinfo);
 
 int64_t score(const Position& position);
-
-ScoredMove minimax(const Position& position, int depth);
 
 std::ostream& operator<< (std::ostream& stream, const Position& position);
 

@@ -85,13 +85,13 @@ Position from_fen(std::string fen)
 {
     Position position;
     position.current_side = WHITE;
-    for (int i = 0; i < SQUARE_NUM; ++i)
+    for (uint32_t i = 0; i < SQUARE_NUM; ++i)
         position.board[i] = NO_PIECE;
-    for (int i = 0; i < PIECE_NUM; ++i)
+    for (uint32_t i = 0; i < PIECE_NUM; ++i)
         position.piece_count[i] = 0;
-    for (int i = 0; i < PIECE_KIND_NUM; ++i)
+    for (uint32_t i = 0; i < PIECE_KIND_NUM; ++i)
         position.by_piece_kind_bb[i] = 0ULL;
-    for (int i = 0; i < COLOR_NUM; ++i)
+    for (uint32_t i = 0; i < COLOR_NUM; ++i)
         position.by_color_bb[i] = 0ULL;
     position.castling_rights = NO_CASTLING;
     position.enpassant = NO_SQUARE;
@@ -103,7 +103,7 @@ Position from_fen(std::string fen)
 
     int pos = 0;
     int rank = RANK_8;
-    int file = FILE_A;
+    File file = FILE_A;
     while (rank >= 0)
     {
         if (fen[pos] == '/')
@@ -117,14 +117,14 @@ Position from_fen(std::string fen)
             file += (c - '0');
         else
         {
-            Square square = make_square(Rank(rank), File(file));
+            Square square = make_square(Rank(rank), file);
             Piece piece = char_to_piece[c];
             position.board[square] = piece;
             position.by_color_bb[get_color(piece)] |= square_bb(square);
             position.by_piece_kind_bb[get_piece_kind(piece)] |= square_bb(square);
             position.piece_position[piece][position.piece_count[piece]] = square;
             position.piece_count[piece] += 1;
-            file += 1;
+            ++file;
         }
         pos++;
 

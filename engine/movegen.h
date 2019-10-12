@@ -22,13 +22,13 @@ struct Pin
     RayDirection direction;
 };
 
-extern Move MOVE_LIST[NUM_THREADS][MAX_DEPTH][MAX_MOVES];
-extern Move QUIESCENCE_MOVE_LIST[NUM_THREADS][MAX_DEPTH][MAX_MOVES];
-extern Pin PINS[NUM_THREADS][MAX_PINS];
+extern Move MOVE_LIST[MAX_DEPTH][MAX_MOVES];
+extern Move QUIESCENCE_MOVE_LIST[MAX_DEPTH][MAX_MOVES];
+extern Pin PINS[MAX_PINS];
 
-Move* generate_moves(const Position& position, int id, Move* list);
+Move* generate_moves(const Position& position, Move* list);
 
-Move* generate_quiescence_moves(const Position& position, int id, Move* list);
+Move* generate_quiescence_moves(const Position& position, Move* list);
 
 Bitboard attacked_squares(const Position& position);
 

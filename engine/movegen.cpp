@@ -4,9 +4,9 @@
 namespace engine
 {
 
-Move MOVE_LIST[NUM_THREADS][MAX_DEPTH][MAX_MOVES];
-Move QUIESCENCE_MOVE_LIST[NUM_THREADS][MAX_DEPTH][MAX_MOVES];
-Pin PINS[NUM_THREADS][MAX_PINS];
+Move MOVE_LIST[MAX_DEPTH][MAX_MOVES];
+Move QUIESCENCE_MOVE_LIST[MAX_DEPTH][MAX_MOVES];
+Pin PINS[MAX_PINS];
 
 Move create_move(Square from, Square to)
 {
@@ -378,13 +378,13 @@ Move* generate_pinned_piece_moves(Square from, PieceKind piece, RayDirection ray
 }
 
 template <Color side>
-Move* generate_legal_moves(const Position& pos, int id, Move* list)
+Move* generate_legal_moves(const Position& pos, Move* list)
 {
     const Piece C_KING = side == WHITE ? W_KING : B_KING;
     Bitboard checkers_bb = checkers<side>(pos);
 
     Bitboard pinned = 0ULL;
-    Pin* pins_start = PINS[id];
+    Pin* pins_start = PINS;
     Pin* pins_end = generate_pins<side>(pos, pins_start, &pinned);
 
     Bitboard push_mask;
@@ -471,13 +471,13 @@ Move* generate_legal_moves(const Position& pos, int id, Move* list)
 }
 
 template <Color side>
-Move* generate_quiescence(const Position& pos, int id, Move* list)
+Move* generate_quiescence(const Position& pos, Move* list)
 {
     const Piece C_KING = side == WHITE ? W_KING : B_KING;
     Bitboard checkers_bb = checkers<side>(pos);
 
     Bitboard pinned = 0ULL;
-    Pin* pins_start = PINS[id];
+    Pin* pins_start = PINS;
     Pin* pins_end = generate_pins<side>(pos, pins_start, &pinned);
 
     Bitboard attacked = forbidden_squares<side>(pos);
@@ -536,18 +536,18 @@ Move* generate_quiescence(const Position& pos, int id, Move* list)
 
 }  // namespace
 
-Move* generate_moves(const Position& position, int id, Move* list)
+Move* generate_moves(const Position& position, Move* list)
 {
     return position.current_side == WHITE ?
-            generate_legal_moves<WHITE>(position, id, list) :
-            generate_legal_moves<BLACK>(position, id, list);
+            generate_legal_moves<WHITE>(position, list) :
+            generate_legal_moves<BLACK>(position, list);
 }
 
-Move* generate_quiescence_moves(const Position& position, int id, Move* list)
+Move* generate_quiescence_moves(const Position& position, Move* list)
 {
     return position.current_side == WHITE ?
-            generate_quiescence<WHITE>(position, id, list) :
-            generate_quiescence<BLACK>(position, id, list);
+            generate_quiescence<WHITE>(position, list) :
+            generate_quiescence<BLACK>(position, list);
 }
 
 Bitboard attacked_squares(const Position& position)

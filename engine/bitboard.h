@@ -1,8 +1,9 @@
 #ifndef CHESS_ENGINE_BITBOARD_H_
 #define CHESS_ENGINE_BITBOARD_H_
 
-#include "engine.h"
+#include <cassert>
 
+#include "engine.h"
 
 namespace engine
 {
@@ -70,6 +71,8 @@ inline Bitboard shift(Bitboard bb, Direction dir)
     case SOUTHEAST: return shift<SOUTHEAST>(bb);
     case SOUTHWEST: return shift<SOUTHWEST>(bb);
     }
+    assert(false);
+    return 0ULL;
 }
 
 }
