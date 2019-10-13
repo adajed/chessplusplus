@@ -7,6 +7,7 @@
 #include "bithacks.h"
 #include "move_bitboards.h"
 #include "position.h"
+#include "types.h"
 
 namespace engine
 {
@@ -31,6 +32,8 @@ Move* generate_moves(const Position& position, Move* list);
 Move* generate_quiescence_moves(const Position& position, Move* list);
 
 Bitboard attacked_squares(const Position& position);
+
+uint64_t perft(Position& position, int depth);
 
 }
 

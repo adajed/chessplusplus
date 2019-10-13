@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "engine.h"
+#include "move_bitboards.h"
 
 int main(int argc, char** argv)
 {

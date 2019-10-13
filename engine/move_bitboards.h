@@ -58,6 +58,8 @@ extern int BISHOP_INDEX_BITS[SQUARE_NUM];
 extern Bitboard ROOK_TABLE[SQUARE_NUM][4096];
 extern Bitboard BISHOP_TABLE[SQUARE_NUM][4096];
 
+void init_move_bitboards();
+
 }
 
 #endif  // CHESS_ENGINE_MOVE_BITBOARDS_H_

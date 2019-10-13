@@ -1,7 +1,6 @@
 #ifndef CHESS_ENGINE_SCORE_H_
 #define CHESS_ENGINE_SCORE_H_
 
-#include "engine.h"
 #include "movegen.h"
 #include "weights.h"
 

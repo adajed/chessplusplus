@@ -12,13 +12,16 @@ Weights::Weights(std::string path)
 
     if (file.is_open())
     {
-        for (PieceKind p = PAWN; p != KING; ++p)
-            file >> piece_values[p];
+        for (GamePhase phase : {MIDDLE_GAME, END_GAME})
+        {
+            for (PieceKind piece = PAWN; piece != KING; ++piece)
+                file >> piece_values[phase][piece];
 
 
-        for (PieceKind p = PAWN; p <= KING; ++p)
-            for (Square sq = SQ_A1; sq != NO_SQUARE; ++sq)
-                file >> piece_position_values[p][sq];
+            for (PieceKind piece = PAWN; piece <= KING; ++piece)
+                for (Square sq = SQ_A1; sq != NO_SQUARE; ++sq)
+                    file >> piece_position_values[phase][piece][sq];
+        }
 
         file >> mobility_bonus;
         file >> attacking_bonus;
@@ -32,18 +35,18 @@ Weights::Weights(std::string path)
     }
 }
 
-int32_t Weights::get_piece_value(PieceKind piecekind) const
+int32_t Weights::get_piece_value(GamePhase phase, PieceKind piecekind) const
 {
     assert(piecekind != NO_PIECE_KIND && piecekind != KING);
-    return piece_values[piecekind];
+    return piece_values[phase][piecekind];
 }
 
 int32_t Weights::get_piece_position_value(
-        PieceKind piecekind, Square square) const
+        GamePhase phase, PieceKind piecekind, Square square) const
 {
     assert(piecekind != NO_PIECE_KIND);
     assert(square != NO_SQUARE);
-    return piece_position_values[piecekind][square];
+    return piece_position_values[phase][piecekind][square];
 }
 
 int32_t Weights::get_mobility_bonus() const

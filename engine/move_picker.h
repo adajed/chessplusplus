@@ -1,7 +1,8 @@
 #ifndef CHESS_ENGINE_MOVE_PICKER_H_
 #define CHESS_ENGINE_MOVE_PICKER_H_
 
-#include "engine.h"
+#include "position.h"
+#include "types.h"
 
 #include <vector>
 

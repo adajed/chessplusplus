@@ -1,6 +1,5 @@
 #include <iostream>
 
-#include "engine.h"
 #include "score.h"
 #include "search.h"
 #include "weights.h"
@@ -20,14 +19,17 @@ int main(int argc, char** argv)
     Search search(scorer);
     search.set_thinking_time(120ULL * 1000000ULL);
 
-    for (int i = 0; i < 60; ++i)
+    int move_number = 0;
+    while (!is_checkmate(position) && move_number < 400)
     {
+        move_number++;
+        std::cout << "move number " << move_number << std::endl;
         std::cout << position;
 
-        Move move = search.select_move(position, 6);
+        Move move = search.select_move(position, 4);
 
         std::cout << "move = ";
-        print_move(move);
+        print_move(std::cout, move);
         std::cout << std::endl;
 
         do_move(position, move);

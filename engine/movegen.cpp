@@ -584,4 +584,26 @@ Bitboard attacked_squares(const Position& position)
     return bb;
 }
 
+uint64_t perft(Position& position, int depth)
+{
+    Move* begin = MOVE_LIST[depth];
+    Move* end = generate_moves(position, begin);
+
+    if (depth == 1)
+        return end - begin;
+
+    uint64_t sum = 0;
+    for (Move* it = begin; it != end; ++it)
+    {
+        Move move = *it;
+        MoveInfo moveinfo = do_move(position, move);
+
+        sum += perft(position, depth - 1);
+
+        undo_move(position, move, moveinfo);
+    }
+
+    return sum;
+}
+
 };

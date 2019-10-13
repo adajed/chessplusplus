@@ -438,5 +438,26 @@ bool is_in_check(const Position& position)
     return attacked & pieces_bb(position, side, KING);
 }
 
+bool is_checkmate(const Position& position)
+{
+    Move* begin = MOVE_LIST[0];
+    Move* end = generate_moves(position, begin);
+
+    return (begin == end) && is_in_check(position);
+}
+
+GamePhase get_game_phase(const Position& position)
+{
+    uint32_t value[] = {0, 0};
+
+    uint32_t piece_values[] = {0, 0, 3, 3, 5, 9, 0};
+
+    for (Color side : {WHITE, BLACK})
+        for (PieceKind p = KNIGHT; p < KING; ++p)
+            value[side] += piece_values[p] * position.piece_count[p];
+
+    return (value[WHITE] < 18 && value[BLACK] < 18) ? END_GAME : MIDDLE_GAME;
+}
+
 
 }

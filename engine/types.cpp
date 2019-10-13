@@ -12,33 +12,43 @@ Bitboard FILES_BB[FILE_NUM] = {
     fileA_bb, fileB_bb, fileC_bb, fileD_bb, fileE_bb, fileF_bb, fileG_bb, fileH_bb
 };
 
-void print_move(Move move)
+std::ostream& print_move(std::ostream& stream, Move move)
 {
     const std::string files = "abcdefgh";
     const std::string ranks = "12345678";
+    const std::string promotions = "  NBRQ ";
 
     if (castling(move) & KING_CASTLING)
-    {
-        std::cout << "OO";
-        return;
-    }
-    else if (castling(move) & QUEEN_CASTLING)
-    {
-        std::cout << "OOO";
-        return;
-    }
+        return stream << "OO";
+    if (castling(move) & QUEEN_CASTLING)
+        return stream << "OOO";
 
-    std::cout << files[file(from(move))] << ranks[rank(from(move))]
-           << files[file(to(move))] << ranks[rank(to(move))];
+    stream << files[file(from(move))] << ranks[rank(from(move))]
+           << files[file(to(move))]   << ranks[rank(to(move))];
 
-    if (promotion(move) == KNIGHT)
-        std::cout << "N";
-    if (promotion(move) == BISHOP)
-        std::cout << "B";
-    if (promotion(move) == ROOK)
-        std::cout << "R";
-    if (promotion(move) == QUEEN)
-        std::cout << "Q";
+    if (promotion(move) != NO_PIECE_KIND)
+        stream << promotions[promotion(move)];
+
+    return stream;
+}
+
+std::ostream& print_bitboard(std::ostream& stream, Bitboard bb)
+{
+    stream << "##########" << std::endl;
+    for (int rank = 7; rank >= 0; rank--)
+    {
+        stream << "#";
+        for (int file = 0; file < 8; ++file)
+        {
+            if (bb & square_bb(make_square(Rank(rank), File(file))))
+                stream << ".";
+            else
+                stream << " ";
+        }
+        stream << "#" << std::endl;
+    }
+    stream << "##########" << std::endl;
+    return stream;
 }
 
 }

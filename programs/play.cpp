@@ -1,10 +1,10 @@
 #include <chrono>
 #include <iostream>
 
-#include "engine.h"
 #include "score.h"
 #include "search.h"
 #include "weights.h"
+#include "zobrist_hash.h"
 
 using namespace engine;
 
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
         Move move = search.select_move(position, 0);
 
         std::cout << "move = ";
-        print_move(move);
+        print_move(std::cout, move);
         std::cout << std::endl;
 
         do_move(position, move);

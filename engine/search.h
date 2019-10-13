@@ -1,8 +1,9 @@
 #ifndef CHESS_ENGINE_SEARCH_H_
 #define CHESS_ENGINE_SEARCH_H_
 
-#include "engine.h"
+#include "position.h"
 #include "score.h"
+#include "types.h"
 
 namespace engine
 {
