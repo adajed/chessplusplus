@@ -6,7 +6,6 @@ namespace engine
 
 Move MOVE_LIST[MAX_DEPTH][MAX_MOVES];
 Move QUIESCENCE_MOVE_LIST[MAX_DEPTH][MAX_MOVES];
-Pin PINS[MAX_PINS];
 
 Move create_move(Square from, Square to)
 {
@@ -33,7 +32,7 @@ Move create_castling(Castling castling)
 namespace
 {
 
-Bitboard attack_in_ray(Square sq, RayDirection ray, Bitboard blockers)
+Bitboard attack_in_ray(Square sq, Ray ray, Bitboard blockers)
 {
     Bitboard masked_blockers = blockers & RAYS[ray][sq];
     if (!masked_blockers)
@@ -47,7 +46,7 @@ Bitboard attack_in_ray(Square sq, RayDirection ray, Bitboard blockers)
     return RAYS[ray][sq] & ~RAYS[ray][blocker];
 }
 
-Bitboard attack_in_line(Square sq, RayDirection ray, Bitboard blockers)
+Bitboard attack_in_line(Square sq, Ray ray, Bitboard blockers)
 {
     return attack_in_ray(sq, ray, blockers) | attack_in_ray(sq, opposite_ray(ray), blockers);
 }
@@ -250,6 +249,33 @@ Move* generate_enpassant(const Position& pos, Bitboard not_pinned_pawns, Bitboar
     return list;
 }
 
+// 0-5 square
+// 6-8 piece kind
+// 9-11 ray
+using Pin = uint32_t;
+
+Pin PINS[MAX_PINS];
+
+Pin create_pin(Square square, PieceKind piece, Ray ray)
+{
+    return ray << 9 | piece << 6 | square;
+}
+
+Square pin_square(Pin pin)
+{
+    return Square(pin & 0x3F);
+}
+
+PieceKind pin_piece_kind(Pin pin)
+{
+    return PieceKind((pin >> 6) & 0x7);
+}
+
+Ray pin_ray(Pin pin)
+{
+    return Ray((pin >> 9) & 0x7);
+}
+
 // generates all moves for a given piece,
 //  assumes that king is not in check
 //  and that piece is not pinned
@@ -316,7 +342,7 @@ Pin* generate_pins(const Position& pos, Pin* list, Bitboard* pinned_bb)
 
                 if (square_bb(attacking_sq) & sliders)
                 {
-                    *list++ = Pin{pinned_sq, make_piece_kind(pos.board[pinned_sq]), RayDirection(dir)};
+                    *list++ = create_pin(pinned_sq, make_piece_kind(pos.board[pinned_sq]), Ray(dir));
                     *pinned_bb |= square_bb(pinned_sq);
                 }
             }
@@ -327,7 +353,7 @@ Pin* generate_pins(const Position& pos, Pin* list, Bitboard* pinned_bb)
 }
 
 template <Color side>
-Move* generate_pinned_pawn_moves(Square from, RayDirection ray, const Position& pos, Bitboard target, Move* list)
+Move* generate_pinned_pawn_moves(Square from, Ray ray, const Position& pos, Bitboard target, Move* list)
 {
     const Direction UP = side == WHITE ? NORTH : SOUTH;
     const Direction UPRIGHT = side == WHITE ? NORTHEAST : SOUTHWEST;
@@ -355,8 +381,12 @@ Move* generate_pinned_pawn_moves(Square from, RayDirection ray, const Position& 
 }
 
 template <Color side>
-Move* generate_pinned_piece_moves(Square from, PieceKind piece, RayDirection ray, const Position& pos, Bitboard target, Move* list)
+Move* generate_pinned_piece_moves(Pin pin, const Position& pos, Bitboard target, Move* list)
 {
+    Square from = pin_square(pin);
+    PieceKind piece = pin_piece_kind(pin);
+    Ray ray = pin_ray(pin);
+
     assert(piece != KING);
 
     // pinned knight cannot move
@@ -437,7 +467,7 @@ Move* generate_legal_moves(const Position& pos, Move* list)
     if (!checkers_bb)
     {
         for (Pin* iter = pins_start; iter != pins_end; ++iter)
-            list = generate_pinned_piece_moves<side>(iter->square, iter->piece_kind, iter->direction, pos, push_mask | capture_mask, list);
+            list = generate_pinned_piece_moves<side>(*iter, pos, push_mask | capture_mask, list);
 
         Bitboard taken_for_castling = attacked | pieces_bb(pos);
 
@@ -528,7 +558,7 @@ Move* generate_quiescence(const Position& pos, Move* list)
     else
     {
         for (Pin* iter = pins_start; iter != pins_end; ++iter)
-            list = generate_pinned_piece_moves<side>(iter->square, iter->piece_kind, iter->direction, pos, target, list);
+            list = generate_pinned_piece_moves<side>(*iter, pos, target, list);
     }
 
     return list;

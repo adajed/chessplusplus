@@ -52,14 +52,12 @@ enum Rank : uint32_t
     RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8,
 };
 constexpr uint32_t RANK_NUM = 8;
-extern Bitboard RANKS_BB[RANK_NUM];
 
 enum File : uint32_t
 {
     FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H,
 };
 constexpr uint32_t FILE_NUM = 8;
-extern Bitboard FILES_BB[FILE_NUM];
 
 enum Castling : uint32_t
 {
@@ -116,9 +114,9 @@ Square last_enpassant_square(MoveInfo moveinfo);
 bool last_enpassant(MoveInfo moveinfo);
 bool enpassant(MoveInfo moveinfo);
 
-extern Castling CASTLING_RIGHTS[COLOR_NUM];
-extern Square KING_SIDE_ROOK_SQUARE[COLOR_NUM];
-extern Square QUEEN_SIDE_ROOK_SQUARE[COLOR_NUM];
+const Castling CASTLING_RIGHTS[COLOR_NUM]      = {W_CASTLING, B_CASTLING};
+const Square KING_SIDE_ROOK_SQUARE[COLOR_NUM]  = {SQ_H1, SQ_H8};
+const Square QUEEN_SIDE_ROOK_SQUARE[COLOR_NUM] = {SQ_A1, SQ_A8};;
 
 constexpr Rank rank(Square sq)
 {

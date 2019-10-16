@@ -20,6 +20,9 @@ constexpr Bitboard rank5_bb = rank1_bb << (8 * 4);
 constexpr Bitboard rank6_bb = rank1_bb << (8 * 5);
 constexpr Bitboard rank7_bb = rank1_bb << (8 * 6);
 constexpr Bitboard rank8_bb = rank1_bb << (8 * 7);
+const Bitboard RANKS_BB[RANK_NUM] = {
+    rank1_bb, rank2_bb, rank3_bb, rank4_bb, rank5_bb, rank6_bb, rank7_bb, rank8_bb
+};
 
 constexpr Bitboard middle_ranks = rank2_bb | rank3_bb | rank4_bb | rank5_bb | rank6_bb | rank7_bb;
 
@@ -31,6 +34,10 @@ constexpr Bitboard fileE_bb = fileA_bb << 4;
 constexpr Bitboard fileF_bb = fileA_bb << 5;
 constexpr Bitboard fileG_bb = fileA_bb << 6;
 constexpr Bitboard fileH_bb = fileA_bb << 7;
+const Bitboard FILES_BB[FILE_NUM] = {
+    fileA_bb, fileB_bb, fileC_bb, fileD_bb, fileE_bb, fileF_bb, fileG_bb, fileH_bb
+};
+
 
 enum Direction : int32_t
 {

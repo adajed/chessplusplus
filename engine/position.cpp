@@ -5,61 +5,6 @@
 namespace engine
 {
 
-Square from(Move move)
-{
-    return Square(move & 0x3F);
-}
-
-Square to(Move move)
-{
-    return Square((move >> 6) & 0x3F);
-}
-
-PieceKind promotion(Move move)
-{
-    return PieceKind((move >> 12) & 0x7);
-}
-
-Castling castling(Move move)
-{
-    int p = (move >> 15) & 0x3;
-    return p == 0 ? NO_CASTLING :
-           p == 1 ? KING_CASTLING :
-           QUEEN_CASTLING;
-}
-
-MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant, bool enpassant)
-{
-    if (last_enpassant != NO_SQUARE)
-        return enpassant << 14 | 1 << 13 | last_enpassant << 7 | last_castling << 3 | captured;
-    return enpassant << 14 | last_castling << 3 | captured;
-}
-
-PieceKind captured_piece(MoveInfo moveinfo)
-{
-    return PieceKind(moveinfo & 0x7);
-}
-
-Castling last_castling(MoveInfo moveinfo)
-{
-    return Castling((moveinfo >> 3) & 0xF);
-}
-
-Square last_enpassant_square(MoveInfo moveinfo)
-{
-    return Square((moveinfo >> 7) & 0x3F);
-}
-
-bool last_enpassant(MoveInfo moveinfo)
-{
-    return (moveinfo >> 13) & 0x1;
-}
-
-bool enpassant(MoveInfo moveinfo)
-{
-    return (moveinfo >> 14) & 0x1;
-}
-
 std::ostream& operator<< (std::ostream& stream, const Position& position)
 {
     const std::string piece_to_char = " PNBRQKpnbrqk";
