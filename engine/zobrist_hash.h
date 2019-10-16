@@ -1,9 +1,8 @@
 #ifndef CHESS_ENGINE_HASH_H_
 #define CHESS_ENGINE_HASH_H_
 
-#include <cinttypes>
-
-#include "engine.h"
+#include "position.h"
+#include "types.h"
 
 namespace engine
 {
@@ -12,10 +11,7 @@ HashKey hash_position(const Position& position);
 
 void update_hash(Position& position, Move move);
 
-/*
-void update_hash_after_undo_move(Position& position, Move move,
-                                 MoveInfo moveinfo);
-                                 */
+void init_zobrist_hash();
 
 }  // namespace engine
 

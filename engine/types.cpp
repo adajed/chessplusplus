@@ -4,41 +4,98 @@
 namespace engine
 {
 
-Bitboard RANKS_BB[RANK_NUM] = {
-    rank1_bb, rank2_bb, rank3_bb, rank4_bb, rank5_bb, rank6_bb, rank7_bb, rank8_bb
-};
+Square from(Move move)
+{
+    return Square(move & 0x3F);
+}
 
-Bitboard FILES_BB[FILE_NUM] = {
-    fileA_bb, fileB_bb, fileC_bb, fileD_bb, fileE_bb, fileF_bb, fileG_bb, fileH_bb
-};
+Square to(Move move)
+{
+    return Square((move >> 6) & 0x3F);
+}
 
-void print_move(Move move)
+PieceKind promotion(Move move)
+{
+    return PieceKind((move >> 12) & 0x7);
+}
+
+Castling castling(Move move)
+{
+    int p = (move >> 15) & 0x3;
+    return p == 0 ? NO_CASTLING :
+           p == 1 ? KING_CASTLING :
+           QUEEN_CASTLING;
+}
+
+MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant, bool enpassant)
+{
+    if (last_enpassant != NO_SQUARE)
+        return enpassant << 14 | 1 << 13 | last_enpassant << 7 | last_castling << 3 | captured;
+    return enpassant << 14 | last_castling << 3 | captured;
+}
+
+PieceKind captured_piece(MoveInfo moveinfo)
+{
+    return PieceKind(moveinfo & 0x7);
+}
+
+Castling last_castling(MoveInfo moveinfo)
+{
+    return Castling((moveinfo >> 3) & 0xF);
+}
+
+Square last_enpassant_square(MoveInfo moveinfo)
+{
+    return Square((moveinfo >> 7) & 0x3F);
+}
+
+bool last_enpassant(MoveInfo moveinfo)
+{
+    return (moveinfo >> 13) & 0x1;
+}
+
+bool enpassant(MoveInfo moveinfo)
+{
+    return (moveinfo >> 14) & 0x1;
+}
+
+std::ostream& print_move(std::ostream& stream, Move move)
 {
     const std::string files = "abcdefgh";
     const std::string ranks = "12345678";
+    const std::string promotions = "  NBRQ ";
 
     if (castling(move) & KING_CASTLING)
-    {
-        std::cout << "OO";
-        return;
-    }
-    else if (castling(move) & QUEEN_CASTLING)
-    {
-        std::cout << "OOO";
-        return;
-    }
+        return stream << "OO";
+    if (castling(move) & QUEEN_CASTLING)
+        return stream << "OOO";
 
-    std::cout << files[file(from(move))] << ranks[rank(from(move))]
-           << files[file(to(move))] << ranks[rank(to(move))];
+    stream << files[file(from(move))] << ranks[rank(from(move))]
+           << files[file(to(move))]   << ranks[rank(to(move))];
 
-    if (promotion(move) == KNIGHT)
-        std::cout << "N";
-    if (promotion(move) == BISHOP)
-        std::cout << "B";
-    if (promotion(move) == ROOK)
-        std::cout << "R";
-    if (promotion(move) == QUEEN)
-        std::cout << "Q";
+    if (promotion(move) != NO_PIECE_KIND)
+        stream << promotions[promotion(move)];
+
+    return stream;
+}
+
+std::ostream& print_bitboard(std::ostream& stream, Bitboard bb)
+{
+    stream << "##########" << std::endl;
+    for (int rank = 7; rank >= 0; rank--)
+    {
+        stream << "#";
+        for (int file = 0; file < 8; ++file)
+        {
+            if (bb & square_bb(make_square(Rank(rank), File(file))))
+                stream << ".";
+            else
+                stream << " ";
+        }
+        stream << "#" << std::endl;
+    }
+    stream << "##########" << std::endl;
+    return stream;
 }
 
 }

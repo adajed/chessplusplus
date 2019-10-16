@@ -1,7 +1,7 @@
 #ifndef CHESS_ENGINE_TRANSPOSITION_TABLE_H_
 #define CHESS_ENGINE_TRANSPOSITION_TABLE_H_
 
-#include "engine.h"
+#include "types.h"
 
 namespace engine
 {

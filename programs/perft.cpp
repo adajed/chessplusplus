@@ -2,7 +2,8 @@
 #include <iostream>
 #include <vector>
 
-#include "engine.h"
+#include "movegen.h"
+#include "position.h"
 
 using namespace engine;
 
@@ -23,7 +24,7 @@ int main(int argc, char** argv)
     std::cout << position;
 
     auto start = std::chrono::steady_clock::now();
-    uint32_t score = perft(position, depth, true);
+    uint64_t score = perft(position, depth);
     auto end = std::chrono::steady_clock::now();
 
     uint64_t time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();

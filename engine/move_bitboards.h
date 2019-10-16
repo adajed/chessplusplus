@@ -9,18 +9,18 @@
 namespace engine
 {
 
-enum RayDirection : uint32_t
+enum Ray : uint32_t
 {
     RAY_NW = 0, RAY_N = 1, RAY_NE = 2, RAY_E = 3, RAY_SE = 4, RAY_S = 5, RAY_SW = 6, RAY_W = 7
 };
 constexpr uint32_t RAYS_NUM = 8;
 
-constexpr RayDirection opposite_ray(RayDirection ray)
+constexpr Ray opposite_ray(Ray ray)
 {
-    return RayDirection((ray + 4) & 7);
+    return Ray((ray + 4) & 7);
 }
 
-constexpr bool allowed_ray(PieceKind piece, RayDirection ray)
+constexpr bool allowed_ray(PieceKind piece, Ray ray)
 {
     assert(piece == BISHOP || piece == ROOK || piece == QUEEN);
     return piece == BISHOP ? !(ray & 1) :
@@ -28,7 +28,7 @@ constexpr bool allowed_ray(PieceKind piece, RayDirection ray)
            true;
 }
 
-ENABLE_INCREMENT_OPERATIONS(RayDirection)
+ENABLE_INCREMENT_OPERATIONS(Ray)
 
 extern Bitboard RAYS[RAYS_NUM][SQUARE_NUM];
 
@@ -57,6 +57,8 @@ extern int BISHOP_INDEX_BITS[SQUARE_NUM];
 
 extern Bitboard ROOK_TABLE[SQUARE_NUM][4096];
 extern Bitboard BISHOP_TABLE[SQUARE_NUM][4096];
+
+void init_move_bitboards();
 
 }
 

@@ -5,61 +5,6 @@
 namespace engine
 {
 
-Square from(Move move)
-{
-    return Square(move & 0x3F);
-}
-
-Square to(Move move)
-{
-    return Square((move >> 6) & 0x3F);
-}
-
-PieceKind promotion(Move move)
-{
-    return PieceKind((move >> 12) & 0x7);
-}
-
-Castling castling(Move move)
-{
-    int p = (move >> 15) & 0x3;
-    return p == 0 ? NO_CASTLING :
-           p == 1 ? KING_CASTLING :
-           QUEEN_CASTLING;
-}
-
-MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant, bool enpassant)
-{
-    if (last_enpassant != NO_SQUARE)
-        return enpassant << 14 | 1 << 13 | last_enpassant << 7 | last_castling << 3 | captured;
-    return enpassant << 14 | last_castling << 3 | captured;
-}
-
-PieceKind captured_piece(MoveInfo moveinfo)
-{
-    return PieceKind(moveinfo & 0x7);
-}
-
-Castling last_castling(MoveInfo moveinfo)
-{
-    return Castling((moveinfo >> 3) & 0xF);
-}
-
-Square last_enpassant_square(MoveInfo moveinfo)
-{
-    return Square((moveinfo >> 7) & 0x3F);
-}
-
-bool last_enpassant(MoveInfo moveinfo)
-{
-    return (moveinfo >> 13) & 0x1;
-}
-
-bool enpassant(MoveInfo moveinfo)
-{
-    return (moveinfo >> 14) & 0x1;
-}
-
 std::ostream& operator<< (std::ostream& stream, const Position& position)
 {
     const std::string piece_to_char = " PNBRQKpnbrqk";
@@ -85,13 +30,13 @@ Position from_fen(std::string fen)
 {
     Position position;
     position.current_side = WHITE;
-    for (int i = 0; i < SQUARE_NUM; ++i)
+    for (uint32_t i = 0; i < SQUARE_NUM; ++i)
         position.board[i] = NO_PIECE;
-    for (int i = 0; i < PIECE_NUM; ++i)
+    for (uint32_t i = 0; i < PIECE_NUM; ++i)
         position.piece_count[i] = 0;
-    for (int i = 0; i < PIECE_KIND_NUM; ++i)
+    for (uint32_t i = 0; i < PIECE_KIND_NUM; ++i)
         position.by_piece_kind_bb[i] = 0ULL;
-    for (int i = 0; i < COLOR_NUM; ++i)
+    for (uint32_t i = 0; i < COLOR_NUM; ++i)
         position.by_color_bb[i] = 0ULL;
     position.castling_rights = NO_CASTLING;
     position.enpassant = NO_SQUARE;
@@ -103,7 +48,7 @@ Position from_fen(std::string fen)
 
     int pos = 0;
     int rank = RANK_8;
-    int file = FILE_A;
+    File file = FILE_A;
     while (rank >= 0)
     {
         if (fen[pos] == '/')
@@ -117,14 +62,14 @@ Position from_fen(std::string fen)
             file += (c - '0');
         else
         {
-            Square square = make_square(Rank(rank), File(file));
+            Square square = make_square(Rank(rank), file);
             Piece piece = char_to_piece[c];
             position.board[square] = piece;
             position.by_color_bb[get_color(piece)] |= square_bb(square);
             position.by_piece_kind_bb[get_piece_kind(piece)] |= square_bb(square);
             position.piece_position[piece][position.piece_count[piece]] = square;
             position.piece_count[piece] += 1;
-            file += 1;
+            ++file;
         }
         pos++;
 
@@ -436,6 +381,27 @@ bool is_in_check(const Position& position)
     Color side = position.current_side;
     Bitboard attacked = attacked_squares(position);
     return attacked & pieces_bb(position, side, KING);
+}
+
+bool is_checkmate(const Position& position)
+{
+    Move* begin = MOVE_LIST[0];
+    Move* end = generate_moves(position, begin);
+
+    return (begin == end) && is_in_check(position);
+}
+
+GamePhase get_game_phase(const Position& position)
+{
+    uint32_t value[] = {0, 0};
+
+    uint32_t piece_values[] = {0, 0, 3, 3, 5, 9, 0};
+
+    for (Color side : {WHITE, BLACK})
+        for (PieceKind p = KNIGHT; p < KING; ++p)
+            value[side] += piece_values[p] * position.piece_count[p];
+
+    return (value[WHITE] < 18 && value[BLACK] < 18) ? END_GAME : MIDDLE_GAME;
 }
 
 

@@ -4,9 +4,8 @@
 namespace engine
 {
 
-Move MOVE_LIST[NUM_THREADS][MAX_DEPTH][MAX_MOVES];
-Move QUIESCENCE_MOVE_LIST[NUM_THREADS][MAX_DEPTH][MAX_MOVES];
-Pin PINS[NUM_THREADS][MAX_PINS];
+Move MOVE_LIST[MAX_DEPTH][MAX_MOVES];
+Move QUIESCENCE_MOVE_LIST[MAX_DEPTH][MAX_MOVES];
 
 Move create_move(Square from, Square to)
 {
@@ -33,7 +32,7 @@ Move create_castling(Castling castling)
 namespace
 {
 
-Bitboard attack_in_ray(Square sq, RayDirection ray, Bitboard blockers)
+Bitboard attack_in_ray(Square sq, Ray ray, Bitboard blockers)
 {
     Bitboard masked_blockers = blockers & RAYS[ray][sq];
     if (!masked_blockers)
@@ -47,7 +46,7 @@ Bitboard attack_in_ray(Square sq, RayDirection ray, Bitboard blockers)
     return RAYS[ray][sq] & ~RAYS[ray][blocker];
 }
 
-Bitboard attack_in_line(Square sq, RayDirection ray, Bitboard blockers)
+Bitboard attack_in_line(Square sq, Ray ray, Bitboard blockers)
 {
     return attack_in_ray(sq, ray, blockers) | attack_in_ray(sq, opposite_ray(ray), blockers);
 }
@@ -250,6 +249,33 @@ Move* generate_enpassant(const Position& pos, Bitboard not_pinned_pawns, Bitboar
     return list;
 }
 
+// 0-5 square
+// 6-8 piece kind
+// 9-11 ray
+using Pin = uint32_t;
+
+Pin PINS[MAX_PINS];
+
+Pin create_pin(Square square, PieceKind piece, Ray ray)
+{
+    return ray << 9 | piece << 6 | square;
+}
+
+Square pin_square(Pin pin)
+{
+    return Square(pin & 0x3F);
+}
+
+PieceKind pin_piece_kind(Pin pin)
+{
+    return PieceKind((pin >> 6) & 0x7);
+}
+
+Ray pin_ray(Pin pin)
+{
+    return Ray((pin >> 9) & 0x7);
+}
+
 // generates all moves for a given piece,
 //  assumes that king is not in check
 //  and that piece is not pinned
@@ -316,7 +342,7 @@ Pin* generate_pins(const Position& pos, Pin* list, Bitboard* pinned_bb)
 
                 if (square_bb(attacking_sq) & sliders)
                 {
-                    *list++ = Pin{pinned_sq, make_piece_kind(pos.board[pinned_sq]), RayDirection(dir)};
+                    *list++ = create_pin(pinned_sq, make_piece_kind(pos.board[pinned_sq]), Ray(dir));
                     *pinned_bb |= square_bb(pinned_sq);
                 }
             }
@@ -327,7 +353,7 @@ Pin* generate_pins(const Position& pos, Pin* list, Bitboard* pinned_bb)
 }
 
 template <Color side>
-Move* generate_pinned_pawn_moves(Square from, RayDirection ray, const Position& pos, Bitboard target, Move* list)
+Move* generate_pinned_pawn_moves(Square from, Ray ray, const Position& pos, Bitboard target, Move* list)
 {
     const Direction UP = side == WHITE ? NORTH : SOUTH;
     const Direction UPRIGHT = side == WHITE ? NORTHEAST : SOUTHWEST;
@@ -355,8 +381,12 @@ Move* generate_pinned_pawn_moves(Square from, RayDirection ray, const Position& 
 }
 
 template <Color side>
-Move* generate_pinned_piece_moves(Square from, PieceKind piece, RayDirection ray, const Position& pos, Bitboard target, Move* list)
+Move* generate_pinned_piece_moves(Pin pin, const Position& pos, Bitboard target, Move* list)
 {
+    Square from = pin_square(pin);
+    PieceKind piece = pin_piece_kind(pin);
+    Ray ray = pin_ray(pin);
+
     assert(piece != KING);
 
     // pinned knight cannot move
@@ -378,13 +408,13 @@ Move* generate_pinned_piece_moves(Square from, PieceKind piece, RayDirection ray
 }
 
 template <Color side>
-Move* generate_legal_moves(const Position& pos, int id, Move* list)
+Move* generate_legal_moves(const Position& pos, Move* list)
 {
     const Piece C_KING = side == WHITE ? W_KING : B_KING;
     Bitboard checkers_bb = checkers<side>(pos);
 
     Bitboard pinned = 0ULL;
-    Pin* pins_start = PINS[id];
+    Pin* pins_start = PINS;
     Pin* pins_end = generate_pins<side>(pos, pins_start, &pinned);
 
     Bitboard push_mask;
@@ -437,7 +467,7 @@ Move* generate_legal_moves(const Position& pos, int id, Move* list)
     if (!checkers_bb)
     {
         for (Pin* iter = pins_start; iter != pins_end; ++iter)
-            list = generate_pinned_piece_moves<side>(iter->square, iter->piece_kind, iter->direction, pos, push_mask | capture_mask, list);
+            list = generate_pinned_piece_moves<side>(*iter, pos, push_mask | capture_mask, list);
 
         Bitboard taken_for_castling = attacked | pieces_bb(pos);
 
@@ -471,13 +501,13 @@ Move* generate_legal_moves(const Position& pos, int id, Move* list)
 }
 
 template <Color side>
-Move* generate_quiescence(const Position& pos, int id, Move* list)
+Move* generate_quiescence(const Position& pos, Move* list)
 {
     const Piece C_KING = side == WHITE ? W_KING : B_KING;
     Bitboard checkers_bb = checkers<side>(pos);
 
     Bitboard pinned = 0ULL;
-    Pin* pins_start = PINS[id];
+    Pin* pins_start = PINS;
     Pin* pins_end = generate_pins<side>(pos, pins_start, &pinned);
 
     Bitboard attacked = forbidden_squares<side>(pos);
@@ -528,7 +558,7 @@ Move* generate_quiescence(const Position& pos, int id, Move* list)
     else
     {
         for (Pin* iter = pins_start; iter != pins_end; ++iter)
-            list = generate_pinned_piece_moves<side>(iter->square, iter->piece_kind, iter->direction, pos, target, list);
+            list = generate_pinned_piece_moves<side>(*iter, pos, target, list);
     }
 
     return list;
@@ -536,18 +566,18 @@ Move* generate_quiescence(const Position& pos, int id, Move* list)
 
 }  // namespace
 
-Move* generate_moves(const Position& position, int id, Move* list)
+Move* generate_moves(const Position& position, Move* list)
 {
     return position.current_side == WHITE ?
-            generate_legal_moves<WHITE>(position, id, list) :
-            generate_legal_moves<BLACK>(position, id, list);
+            generate_legal_moves<WHITE>(position, list) :
+            generate_legal_moves<BLACK>(position, list);
 }
 
-Move* generate_quiescence_moves(const Position& position, int id, Move* list)
+Move* generate_quiescence_moves(const Position& position, Move* list)
 {
     return position.current_side == WHITE ?
-            generate_quiescence<WHITE>(position, id, list) :
-            generate_quiescence<BLACK>(position, id, list);
+            generate_quiescence<WHITE>(position, list) :
+            generate_quiescence<BLACK>(position, list);
 }
 
 Bitboard attacked_squares(const Position& position)
@@ -582,6 +612,28 @@ Bitboard attacked_squares(const Position& position)
     bb |= KING_MASK[position.piece_position[OPPONENT_KING][0]];
 
     return bb;
+}
+
+uint64_t perft(Position& position, int depth)
+{
+    Move* begin = MOVE_LIST[depth];
+    Move* end = generate_moves(position, begin);
+
+    if (depth == 1)
+        return end - begin;
+
+    uint64_t sum = 0;
+    for (Move* it = begin; it != end; ++it)
+    {
+        Move move = *it;
+        MoveInfo moveinfo = do_move(position, move);
+
+        sum += perft(position, depth - 1);
+
+        undo_move(position, move, moveinfo);
+    }
+
+    return sum;
 }
 
 };

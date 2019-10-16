@@ -1,7 +1,10 @@
 #include <chrono>
 #include <iostream>
 
-#include "engine.h"
+#include "score.h"
+#include "search.h"
+#include "weights.h"
+#include "zobrist_hash.h"
 
 using namespace engine;
 
@@ -74,8 +77,14 @@ int main(int argc, char** argv)
     init_move_bitboards();
     init_zobrist_hash();
 
-    std::string fen(argv[1]);
+    std::string weights_path(argv[1]);
+    std::string fen(argv[2]);
     Position position = from_fen(fen);
+
+    Weights weights(weights_path);
+    PositionScorer scorer(weights);
+    Search search(scorer);
+    search.set_thinking_time(120ULL * 1000000ULL);
 
     for (int i = 2; i < argc; ++i)
     {
@@ -84,38 +93,17 @@ int main(int argc, char** argv)
         do_move(position, m);
     }
 
-    Move move;
-    ScoredMove scored_move;
     while (true)
     {
         std::cout << position;
 
-        int depth = 1;
-        TimePoint start_time = std::chrono::steady_clock::now();
-        TimePoint end_time = start_time;
-        uint64_t time = duration(start_time, end_time);
+        Move move = search.select_move(position, 0);
 
-        while (time < MOVE_TIME / 2)
-        {
-            depth++;
-            scored_move = minimax(position, depth);
-            end_time = std::chrono::steady_clock::now();
-            time = duration(start_time, end_time);
-
-            std::cout << "depth=" << depth << ", time=" << time / 1000000ULL << "s, move=";
-            print_move(scored_move.move);
-            std::cout << " score=" << scored_move.score << std::endl;
-        }
-
-        std::cout << "depth = " << depth << std::endl;
-        std::cout << "score = " << scored_move.score << std::endl;
-        std::cout << "time = " << time / 1000000ULL << "s" << std::endl;
         std::cout << "move = ";
-        print_move(scored_move.move);
-        std::cout << std::endl;
+        print_move(std::cout, move);
         std::cout << std::endl;
 
-        do_move(position, scored_move.move);
+        do_move(position, move);
 
         std::cout << position;
 
