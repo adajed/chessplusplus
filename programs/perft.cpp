@@ -10,7 +10,7 @@ using namespace engine;
 uint64_t perftBatched(Position& position, int depth)
 {
     Move* begin = MOVE_LIST[depth];
-    Move* end = generate_moves(position, begin);
+    Move* end = generate_moves(position, position.side_to_move(), begin);
 
     if (depth == 1)
         return end - begin;
@@ -19,11 +19,11 @@ uint64_t perftBatched(Position& position, int depth)
     for (Move* it = begin; it != end; ++it)
     {
         Move move = *it;
-        MoveInfo moveinfo = do_move(position, move);
+        MoveInfo moveinfo = position.do_move(move);
 
         uint64_t nodes = perft(position, depth - 1);
 
-        undo_move(position, move, moveinfo);
+        position.undo_move(move, moveinfo);
 
         sum += nodes;
         print_move(std::cout, move);
@@ -46,7 +46,7 @@ int main(int argc, char** argv)
 
     init_move_bitboards();
 
-    Position position = from_fen(fen);
+    Position position(fen);
     std::cout << position << std::endl << std::endl;
 
     auto start = std::chrono::steady_clock::now();
@@ -55,6 +55,7 @@ int main(int argc, char** argv)
     std::chrono::duration<double> elapsed = end - start;
 
 
+    std::cout << std::endl;
     std::cout << "Total time (ms)  : " << static_cast<int>(elapsed.count() * 1000) << std::endl;
     std::cout << "Nodes searched   : " << score << std::endl;
     std::cout << "Nodes / second   : " << static_cast<int>(score / elapsed.count()) << std::endl;

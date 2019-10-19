@@ -6,13 +6,19 @@
 
 namespace engine
 {
+namespace zobrist
+{
 
-HashKey hash_position(const Position& position);
+extern uint64_t PIECE_HASH[PIECE_NUM][SQUARE_NUM];
+extern uint64_t CASTLING_HASH[1 << 4];
+extern uint64_t SIDE_HASH;
+extern uint64_t ENPASSANT_HASH[FILE_NUM];
 
-void update_hash(Position& position, Move move);
+HashKey hash(const Position& position);
 
-void init_zobrist_hash();
+void init();
 
+}  // namespace zobrist
 }  // namespace engine
 
 #endif  // CHESS_ENGINE_HASH_H_

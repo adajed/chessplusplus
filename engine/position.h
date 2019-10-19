@@ -15,49 +15,66 @@
 namespace engine
 {
 
-struct Position
+class Position
 {
-    Color current_side;
-    Piece board[SQUARE_NUM];
-    Square piece_position[PIECE_NUM][10];
-    int piece_count[PIECE_NUM];
+    public:
+        Position();
+        Position(std::string fen);
 
-    Bitboard by_piece_kind_bb[PIECE_KIND_NUM];
-    Bitboard by_color_bb[COLOR_NUM];
+        bool operator== (const Position& other) const;
 
-    Castling castling_rights;
-    Square enpassant;
+        std::string fen() const;
 
-    HashKey zobrist_hash;
+        MoveInfo do_move(Move move);
+        void undo_move(Move move, MoveInfo moveinfo);
+
+        bool is_in_check(Color side) const;
+        bool is_checkmate() const;
+
+        Color side_to_move() const { return _current_side; }
+
+        uint32_t half_moves_counter() const { return _half_move_counter; }
+        uint32_t moves_counter() const { return _move_counter; }
+
+        Piece piece_at(Square square) const { return _board[square]; }
+        int number_of_pieces(Piece piece) const { return _piece_count[piece]; }
+        Square piece_position(Piece piece, int pos) const { return _piece_position[piece][pos]; }
+
+        Castling castling_rights() const { return _castling_rights; }
+        Square enpassant_square() const { return _enpassant_square; }
+        GamePhase game_phase() const;
+        HashKey hash() const { return _zobrist_hash; }
+
+        Bitboard pieces() const;
+        Bitboard pieces(Color c) const;
+        Bitboard pieces(PieceKind p) const;
+        Bitboard pieces(Color c, PieceKind p) const;
+
+    private:
+
+        void add_piece(Piece piece, Square square);
+        void remove_piece(Square square);
+        void move_piece(Square from, Square to);
+
+        void change_current_side();
+
+        Color _current_side;
+
+        uint32_t _half_move_counter;
+        uint32_t _move_counter;
+
+        Piece _board[SQUARE_NUM];
+        Square _piece_position[PIECE_NUM][10];
+        int _piece_count[PIECE_NUM];
+
+        Bitboard _by_piece_kind_bb[PIECE_KIND_NUM];
+        Bitboard _by_color_bb[COLOR_NUM];
+
+        Castling _castling_rights;
+        Square _enpassant_square;
+
+        HashKey _zobrist_hash;
 };
-
-bool operator== (const Position& position1, const Position& position2);
-
-Bitboard pieces_bb(const Position& position);
-
-Bitboard pieces_bb(const Position& position, Color c);
-
-Bitboard pieces_bb(const Position& position, PieceKind p);
-
-Bitboard pieces_bb(const Position& position, Color c, PieceKind p);
-
-
-Position initial_position();
-
-Position from_fen(std::string fen);
-
-std::string to_fen(const Position& position);
-
-MoveInfo do_move(Position& position, Move move);
-
-void undo_move(Position& position, Move move, MoveInfo moveinfo);
-
-
-bool is_in_check(const Position& position);
-
-bool is_checkmate(const Position& position);
-
-GamePhase get_game_phase(const Position& position);
 
 std::ostream& operator<< (std::ostream& stream, const Position& position);
 

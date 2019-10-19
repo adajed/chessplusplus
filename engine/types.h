@@ -47,13 +47,13 @@ enum Piece : uint32_t
 };
 constexpr uint32_t PIECE_NUM = 13;
 
-enum Rank : uint32_t
+enum Rank : int32_t
 {
     RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8,
 };
 constexpr uint32_t RANK_NUM = 8;
 
-enum File : uint32_t
+enum File : int32_t
 {
     FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H,
 };
@@ -130,6 +130,10 @@ constexpr File file(Square sq)
 
 constexpr Square make_square(Rank rank, File file)
 {
+    if (!(RANK_1 <= rank && rank <= RANK_8))
+        std::cout << "Rank " << rank << std::endl;
+    assert(RANK_1 <= rank && rank <= RANK_8);
+    assert(FILE_A <= file && file <= FILE_H);
     return Square((rank << 3) + file);
 }
 
@@ -158,6 +162,12 @@ ENABLE_INCREMENT_OPERATIONS(Rank)
 ENABLE_INCREMENT_OPERATIONS(File)
 ENABLE_INCREMENT_OPERATIONS(PieceKind)
 ENABLE_INCREMENT_OPERATIONS(Piece)
+
+constexpr Castling operator& (Castling c1, Castling c2) { return Castling(uint32_t(c1) & uint32_t(c2)); }
+inline Castling& operator|= (Castling& c1, Castling c2) { return c1 = Castling(c1 | c2); }
+inline Castling& operator&= (Castling& c1, Castling c2) { return c1 = Castling(c1 & c2); }
+
+constexpr Castling operator! (Castling castling) { return Castling(~castling); }
 
 constexpr Bitboard square_bb(Square sq) { return 1ULL << sq; }
 

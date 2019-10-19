@@ -56,11 +56,11 @@ Move parse_move(std::string move_str)
 int main(int argc, char** argv)
 {
     init_move_bitboards();
-    init_zobrist_hash();
+    zobrist::init();
 
     std::string weights_path(argv[1]);
     std::string fen(argv[2]);
-    Position position = from_fen(fen);
+    Position position(fen);
 
     Weights weights = load(weights_path);
     PositionScorer scorer(weights);
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
             std::cout << "Illegal move" << std::endl;
             return 1;
         }
-        do_move(position, m);
+        position.do_move(m);
     }
 
     while (true)
@@ -90,7 +90,7 @@ int main(int argc, char** argv)
         print_move(std::cout, move);
         std::cout << std::endl;
 
-        do_move(position, move);
+        position.do_move(move);
 
         std::cout << position;
 
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
             move = parse_move(move_str);
         } while (!is_move_legal(position, move));
 
-        do_move(position, move);
+        position.do_move(move);
 
     }
     std::cout << position;
