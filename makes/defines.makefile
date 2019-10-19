@@ -12,13 +12,12 @@ LIB_STATIC_DEBUG   = $(OUTDIR)/libengine_static_debug.a
 
 
 #### compilation flags
-CC=g++
 
-CFLAGS_COMMON = -Wall -std=c++17 -I$(ROOTDIR)/engine
-LFLAGS_COMMON = -pthread
+CFLAGS_COMMON = -Wall -std=c++17 -flto -I$(ROOTDIR)/engine
+LFLAGS_COMMON = -pthread -flto
 
-CFLAGS_RELEASE = $(CFLAGS_COMMON) -Ofast -funroll-loops -march=native -DNDEBUG -DNUM_THREADS=$(NUM_THREADS)
-CFLAGS_DEBUG = $(CFLAGS_COMMON) -g -DDEBUG -DNUM_THREADS=$(NUM_THREADS)
+CFLAGS_RELEASE = $(CFLAGS_COMMON) -Ofast -DNDEBUG -DNUM_THREADS=$(NUM_THREADS)
+CFLAGS_DEBUG = $(CFLAGS_COMMON) -g -DNUM_THREADS=$(NUM_THREADS)
 
 OUTDIR_PROGRAMS=$(OUTDIR)/programs_objs
 OUTDIR_ENGINE=$(OUTDIR)/engine_objs

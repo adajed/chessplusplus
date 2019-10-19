@@ -30,38 +30,38 @@ debug: $(ENGINE_DEBUG) $(PERFT_DEBUG) $(PLAY_DEBUG)
 
 $(ENGINE_RELEASE): $(ENGINE_OBJ_RELEASE) $(LIB_STATIC_RELEASE)
 	@echo "Linking $@"
-	@$(CC) $^ $(LIB_STATIC_RELEASE) -o $@ $(LFLAGS_RELEASE)
+	@$(CXX) $^ $(LIB_STATIC_RELEASE) -o $@ $(LFLAGS_RELEASE)
 
 $(ENGINE_DEBUG): $(ENGINE_OBJ_DEBUG) $(LIB_STATIC_DEBUG)
 	@echo "Linking $@"
-	@$(CC) $^ $(LIB_STATIC_DEBUG) -o $@ $(LFLAGS_DEBUG)
+	@$(CXX) $^ $(LIB_STATIC_DEBUG) -o $@ $(LFLAGS_DEBUG)
 
 $(PERFT_RELEASE): $(PERFT_OBJ_RELEASE) $(LIB_STATIC_RELEASE)
 	@echo "Linking $@"
-	@$(CC) $^ $(LIB_STATIC_RELEASE) -o $@ $(LFLAGS_RELEASE)
+	@$(CXX) $^ $(LIB_STATIC_RELEASE) -o $@ $(LFLAGS_RELEASE)
 
 $(PERFT_DEBUG): $(PERFT_OBJ_DEBUG) $(LIB_STATIC_DEBUG)
 	@echo "Linking $@"
-	@$(CC) $^ $(LIB_STATIC_DEBUG) -o $@ $(LFLAGS_DEBUG)
+	@$(CXX) $^ $(LIB_STATIC_DEBUG) -o $@ $(LFLAGS_DEBUG)
 
 $(PLAY_RELEASE): $(PLAY_OBJ_RELEASE) $(LIB_STATIC_RELEASE)
 	@echo "Linking $@"
-	@$(CC) $^ $(LIB_STATIC_RELEASE) -o $@ $(LFLAGS_RELEASE)
+	@$(CXX) $^ $(LIB_STATIC_RELEASE) -o $@ $(LFLAGS_RELEASE)
 
 $(PLAY_DEBUG): $(PLAY_OBJ_DEBUG) $(LIB_STATIC_DEBUG)
 	@echo "Linking $@"
-	@$(CC) $^ $(LIB_STATIC_DEBUG) -o $@ $(LFLAGS_DEBUG)
+	@$(CXX) $^ $(LIB_STATIC_DEBUG) -o $@ $(LFLAGS_DEBUG)
 
 
 #### compling
 
 $(OUTDIR_PROGRAMS)/%.r.o: %.cpp $(CPP_HEADERS) | $(OUTDIR_PROGRAMS)
 	@echo "Compiling release $<"
-	@$(CC) -c -o $@ $(CFLAGS_RELEASE) $<
+	@$(CXX) -c -o $@ $(CFLAGS_RELEASE) $<
 
 $(OUTDIR_PROGRAMS)/%.d.o: %.cpp $(CPP_HEADERS) | $(OUTDIR_PROGRAMS)
 	@echo "Compiling debug $<"
-	@$(CC) -c -o $@ $(CFLAGS_DEBUG) $<
+	@$(CXX) -c -o $@ $(CFLAGS_DEBUG) $<
 
 $(OUTDIR_PROGRAMS):
 	@mkdir -p $@

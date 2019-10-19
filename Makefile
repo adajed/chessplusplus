@@ -35,7 +35,7 @@ tests_debug: engine_debug
 #### utils
 
 clean:
-	rm -rf $(OUTDIR)
+	$(RM) -r $(OUTDIR)
 
 ctags:
 	ctags -R --tag-relative=yes --exclude=.git $(ROOTDIR)
