@@ -1,9 +1,8 @@
 ROOTDIR=$(shell dirname $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
 OUTDIR=$(ROOTDIR)/build
 
+GTEST_INCLUDE_PATH=/usr/include
 GTEST_LIB_PATH=/usr/lib
-
-NUM_THREADS=8
 
 #### outputs
 
