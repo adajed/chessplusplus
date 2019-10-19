@@ -2,367 +2,364 @@
 #include "movegen.h"
 #include "zobrist_hash.h"
 
+#include <sstream>
+
 namespace engine
 {
 
-bool operator== (const Position& position1, const Position& position2)
+Square notationToSquare(std::string notation)
 {
-    if (position1.current_side != position2.current_side)
-        return false;
-    if (position1.castling_rights != position2.castling_rights)
-        return false;
-    if (position1.enpassant != position2.enpassant)
-        return false;
-    for (Square square = SQ_A1; square <= SQ_H8; ++square)
-        if (position1.board[square] != position2.board[square])
-            return false;
-    return true;
+    File file = File(notation[0] - 'a');
+    Rank rank = Rank(notation[1] - '1');
+    return make_square(rank, file);
 }
 
-std::ostream& operator<< (std::ostream& stream, const Position& position)
+Position::Position() : Position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 {
-    const std::string piece_to_char = " PNBRQKpnbrqk";
-
-    stream << to_fen(position) << std::endl;
-    stream << " +---+---+---+---+---+---+---+---+\n";
-    for (int rank = 7; rank >= 0; rank--)
-    {
-        for (int file = 0; file < 8; ++file)
-            stream << " | " << piece_to_char[(uint32_t)position.board[make_square(Rank(rank), File(file))]];
-        stream << " |\n +---+---+---+---+---+---+---+---+\n";
-    }
-
-    return stream;
 }
 
-Position initial_position()
+Position::Position(std::string fen)
 {
-    return from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-}
+    _current_side = WHITE;
+    std::fill_n(_board, SQUARE_NUM, NO_PIECE);
+    std::fill_n(_piece_count, PIECE_NUM, 0);
+    std::fill_n(_by_piece_kind_bb, PIECE_KIND_NUM, 0ULL);
+    std::fill_n(_by_color_bb, COLOR_NUM, 0ULL);
+    _castling_rights = NO_CASTLING;
+    _enpassant_square = NO_SQUARE;
 
-Position from_fen(std::string fen)
-{
-    Position position;
-    position.current_side = WHITE;
-    for (uint32_t i = 0; i < SQUARE_NUM; ++i)
-        position.board[i] = NO_PIECE;
-    for (uint32_t i = 0; i < PIECE_NUM; ++i)
-        position.piece_count[i] = 0;
-    for (uint32_t i = 0; i < PIECE_KIND_NUM; ++i)
-        position.by_piece_kind_bb[i] = 0ULL;
-    for (uint32_t i = 0; i < COLOR_NUM; ++i)
-        position.by_color_bb[i] = 0ULL;
-    position.castling_rights = NO_CASTLING;
-    position.enpassant = NO_SQUARE;
+    std::istringstream stream(fen);
+    std::string token;
 
     std::map<char, Piece> char_to_piece = {
         {'P', W_PAWN}, {'N', W_KNIGHT}, {'B', W_BISHOP}, {'R', W_ROOK}, {'Q', W_QUEEN}, {'K', W_KING},
         {'p', B_PAWN}, {'n', B_KNIGHT}, {'b', B_BISHOP}, {'r', B_ROOK}, {'q', B_QUEEN}, {'k', B_KING},
     };
 
-    int pos = 0;
-    int rank = RANK_8;
-    File file = FILE_A;
-    while (rank >= 0)
+    stream >> token;
+    Square square = SQ_A8;
+    for (char c : token)
     {
-        if (fen[pos] == '/')
-        {
-            pos++;
-            continue;
-        }
-
-        char c = fen[pos];
-        if ('0' <= c && c <= '9')
-            file += (c - '0');
+        if (c == '/')
+            square -= 16;
+        else if ('0' <= c && c <= '9')
+            square += (c - '0');
         else
         {
-            Square square = make_square(Rank(rank), file);
             Piece piece = char_to_piece[c];
-            position.board[square] = piece;
-            position.by_color_bb[get_color(piece)] |= square_bb(square);
-            position.by_piece_kind_bb[get_piece_kind(piece)] |= square_bb(square);
-            position.piece_position[piece][position.piece_count[piece]] = square;
-            position.piece_count[piece] += 1;
-            ++file;
-        }
-        pos++;
+            _board[square] = piece;
+            _by_color_bb[get_color(piece)] |= square_bb(square);
+            _by_piece_kind_bb[get_piece_kind(piece)] |= square_bb(square);
+            _piece_position[piece][_piece_count[piece]++] = square;
 
-        if (file > FILE_H)
-        {
-            rank -= 1;
-            file = FILE_A;
+            ++square;
         }
     }
-    pos++;
 
-    position.current_side = fen[pos++] == 'w' ? WHITE : BLACK;
-    pos++;
-    while (fen[pos] != ' ')
+    stream >> token;
+    _current_side = token == "w" ? WHITE : BLACK;
+
+    stream >> token;
+    for (char c : token)
     {
-        switch (fen[pos])
+        switch (c)
         {
-            case 'K': position.castling_rights = Castling(position.castling_rights | W_OO); break;
-            case 'Q': position.castling_rights = Castling(position.castling_rights | W_OOO); break;
-            case 'k': position.castling_rights = Castling(position.castling_rights | B_OO); break;
-            case 'q': position.castling_rights = Castling(position.castling_rights | B_OOO); break;
+            case 'K': _castling_rights |= W_OO;  break;
+            case 'Q': _castling_rights |= W_OOO; break;
+            case 'k': _castling_rights |= B_OO;  break;
+            case 'q': _castling_rights |= B_OOO; break;
         }
-        pos++;
-    }
-    pos++;
-
-    if (fen[pos] != '-')
-    {
-        File f = File(fen[pos++] - 'a');
-        Rank r = Rank(fen[pos++] - '1');
-        position.enpassant = make_square(r, f);
     }
 
-    position.zobrist_hash = hash_position(position);
+    stream >> token;
+    _enpassant_square = token == "-" ? NO_SQUARE : notationToSquare(token);
 
-    return position;
+    stream >> _half_move_counter;
+    stream >> _move_counter;
+
+    _zobrist_hash = zobrist::hash(*this);
 }
 
-std::string to_fen(const Position& position)
+bool Position::operator== (const Position& other) const
+{
+    if (_current_side != other._current_side)
+        return false;
+    if (_castling_rights != other._castling_rights)
+        return false;
+    if (_enpassant_square != other._enpassant_square)
+        return false;
+    for (Square square = SQ_A1; square <= SQ_H8; ++square)
+        if (_board[square] != other._board[square])
+            return false;
+    return true;
+}
+
+std::string Position::fen() const
 {
     const std::string piece_to_char = " PNBRQKpnbrqk";
-    std::string result = "";
+
+    std::ostringstream stream;
 
     int counter = 0;
-    for (int rank = 7; rank >= 0; rank--)
+    for (Rank rank = RANK_8; rank >= RANK_1; --rank)
     {
-        for (int file = 0; file < 8; file++)
+        for (File file = FILE_A; file <= FILE_H; ++file)
         {
-            Piece p = position.board[make_square(Rank(rank), File(file))];
-            if (p == NO_PIECE)
+            Piece piece = piece_at(make_square(rank, file));
+            if (piece == NO_PIECE)
                 counter++;
             else
             {
                 if (counter > 0)
                 {
-                    result += char('0' + counter);
+                    stream << static_cast<char>('0' + counter);
                     counter = 0;
                 }
-                result += piece_to_char[uint32_t(p)];
+                stream << piece_to_char[piece];
             }
         }
         if (counter > 0)
         {
-            result += char('0' + counter);
+            stream << static_cast<char>('0' + counter);
             counter = 0;
         }
         if (rank > 0)
-            result += "/";
+            stream << "/";
     }
-    result += " ";
-    result += (position.current_side == WHITE) ? "w" : "b";
-    result += " ";
-    if (position.castling_rights != NO_CASTLING)
+    stream << " " << (_current_side == WHITE ? "w" : "b") << " ";
+    if (_castling_rights != NO_CASTLING)
     {
-        if (position.castling_rights & W_OO) result += "K";
-        if (position.castling_rights & W_OOO) result += "Q";
-        if (position.castling_rights & B_OO) result += "k";
-        if (position.castling_rights & B_OOO) result += "q";
+        if (_castling_rights & W_OO)  stream << "K";
+        if (_castling_rights & W_OOO) stream << "Q";
+        if (_castling_rights & B_OO)  stream << "k";
+        if (_castling_rights & B_OOO) stream << "q";
     }
     else
-        result += "-";
-    result += " ";
-    if (position.enpassant != NO_SQUARE)
+        stream << "-";
+    stream << " ";
+    if (_enpassant_square != NO_SQUARE)
     {
-        result += char('a' + file(position.enpassant));
-        result += char('1' + rank(position.enpassant));
+        stream << char('a' + file(_enpassant_square));
+        stream << char('1' + rank(_enpassant_square));
     }
     else
-        result += "-";
+        stream << "-";
 
-    return result;
+    stream << " " << _half_move_counter << " " << _move_counter;
+
+    return stream.str();
 }
 
-Bitboard pieces_bb(const Position& position)
+Bitboard Position::pieces() const
 {
-    return position.by_color_bb[WHITE] | position.by_color_bb[BLACK];
+    return _by_color_bb[WHITE] | _by_color_bb[BLACK];
 }
 
-Bitboard pieces_bb(const Position& position, Color c)
+Bitboard Position::pieces(Color c) const
 {
-    return position.by_color_bb[c];
+    return _by_color_bb[c];
 }
 
-Bitboard pieces_bb(const Position& position, PieceKind p)
+Bitboard Position::pieces(PieceKind p) const
 {
-    return position.by_piece_kind_bb[p];
+    return _by_piece_kind_bb[p];
 }
 
-Bitboard pieces_bb(const Position& position, Color c, PieceKind p)
+Bitboard Position::pieces(Color c, PieceKind p) const
 {
-    return position.by_color_bb[c] & position.by_piece_kind_bb[p];
+    return _by_color_bb[c] & _by_piece_kind_bb[p];
 }
 
-void add_piece(Position& position, Piece piece, Square square)
+void Position::add_piece(Piece piece, Square square)
 {
-    assert(position.board[square] == NO_PIECE);
+    assert(_board[square] == NO_PIECE);
 
-    position.board[square] = piece;
-    position.by_color_bb[get_color(piece)] |= square_bb(square);
-    position.by_piece_kind_bb[get_piece_kind(piece)] |= square_bb(square);
-    position.piece_position[piece][position.piece_count[piece]] = square;
-    position.piece_count[piece] += 1;
+    _board[square] = piece;
+    _by_color_bb[get_color(piece)] |= square_bb(square);
+    _by_piece_kind_bb[get_piece_kind(piece)] |= square_bb(square);
+    _piece_position[piece][_piece_count[piece]] = square;
+    _piece_count[piece] += 1;
+
+    _zobrist_hash ^= zobrist::PIECE_HASH[piece][square];
 }
 
-void add_piece(Position& position, Color side, PieceKind piece_kind, Square square)
+void Position::remove_piece(Square square)
 {
-    add_piece(position, make_piece(side, piece_kind), square);
-}
+    assert(_board[square] != NO_PIECE);
 
-void remove_piece(Position& position, Square square)
-{
-    assert(position.board[square] != NO_PIECE);
+    Piece piece = _board[square];
+    _board[square] = NO_PIECE;
+    _by_color_bb[get_color(piece)] ^= square_bb(square);
+    _by_piece_kind_bb[get_piece_kind(piece)] ^= square_bb(square);
 
-    Piece piece = position.board[square];
-    position.board[square] = NO_PIECE;
-    position.by_color_bb[get_color(piece)] ^= square_bb(square);
-    position.by_piece_kind_bb[get_piece_kind(piece)] ^= square_bb(square);
-
-    for (int i = 0; i < position.piece_count[piece] - 1; ++i)
+    for (int i = 0; i < _piece_count[piece] - 1; ++i)
     {
-        if (position.piece_position[piece][i] == square)
+        if (_piece_position[piece][i] == square)
         {
-            int pos = position.piece_count[piece] - 1;
-            position.piece_position[piece][i] = position.piece_position[piece][pos];
+            int pos = _piece_count[piece] - 1;
+            _piece_position[piece][i] = _piece_position[piece][pos];
             break;
         }
     }
-    position.piece_count[piece] -= 1;
+    _piece_count[piece] -= 1;
+
+    _zobrist_hash ^= zobrist::PIECE_HASH[piece][square];
 }
 
-void move_piece(Position& position, Square from, Square to)
+void Position::move_piece(Square from, Square to)
 {
-    assert(position.board[from] != NO_PIECE);
-    assert(position.board[to] == NO_PIECE);
+    assert(_board[from] != NO_PIECE);
+    assert(_board[to] == NO_PIECE);
 
-    Piece piece = position.board[from];
-    position.board[from] = NO_PIECE;
-    position.board[to] = piece;
+    Piece piece = _board[from];
+    _board[from] = NO_PIECE;
+    _board[to] = piece;
 
     Bitboard change = square_bb(from) | square_bb(to);
-    position.by_color_bb[get_color(piece)] ^= change;
-    position.by_piece_kind_bb[get_piece_kind(piece)] ^= change;
+    _by_color_bb[get_color(piece)] ^= change;
+    _by_piece_kind_bb[get_piece_kind(piece)] ^= change;
 
-    for (int i = 0; i < position.piece_count[piece]; ++i)
+    for (int i = 0; i < _piece_count[piece]; ++i)
     {
-        if (position.piece_position[piece][i] == from)
+        if (_piece_position[piece][i] == from)
         {
-            position.piece_position[piece][i] = to;
+            _piece_position[piece][i] = to;
             break;
         }
     }
+
+    _zobrist_hash ^= zobrist::PIECE_HASH[piece][from];
+    _zobrist_hash ^= zobrist::PIECE_HASH[piece][from];
 }
 
-
-MoveInfo do_move(Position& pos, Move move)
+void Position::change_current_side()
 {
-    update_hash(pos, move);
+    _zobrist_hash ^= zobrist::SIDE_HASH;
+    _current_side = !_current_side;
+}
 
+MoveInfo Position::do_move(Move move)
+{
     PieceKind captured = NO_PIECE_KIND;
-    Castling prev_castling = pos.castling_rights;
-    Square prev_enpassant_sq = pos.enpassant;
+    Castling prev_castling = _castling_rights;
+    Square prev_enpassant_sq = _enpassant_square;
     bool enpassant = false;
 
-    Color side = pos.current_side;
-    pos.current_side = !pos.current_side;
+    Color side = _current_side;
+    change_current_side();
+
+    if (_enpassant_square != NO_SQUARE)
+        _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
 
     if (castling(move) != NO_CASTLING)
     {
         Rank rank = side == WHITE ? RANK_1 : RANK_8;
         if (castling(move) == KING_CASTLING)
         {
-            move_piece(pos, make_square(rank, FILE_E), make_square(rank, FILE_G));
-            move_piece(pos, make_square(rank, FILE_H), make_square(rank, FILE_F));
+            move_piece(make_square(rank, FILE_E), make_square(rank, FILE_G));
+            move_piece(make_square(rank, FILE_H), make_square(rank, FILE_F));
         }
         else  // castling(move) == QUEEN_CASTLING
         {
-            move_piece(pos, make_square(rank, FILE_E), make_square(rank, FILE_C));
-            move_piece(pos, make_square(rank, FILE_A), make_square(rank, FILE_D));
+            move_piece(make_square(rank, FILE_E), make_square(rank, FILE_C));
+            move_piece(make_square(rank, FILE_A), make_square(rank, FILE_D));
         }
 
-        pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side]);
-        pos.enpassant = NO_SQUARE;
+        _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
+        _castling_rights &= !CASTLING_RIGHTS[side];
+        _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
+        _enpassant_square = NO_SQUARE;
 
         return create_moveinfo(captured, prev_castling, prev_enpassant_sq, enpassant);
     }
 
-    Piece moved_piece = pos.board[from(move)];
-    Piece captured_piece = pos.board[to(move)];
+    Piece moved_piece = _board[from(move)];
+    Piece captured_piece = _board[to(move)];
     captured = make_piece_kind(captured_piece);
 
     assert(moved_piece != NO_PIECE);
 
     // enpassant
-    if (get_piece_kind(moved_piece) == PAWN && to(move) == pos.enpassant)
+    if (get_piece_kind(moved_piece) == PAWN && to(move) == _enpassant_square)
     {
-        move_piece(pos, from(move), to(move));
+        move_piece(from(move), to(move));
         Square captured_square = Square(to(move) + (side == WHITE ? -8 : 8));
-        remove_piece(pos, captured_square);
+        remove_piece(captured_square);
         enpassant = true;
     }
     else
     {
         if (captured_piece != NO_PIECE)
-            remove_piece(pos, to(move));
+            remove_piece(to(move));
 
         if (promotion(move) != NO_PIECE_KIND)
         {
-            remove_piece(pos, from(move));
-            add_piece(pos, side, promotion(move), to(move));
+            remove_piece(from(move));
+            add_piece(make_piece(side, promotion(move)), to(move));
         }
         else
-            move_piece(pos, from(move), to(move));
+            move_piece(from(move), to(move));
 
+        _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
         if (get_piece_kind(moved_piece) == KING)
-            pos.castling_rights = Castling(pos.castling_rights & ~CASTLING_RIGHTS[side]);
+            _castling_rights &= !CASTLING_RIGHTS[side];
         if (get_piece_kind(moved_piece) == ROOK && from(move) == KING_SIDE_ROOK_SQUARE[side])
-            pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[side] & KING_CASTLING));
+            _castling_rights &= !(CASTLING_RIGHTS[side] & KING_CASTLING);
         if (get_piece_kind(moved_piece) == ROOK && from(move) == QUEEN_SIDE_ROOK_SQUARE[side])
-            pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[side] & QUEEN_CASTLING));
+            _castling_rights &= !(CASTLING_RIGHTS[side] & QUEEN_CASTLING);
         if (make_piece_kind(captured_piece) == ROOK && to(move) == KING_SIDE_ROOK_SQUARE[!side])
-            pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[!side] & KING_CASTLING));
+            _castling_rights &= !(CASTLING_RIGHTS[!side] & KING_CASTLING);
         if (make_piece_kind(captured_piece) == ROOK && to(move) == QUEEN_SIDE_ROOK_SQUARE[!side])
-            pos.castling_rights = Castling(pos.castling_rights & ~(CASTLING_RIGHTS[!side] & QUEEN_CASTLING));
+            _castling_rights &= !(CASTLING_RIGHTS[!side] & QUEEN_CASTLING);
+        _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
     }
 
 
     Rank enpassant_rank = (side == WHITE) ? RANK_4 : RANK_5;
     Rank rank2 = (side == WHITE) ? RANK_2 : RANK_7;
     if (get_piece_kind(moved_piece) == PAWN && rank(from(move)) == rank2 && rank(to(move)) == enpassant_rank)
-        pos.enpassant = Square(to(move) + (side == WHITE ? -8 : 8));
+    {
+        _enpassant_square = Square(to(move) + (side == WHITE ? -8 : 8));
+        _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
+    }
     else
-        pos.enpassant = NO_SQUARE;
+        _enpassant_square = NO_SQUARE;
 
     return create_moveinfo(captured, prev_castling, prev_enpassant_sq, enpassant);
 }
 
-void undo_move(Position& pos, Move move, MoveInfo moveinfo)
+void Position::undo_move(Move move, MoveInfo moveinfo)
 {
-    pos.current_side = !pos.current_side;
-    Color side = pos.current_side;
+    change_current_side();
+    Color side = _current_side;
 
-    pos.castling_rights = last_castling(moveinfo);
+    if (_enpassant_square != NO_SQUARE)
+        _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
+
+    _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
+    _castling_rights = last_castling(moveinfo);
+    _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
+
     if (last_enpassant(moveinfo))
-        pos.enpassant = last_enpassant_square(moveinfo);
+    {
+        _enpassant_square = last_enpassant_square(moveinfo);
+        _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
+    }
     else
-        pos.enpassant = NO_SQUARE;
+        _enpassant_square = NO_SQUARE;
 
     if (castling(move) != NO_CASTLING)
     {
         Rank rank = side == WHITE ? RANK_1 : RANK_8;
         if (castling(move) == KING_CASTLING)
         {
-            move_piece(pos, make_square(rank, FILE_G), make_square(rank, FILE_E));
-            move_piece(pos, make_square(rank, FILE_F), make_square(rank, FILE_H));
+            move_piece(make_square(rank, FILE_G), make_square(rank, FILE_E));
+            move_piece(make_square(rank, FILE_F), make_square(rank, FILE_H));
         }
         else  // castling(move) == QUEEN_CASTLING
         {
-            move_piece(pos, make_square(rank, FILE_C), make_square(rank, FILE_E));
-            move_piece(pos, make_square(rank, FILE_D), make_square(rank, FILE_A));
+            move_piece(make_square(rank, FILE_C), make_square(rank, FILE_E));
+            move_piece(make_square(rank, FILE_D), make_square(rank, FILE_A));
         }
 
         return;
@@ -373,39 +370,36 @@ void undo_move(Position& pos, Move move, MoveInfo moveinfo)
     if (enpassant(moveinfo))
     {
         Square captured_square = Square(to(move) + (side == WHITE ? -8 : 8));
-        add_piece(pos, !side, PAWN, captured_square);
+        add_piece(make_piece(!side, PAWN), captured_square);
     }
 
     if (promotion(move) != NO_PIECE_KIND)
     {
-        add_piece(pos, side, PAWN, from(move));
-        remove_piece(pos, to(move));
+        add_piece(make_piece(side, PAWN), from(move));
+        remove_piece(to(move));
     }
     else
-        move_piece(pos, to(move), from(move));
+        move_piece(to(move), from(move));
 
     if (captured != NO_PIECE)
-        add_piece(pos, captured, to(move));
-
-    update_hash(pos, move);
+        add_piece(captured, to(move));
 }
 
-bool is_in_check(const Position& position)
+bool Position::is_in_check(Color side) const
 {
-    Color side = position.current_side;
-    Bitboard attacked = attacked_squares(position);
-    return attacked & pieces_bb(position, side, KING);
+    Bitboard attacked = attacked_squares(*this, side);
+    return attacked & pieces(side, KING);
 }
 
-bool is_checkmate(const Position& position)
+bool Position::is_checkmate() const
 {
     Move* begin = MOVE_LIST[0];
-    Move* end = generate_moves(position, begin);
+    Move* end = generate_moves(*this, _current_side, begin);
 
-    return (begin == end) && is_in_check(position);
+    return (begin == end) && is_in_check(_current_side);
 }
 
-GamePhase get_game_phase(const Position& position)
+GamePhase Position::game_phase() const
 {
     uint32_t value[] = {0, 0};
 
@@ -413,9 +407,35 @@ GamePhase get_game_phase(const Position& position)
 
     for (Color side : {WHITE, BLACK})
         for (PieceKind p = KNIGHT; p < KING; ++p)
-            value[side] += piece_values[p] * position.piece_count[p];
+            value[side] += piece_values[p] * _piece_count[p];
 
     return (value[WHITE] < 18 && value[BLACK] < 18) ? END_GAME : MIDDLE_GAME;
+}
+
+std::ostream& operator<< (std::ostream& stream, const Position& position)
+{
+    const std::string piece_to_char = ".PNBRQKpnbrqk";
+
+    for (Rank rank = RANK_8; rank >= RANK_1; --rank)
+    {
+        stream << (rank + 1) << "  ";
+        for (File file = FILE_A; file <= FILE_H; ++file)
+        {
+            Piece piece = position.piece_at(make_square(rank, file));
+            stream << piece_to_char[piece] << " ";
+        }
+        stream << std::endl;
+    }
+    stream << std::endl;
+    stream << "   A B C D E F G H" << std::endl;
+    stream << std::endl;
+    stream << "Fen: \"" << position.fen() << "\"" << std::endl;
+    if (position.side_to_move() == WHITE)
+        stream << "White to move" << std::endl;
+    else
+        stream << "Black to move" << std::endl;
+
+    return stream;
 }
 
 

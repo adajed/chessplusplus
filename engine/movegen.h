@@ -19,11 +19,11 @@ constexpr int MAX_PINS = 16;
 extern Move MOVE_LIST[MAX_DEPTH][MAX_MOVES];
 extern Move QUIESCENCE_MOVE_LIST[MAX_DEPTH][MAX_MOVES];
 
-Move* generate_moves(const Position& position, Move* list);
+Move* generate_moves(const Position& position, Color side, Move* list);
 
-Move* generate_quiescence_moves(const Position& position, Move* list);
+Move* generate_quiescence_moves(const Position& position, Color side, Move* list);
 
-Bitboard attacked_squares(const Position& position);
+Bitboard attacked_squares(const Position& position, Color side);
 
 uint64_t perft(Position& position, int depth);
 

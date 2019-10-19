@@ -12,7 +12,7 @@ int main(int argc, char** argv)
 
     std::string weights_path(argv[1]);
     std::string fen(argv[2]);
-    Position position = from_fen(fen);
+    Position position(fen);
 
     Weights weights = load(weights_path);
     PositionScorer scorer(weights);
@@ -20,7 +20,7 @@ int main(int argc, char** argv)
     search.set_thinking_time(120ULL * 1000000ULL);
 
     int move_number = 0;
-    while (!is_checkmate(position) && move_number < 400)
+    while (!position.is_checkmate() && move_number < 400)
     {
         move_number++;
         std::cout << "move number " << move_number << std::endl;
@@ -32,7 +32,7 @@ int main(int argc, char** argv)
         print_move(std::cout, move);
         std::cout << std::endl;
 
-        do_move(position, move);
+        position.do_move(move);
     }
     std::cout << position;
 

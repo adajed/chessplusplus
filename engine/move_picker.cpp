@@ -42,8 +42,8 @@ Move MovePicker::get_next()
 
 uint32_t MovePicker::score_move(const Position& position, Move move)
 {
-    PieceKind moved_piece = make_piece_kind(position.board[from(move)]);
-    PieceKind captured_piece = make_piece_kind(position.board[to(move)]);
+    PieceKind moved_piece = make_piece_kind(position.piece_at(from(move)));
+    PieceKind captured_piece = make_piece_kind(position.piece_at(to(move)));
     PieceKind promotion_piece = promotion(move);
 
     const uint32_t capture_bonus[PIECE_KIND_NUM][PIECE_KIND_NUM] = {
