@@ -9,8 +9,8 @@ CPP_HEADERS=$(wildcard *.h)
 OBJS_RELEASE=$(patsubst %.cpp,$(OUTDIR_TESTS)/%.r.o,$(CPP_SOURCES))
 OBJS_DEBUG=$(patsubst %.cpp,$(OUTDIR_TESTS)/%.d.o,$(CPP_SOURCES))
 
-CFLAGS_RELEASE += -I$(ROOTDIR)/engine
-CFLAGS_DEBUG += -I$(ROOTDIR)/engine
+CFLAGS_RELEASE += -I$(ROOTDIR)/engine -I$(GTEST_INCLUDE_PATH)
+CFLAGS_DEBUG += -I$(ROOTDIR)/engine -I$(GTEST_INCLUDE_PATH)
 
 LFLAGS_COMMON += -L$(GTEST_LIB_PATH) -lgtest -pthread
 
