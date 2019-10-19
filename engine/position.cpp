@@ -5,6 +5,20 @@
 namespace engine
 {
 
+bool operator== (const Position& position1, const Position& position2)
+{
+    if (position1.current_side != position2.current_side)
+        return false;
+    if (position1.castling_rights != position2.castling_rights)
+        return false;
+    if (position1.enpassant != position2.enpassant)
+        return false;
+    for (Square square = SQ_A1; square <= SQ_H8; ++square)
+        if (position1.board[square] != position2.board[square])
+            return false;
+    return true;
+}
+
 std::ostream& operator<< (std::ostream& stream, const Position& position)
 {
     const std::string piece_to_char = " PNBRQKpnbrqk";

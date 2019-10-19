@@ -27,8 +27,8 @@ uint64_t random_uint64()
 
 void init_zobrist_hash()
 {
-    for (int piece = 0; piece < PIECE_NUM; ++piece)
-        for (int square = 0; square < SQUARE_NUM; ++square)
+    for (Piece piece = Piece(0); piece < PIECE_NUM; ++piece)
+        for (Square square = SQ_A1; square <= SQ_H8; ++square)
             PIECE_HASH[piece][square] = random_uint64();
 
     for (int i = 0; i < 1 << 4; ++i)
@@ -36,8 +36,8 @@ void init_zobrist_hash()
 
     SIDE_HASH = random_uint64();
 
-    for (int i = 0; i < FILE_NUM; ++i)
-        ENPASSANT_HASH[i] = random_uint64();
+    for (File file = FILE_A; file <= FILE_H; ++file)
+        ENPASSANT_HASH[file] = random_uint64();
 }
 
 HashKey hash_position(const Position& position)
@@ -47,7 +47,7 @@ HashKey hash_position(const Position& position)
     if (position.current_side == BLACK)
         hash ^= SIDE_HASH;
 
-    for (int piece = W_PAWN; piece < PIECE_NUM; ++piece)
+    for (Piece piece = W_PAWN; piece < PIECE_NUM; ++piece)
     {
         for (int i = 0; i < position.piece_count[piece]; ++i)
         {

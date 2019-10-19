@@ -2,6 +2,7 @@
 #define CHESS_ENGINE_TRANSPOSITION_TABLE_H_
 
 #include "types.h"
+#include "position.h"
 
 namespace engine
 {
@@ -10,8 +11,9 @@ namespace transposition
 
 struct Entry
 {
-    int32_t depth;
+    Position position;
     Move best_move;
+    int32_t depth;
     int64_t value;
 };
 

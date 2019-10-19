@@ -25,5 +25,10 @@ uint32_t pop_lsb(Bitboard* bb)
     return bit;
 }
 
+bool popcount_more_than_one(Bitboard bb)
+{
+    return bb && (bb & (bb - 1));
+}
+
 
 } // namespace engine

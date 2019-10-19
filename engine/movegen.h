@@ -27,6 +27,8 @@ Bitboard attacked_squares(const Position& position);
 
 uint64_t perft(Position& position, int depth);
 
+bool is_move_legal(const Position& position, Move move);
+
 }
 
 #endif  // CHESS_ENGINE_MOVEGEN_H_

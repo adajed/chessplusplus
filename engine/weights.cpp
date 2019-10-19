@@ -6,58 +6,42 @@
 namespace engine
 {
 
-Weights::Weights(std::string path)
+Weights load(const std::string& path)
 {
+    Weights weights;
+
     std::ifstream file(path);
 
-    if (file.is_open())
-    {
-        for (GamePhase phase : {MIDDLE_GAME, END_GAME})
-        {
-            for (PieceKind piece = PAWN; piece != KING; ++piece)
-                file >> piece_values[phase][piece];
-
-
-            for (PieceKind piece = PAWN; piece <= KING; ++piece)
-                for (Square sq = SQ_A1; sq != NO_SQUARE; ++sq)
-                    file >> piece_position_values[phase][piece][sq];
-        }
-
-        file >> mobility_bonus;
-        file >> attacking_bonus;
-
-        file.close();
-    }
-    else
-    {
+    if (!file.is_open())
         throw std::runtime_error(
                 "Could not open file " + path);
+
+    for (GamePhase phase : {MIDDLE_GAME, END_GAME})
+    {
+        for (PieceKind piece = PAWN; piece != KING; ++piece)
+        {
+            file >> weights.piece_values[phase][piece];
+            for (Square square = SQ_A1; square <= SQ_H8; ++square)
+                file >> weights.piece_positional_values[phase][piece][square];
+        }
+
+        for (Square square = SQ_A1; square <= SQ_H8; ++square)
+            file >> weights.piece_positional_values[phase][KING][square];
+
+        for (PieceKind piece = PAWN; piece <= KING; ++piece)
+            file >> weights.mobility_bonus[phase][piece];
+
+        file >> weights.rook_semiopen_file_bonus[phase];
+        file >> weights.rook_open_file_bonus[phase];
+        file >> weights.bishop_pair_bonus[phase];
+        file >> weights.passed_pawn_bonus[phase];
+        file >> weights.doubled_pawn_penalty[phase];
+        file >> weights.isolated_pawn_penalty[phase];
     }
-}
 
-int32_t Weights::get_piece_value(GamePhase phase, PieceKind piecekind) const
-{
-    assert(piecekind != NO_PIECE_KIND && piecekind != KING);
-    return piece_values[phase][piecekind];
-}
+    file.close();
 
-int32_t Weights::get_piece_position_value(
-        GamePhase phase, PieceKind piecekind, Square square) const
-{
-    assert(piecekind != NO_PIECE_KIND);
-    assert(square != NO_SQUARE);
-    return piece_position_values[phase][piecekind][square];
+    return weights;
 }
-
-int32_t Weights::get_mobility_bonus() const
-{
-    return mobility_bonus;
-}
-
-int32_t Weights::get_attacking_bonus() const
-{
-    return attacking_bonus;
-}
-
 
 }
