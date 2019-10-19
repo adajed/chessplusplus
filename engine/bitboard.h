@@ -10,7 +10,7 @@ namespace engine
 
 constexpr Bitboard all_squares_bb = ~Bitboard(0);
 constexpr Bitboard white_squares_bb = 0x55aa55aa55aa55aaULL;
-constexpr Bitboard dark_squares_bb = ~white_squares_bb;
+constexpr Bitboard black_squares_bb = ~white_squares_bb;
 
 constexpr Bitboard rank1_bb = 0x00000000000000ffULL;
 constexpr Bitboard rank2_bb = rank1_bb << (8 * 1);
@@ -38,6 +38,28 @@ const Bitboard FILES_BB[FILE_NUM] = {
     fileA_bb, fileB_bb, fileC_bb, fileD_bb, fileE_bb, fileF_bb, fileG_bb, fileH_bb
 };
 
+const Bitboard NEIGHBOUR_FILES_BB[FILE_NUM] = {
+    fileB_bb,
+    fileA_bb | fileC_bb,
+    fileB_bb | fileD_bb,
+    fileC_bb | fileE_bb,
+    fileD_bb | fileF_bb,
+    fileE_bb | fileG_bb,
+    fileF_bb | fileH_bb,
+    fileG_bb
+};
+
+inline Bitboard forward_ranks_bb(Color side, Square square)
+{
+    return side == WHITE ? ~rank1_bb << (rank(square) - RANK_1)
+                         : ~rank8_bb >> (RANK_8 - rank(square));
+}
+
+inline Bitboard passed_pawn_bb(Color side, Square square)
+{
+    return forward_ranks_bb(side, square) & (NEIGHBOUR_FILES_BB[file(square)] | FILES_BB[file(square)]);
+}
+
 
 enum Direction : int32_t
 {
@@ -54,14 +76,16 @@ enum Direction : int32_t
 
 template <Direction dir> Bitboard shift(Bitboard bb)
 {
-    return dir == NORTH     ? bb << 8 :
-           dir == EAST      ? (bb & ~fileH_bb) << 1 :
-           dir == SOUTH     ? bb >> 8 :
-           dir == WEST      ? (bb & ~fileA_bb) >> 1 :
-           dir == NORTHEAST ? (bb & ~fileH_bb) << 9 :
-           dir == NORTHWEST ? (bb & ~fileA_bb) << 7 :
-           dir == SOUTHEAST ? (bb & ~fileH_bb) >> 7 :
-           dir == SOUTHWEST ? (bb & ~fileA_bb) >> 9 :
+    return dir == NORTH         ? bb << 8 :
+           dir == EAST          ? (bb & ~fileH_bb) << 1 :
+           dir == SOUTH         ? bb >> 8 :
+           dir == WEST          ? (bb & ~fileA_bb) >> 1 :
+           dir == NORTHEAST     ? (bb & ~fileH_bb) << 9 :
+           dir == NORTHWEST     ? (bb & ~fileA_bb) << 7 :
+           dir == SOUTHEAST     ? (bb & ~fileH_bb) >> 7 :
+           dir == SOUTHWEST     ? (bb & ~fileA_bb) >> 9 :
+           dir == NORTH + NORTH ? bb << 16 :
+           dir == SOUTH + SOUTH ? bb >> 16 :
            0ULL;
 }
 

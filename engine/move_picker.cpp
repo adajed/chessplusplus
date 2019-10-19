@@ -15,13 +15,14 @@ MovePicker::MovePicker(const Position& position, Move* begin, Move* end)
 
 bool MovePicker::has_next()
 {
-    return pos < (end - begin);
+    size_t n = end - begin;
+    return pos < n;
 }
 
 Move MovePicker::get_next()
 {
     size_t n = end - begin;
-    uint32_t best_score = 0;
+    uint32_t best_score = scores[pos];
     size_t best_index = pos;
     for (size_t i = pos + 1; i < n; ++i)
     {

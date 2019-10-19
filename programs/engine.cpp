@@ -14,7 +14,7 @@ int main(int argc, char** argv)
     std::string fen(argv[2]);
     Position position = from_fen(fen);
 
-    Weights weights(weights_path);
+    Weights weights = load(weights_path);
     PositionScorer scorer(weights);
     Search search(scorer);
     search.set_thinking_time(120ULL * 1000000ULL);
@@ -26,7 +26,7 @@ int main(int argc, char** argv)
         std::cout << "move number " << move_number << std::endl;
         std::cout << position;
 
-        Move move = search.select_move(position, 4);
+        Move move = search.select_move(position, 6);
 
         std::cout << "move = ";
         print_move(std::cout, move);

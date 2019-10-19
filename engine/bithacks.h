@@ -14,6 +14,8 @@ int popcount(Bitboard bb);
 
 uint32_t pop_lsb(Bitboard* bb);
 
+bool popcount_more_than_one(Bitboard bb);
+
 }
 
 #endif  // CHESS_ENGINE_BITHACKS_H_

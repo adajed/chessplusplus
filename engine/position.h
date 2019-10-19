@@ -19,8 +19,8 @@ struct Position
 {
     Color current_side;
     Piece board[SQUARE_NUM];
-    Square piece_position[PIECE_NUM][16];
-    int piece_count[PIECE_NUM + 1];
+    Square piece_position[PIECE_NUM][10];
+    int piece_count[PIECE_NUM];
 
     Bitboard by_piece_kind_bb[PIECE_KIND_NUM];
     Bitboard by_color_bb[COLOR_NUM];
@@ -30,6 +30,8 @@ struct Position
 
     HashKey zobrist_hash;
 };
+
+bool operator== (const Position& position1, const Position& position2);
 
 Bitboard pieces_bb(const Position& position);
 

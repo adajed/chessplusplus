@@ -7,6 +7,32 @@
 
 using namespace engine;
 
+uint64_t perftBatched(Position& position, int depth)
+{
+    Move* begin = MOVE_LIST[depth];
+    Move* end = generate_moves(position, begin);
+
+    if (depth == 1)
+        return end - begin;
+
+    uint64_t sum = 0;
+    for (Move* it = begin; it != end; ++it)
+    {
+        Move move = *it;
+        MoveInfo moveinfo = do_move(position, move);
+
+        uint64_t nodes = perft(position, depth - 1);
+
+        undo_move(position, move, moveinfo);
+
+        sum += nodes;
+        print_move(std::cout, move);
+        std::cout << ": " << nodes << std::endl;
+    }
+
+    return sum;
+}
+
 int main(int argc, char** argv)
 {
     if (argc != 3)
@@ -21,17 +47,17 @@ int main(int argc, char** argv)
     init_move_bitboards();
 
     Position position = from_fen(fen);
-    std::cout << position;
+    std::cout << position << std::endl << std::endl;
 
     auto start = std::chrono::steady_clock::now();
-    uint64_t score = perft(position, depth);
+    uint64_t score = perftBatched(position, depth);
     auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
 
-    uint64_t time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
 
-    uint64_t speed = (unsigned long long)score * 1000000ULL / time;
-
-    std::cout << "[depth " << depth << "] score=" << score << ", time=" << double(time) * 1e-6  << "s, speed = " << speed << "nps" << std::endl;
+    std::cout << "Total time (ms)  : " << static_cast<int>(elapsed.count() * 1000) << std::endl;
+    std::cout << "Nodes searched   : " << score << std::endl;
+    std::cout << "Nodes / second   : " << static_cast<int>(score / elapsed.count()) << std::endl;
 
     return 0;
 }
