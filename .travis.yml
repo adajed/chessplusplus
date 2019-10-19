@@ -1,0 +1,16 @@
+language: cpp
+compiler:
+    - gcc
+    - clang
+
+before_install:
+    - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+    - sudo apt-get update -qq
+
+install:
+    - sudo apt-get install valgrind
+
+script:
+    - make
+    - ./build/tests
+    - valgrind --leak-check=full -error-exitcode=1 ./build/tests
