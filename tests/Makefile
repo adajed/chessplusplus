@@ -22,22 +22,22 @@ debug: $(PROGRAM_DEBUG)
 
 $(PROGRAM_RELEASE): $(OBJS_RELEASE)
 	@echo "Linking $@"
-	@$(CC) $^ $(OBJS_ENGINE_RELEASE) -o $@ $(LIB_STATIC_RELEASE) $(LFLAGS_COMMON)
+	@$(CXX) $^ $(OBJS_ENGINE_RELEASE) -o $@ $(LIB_STATIC_RELEASE) $(LFLAGS_COMMON)
 
 $(PROGRAM_DEBUG): $(OBJS_DEBUG)
 	@echo "Linking $@"
-	@$(CC) $^ $(OBJS_ENGINE_DEBUG) -o $@ $(LIB_STATIC_DEBUG) $(LFLAGS_COMMON)
+	@$(CXX) $^ $(OBJS_ENGINE_DEBUG) -o $@ $(LIB_STATIC_DEBUG) $(LFLAGS_COMMON)
 
 
 #### compling
 
 $(OUTDIR_TESTS)/%.r.o: %.cpp $(CPP_HEADERS) | $(OUTDIR_TESTS)
 	@echo "Compiling release $<"
-	@$(CC) -c -o $@ $(CFLAGS_RELEASE) $<
+	@$(CXX) -c -o $@ $(CFLAGS_RELEASE) $<
 
 $(OUTDIR_TESTS)/%.d.o: %.cpp $(CPP_HEADERS) | $(OUTDIR_TESTS)
 	@echo "Compiling debug $<"
-	@$(CC) -c -o $@ $(CFLAGS_DEBUG) $<
+	@$(CXX) -c -o $@ $(CFLAGS_DEBUG) $<
 
 $(OUTDIR_TESTS):
 	mkdir -p $@

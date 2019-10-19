@@ -14,22 +14,22 @@ debug: $(LIB_STATIC_DEBUG)
 
 $(LIB_STATIC_RELEASE): $(OBJS_RELEASE)
 	@echo "Linking $@"
-	@ar rs $@ $^
+	@$(AR) rs $@ $^
 
 $(LIB_STATIC_DEBUG): $(OBJS_DEBUG)
 	@echo "Linking $@"
-	@ar rs $@ $^
+	@$(AR) rs $@ $^
 
 
 #### compling
 
 $(OUTDIR_ENGINE)/%.r.o: %.cpp $(CPP_HEADERS) | $(OUTDIR_ENGINE)
 	@echo "Compiling release $<"
-	@$(CC) -c -o $@ $(CFLAGS_RELEASE) $<
+	@$(CXX) -c -o $@ $(CFLAGS_RELEASE) $<
 
 $(OUTDIR_ENGINE)/%.d.o: %.cpp $(CPP_HEADERS) | $(OUTDIR_ENGINE)
 	@echo "Compiling debug $<"
-	@$(CC) -c -o $@ $(CFLAGS_DEBUG) $<
+	@$(CXX) -c -o $@ $(CFLAGS_DEBUG) $<
 
 $(OUTDIR_ENGINE):
 	@mkdir -p $@
