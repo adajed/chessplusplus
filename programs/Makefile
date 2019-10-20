@@ -65,3 +65,9 @@ $(OUTDIR_PROGRAMS)/%.d.o: %.cpp $(CPP_HEADERS) | $(OUTDIR_PROGRAMS)
 
 $(OUTDIR_PROGRAMS):
 	@mkdir -p $@
+
+
+#### utils
+
+tidy:
+	clang-tidy-8 $(CPP_SOURCES) -header-filter=.*

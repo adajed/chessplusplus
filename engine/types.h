@@ -116,7 +116,7 @@ bool enpassant(MoveInfo moveinfo);
 
 const Castling CASTLING_RIGHTS[COLOR_NUM]      = {W_CASTLING, B_CASTLING};
 const Square KING_SIDE_ROOK_SQUARE[COLOR_NUM]  = {SQ_H1, SQ_H8};
-const Square QUEEN_SIDE_ROOK_SQUARE[COLOR_NUM] = {SQ_A1, SQ_A8};;
+const Square QUEEN_SIDE_ROOK_SQUARE[COLOR_NUM] = {SQ_A1, SQ_A8};
 
 constexpr Rank rank(Square sq)
 {
@@ -130,8 +130,6 @@ constexpr File file(Square sq)
 
 constexpr Square make_square(Rank rank, File file)
 {
-    if (!(RANK_1 <= rank && rank <= RANK_8))
-        std::cout << "Rank " << rank << std::endl;
     assert(RANK_1 <= rank && rank <= RANK_8);
     assert(FILE_A <= file && file <= FILE_H);
     return Square((rank << 3) + file);
