@@ -14,7 +14,7 @@ before_install:
     - sudo make
     - sudo cp -a include/gtest /usr/include
     - sudo cp -a libgtest_main.so libgtest.so /usr/lib/
-    - pip install compiledb
+    - pip install compiledb --user
     - cd "${TRAVIS_BUILD_DIR}"
 
 before_script:
