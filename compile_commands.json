@@ -1,0 +1,298 @@
+[
+ {
+  "directory": "/home/adam/Projects/chess-engine/engine",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/engine_objs/bithacks.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "bithacks.cpp"
+  ],
+  "file": "bithacks.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/engine",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/engine_objs/search.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "search.cpp"
+  ],
+  "file": "search.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/engine",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/engine_objs/types.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "types.cpp"
+  ],
+  "file": "types.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/engine",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/engine_objs/move_picker.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "move_picker.cpp"
+  ],
+  "file": "move_picker.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/engine",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/engine_objs/score.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "score.cpp"
+  ],
+  "file": "score.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/engine",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/engine_objs/zobrist_hash.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "zobrist_hash.cpp"
+  ],
+  "file": "zobrist_hash.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/engine",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/engine_objs/position.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "position.cpp"
+  ],
+  "file": "position.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/engine",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/engine_objs/weights.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "weights.cpp"
+  ],
+  "file": "weights.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/engine",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/engine_objs/move_bitboards.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "move_bitboards.cpp"
+  ],
+  "file": "move_bitboards.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/engine",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/engine_objs/movegen.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "movegen.cpp"
+  ],
+  "file": "movegen.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/engine",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/engine_objs/transposition_table.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "transposition_table.cpp"
+  ],
+  "file": "transposition_table.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/programs",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/programs_objs/engine.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "engine.cpp"
+  ],
+  "file": "engine.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/programs",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/programs_objs/perft.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "perft.cpp"
+  ],
+  "file": "perft.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/programs",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/programs_objs/play.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "play.cpp"
+  ],
+  "file": "play.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/tests",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/tests_objs/bithacks_tests.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-I/usr/include",
+   "bithacks_tests.cpp"
+  ],
+  "file": "bithacks_tests.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/tests",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/tests_objs/position_tests.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-I/usr/include",
+   "position_tests.cpp"
+  ],
+  "file": "position_tests.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/tests",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/tests_objs/perft_tests.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-I/usr/include",
+   "perft_tests.cpp"
+  ],
+  "file": "perft_tests.cpp"
+ },
+ {
+  "directory": "/home/adam/Projects/chess-engine/tests",
+  "arguments": [
+   "g++",
+   "-c",
+   "-o",
+   "/home/adam/Projects/chess-engine/build/tests_objs/main.d.o",
+   "-Wall",
+   "-std=c++17",
+   "-flto",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-g",
+   "-I/home/adam/Projects/chess-engine/engine",
+   "-I/usr/include",
+   "main.cpp"
+  ],
+  "file": "main.cpp"
+ }
+]
