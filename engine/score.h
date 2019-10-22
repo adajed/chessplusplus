@@ -10,7 +10,7 @@ namespace engine
 class PositionScorer
 {
     public:
-        PositionScorer(const Weights& weights);
+        explicit PositionScorer(const Weights& weights);
 
         int64_t score(const Position& position) const;
 

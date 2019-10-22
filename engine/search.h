@@ -17,7 +17,7 @@ struct ScoredMove
 class Search
 {
     public:
-        Search(const PositionScorer& scorer);
+        explicit Search(const PositionScorer& scorer);
 
         Move select_move(const Position& position, int depth);
 
