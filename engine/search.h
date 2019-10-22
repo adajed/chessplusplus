@@ -31,12 +31,14 @@ class Search
 
 
     private:
-        ScoredMove search(Position& position, int depth, int64_t alpha, int64_t beta);
+        int64_t search(Position& position, int depth, int64_t alpha, int64_t beta, Move* pv);
 
-        ScoredMove quiescence_search(Position& position, int depth, int64_t alpha, int64_t beta);
+        int64_t quiescence_search(Position& position, int depth, int64_t alpha, int64_t beta);
 
         PositionScorer scorer;
         uint64_t thinking_time;
+
+        Move pv_moves[MAX_DEPTH];
 };
 
 }
