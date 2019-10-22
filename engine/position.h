@@ -18,8 +18,8 @@ namespace engine
 class Position
 {
     public:
-        Position();
-        Position(std::string fen);
+        explicit Position();
+        explicit Position(std::string fen);
 
         bool operator== (const Position& other) const;
 

@@ -52,7 +52,7 @@ Castling castling(Move move)
 MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant, bool enpassant)
 {
     if (last_enpassant != NO_SQUARE)
-        return enpassant << 14 | 1 << 13 | last_enpassant << 7 | last_castling << 3 | captured;
+        return (!!enpassant) << 14 | 1 << 13 | last_enpassant << 7 | last_castling << 3 | captured;
     return enpassant << 14 | last_castling << 3 | captured;
 }
 

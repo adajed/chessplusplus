@@ -40,6 +40,10 @@ clean:
 ctags:
 	ctags -R --tag-relative=yes --exclude=.git $(ROOTDIR)
 
+tidy:
+	@+make -C engine tidy
+	@+make -C programs tidy
+
 help:
 	@echo "Available commands:"
 	@echo "\trelease - compile engine and tests"
