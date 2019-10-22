@@ -3,6 +3,7 @@
 #include "transposition_table.h"
 
 #include <chrono>
+#include <cstring>
 
 namespace engine
 {
@@ -24,11 +25,9 @@ Move Search::select_move(const Position& position, int depth)
 {
     Position pos = position;
 
-    ScoredMove move = {NO_MOVE, LOST};
-
     if (depth > 0)
     {
-        move = search(pos, depth, LOST, WIN);
+        search(pos, depth, LOST, WIN, pv_moves);
     }
     else
     {
@@ -40,19 +39,24 @@ Move Search::select_move(const Position& position, int depth)
         while (time < thinking_time / 2)
         {
             depth++;
-            move = search(pos, depth, LOST, WIN);
+            int64_t result = search(pos, depth, LOST, WIN, pv_moves);
             end_time = std::chrono::steady_clock::now();
             time = duration(start_time, end_time);
 
-            std::cout << "[depth " << depth << "] "
-                      << "time=" << time / 1000000ULL << "s "
-                      << "move=";
-            print_move(std::cout, move.move);
-            std::cout << " score=" << move.score << std::endl;
+            if (result == LOST || result == WIN)
+                break;
+
+            /* std::cout << "[depth " << depth << "] " */
+            /*           << "time=" << time / 1000000ULL << "s " */
+            /*           << "score=" << result << " " */
+            /*           << "pv="; */
+            /* for (int i = 0; i < depth; ++i) */
+            /*     print_move(std::cout, pv_moves[i]) << " "; */
+            /* std::cout << std::endl; */
         }
     }
 
-    return move.move;
+    return pv_moves[0];
 }
 
 void Search::set_thinking_time(uint64_t time)
@@ -65,7 +69,7 @@ uint64_t Search::get_thinking_time()
     return thinking_time;
 }
 
-ScoredMove Search::search(Position& position, int depth, int64_t alpha, int64_t beta)
+int64_t Search::search(Position& position, int depth, int64_t alpha, int64_t beta, Move* pv_moves)
 {
     if (depth == 0)
         return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
@@ -76,119 +80,86 @@ ScoredMove Search::search(Position& position, int depth, int64_t alpha, int64_t 
     if (begin == end)
     {
         if (position.is_in_check(position.side_to_move()))
-            return {NO_MOVE, LOST};
-        return {NO_MOVE, DRAW};
+            return LOST;
+        return DRAW;
     }
 
-    ScoredMove best = {NO_MOVE, 2LL * LOST};
-
-    /*
-    if (transposition::contains(position.zobrist_hash))
-    {
-        transposition::Entry entry = transposition::get(position.zobrist_hash);
-        if (entry.position == position)
-        {
-            if (entry.depth >= depth)
-            {
-                best = {entry.best_move, entry.value};
-
-                alpha = best.score > alpha ? best.score : alpha;
-                if (alpha >= beta)
-                    return best;
-            }
-            else
-            {
-                MoveInfo moveinfo = do_move(position, entry.best_move);
-                best = {entry.best_move, -search(position, depth - 1, -beta, -alpha).score};
-                undo_move(position, entry.best_move, moveinfo);
-
-                alpha = best.score > alpha ? best.score : alpha;
-                if (alpha >= beta)
-                {
-                    transposition::update(position.zobrist_hash, {position, best.move, depth, best.score});
-                    return best;
-                }
-            }
-
-        }
-    }
-    */
+    int64_t best = 2LL * LOST;
+    Move* my_pv = new Move[depth - 1];
 
     MovePicker movepicker(position, begin, end);
-    bool searchPV = true;
 
     while (movepicker.has_next())
     {
         Move move = movepicker.get_next();
         MoveInfo moveinfo = position.do_move(move);
 
-        int64_t result;
-        if (searchPV)
-            result = -search(position, depth - 1, -beta, -alpha).score;
-        else
-        {
-            result = -search(position, depth - 1, -(alpha + 1), -alpha).score;
-            if (result > alpha)
-                result = -search(position, depth - 1, -beta, -alpha).score;
-        }
+        int64_t result = -search(position, depth - 1, -beta, -alpha, my_pv);
 
         position.undo_move(move, moveinfo);
 
-        if (result >= beta)
-            return {best.move, beta};
+        if (result > best)
+        {
+            best = result;
+
+            std::memcpy(pv_moves + 1, my_pv, (depth - 1) * sizeof(Move));
+            pv_moves[0] = move;
+        }
         if (result > alpha)
         {
-            best = {move, result};
             alpha = result;
-            searchPV = false;
+            if (alpha >= beta)
+                break;
         }
     }
+
+    delete [] my_pv;
 
     return best;
 }
 
-ScoredMove Search::quiescence_search(Position& position, int depth, int64_t alpha, int64_t beta)
+int64_t Search::quiescence_search(Position& position, int depth, int64_t alpha, int64_t beta)
 {
-    assert(depth >= 0);
+    if (depth <= 0)
+        return scorer.score(position);
 
     Move* begin = QUIESCENCE_MOVE_LIST[depth];
-    Move* end = generate_quiescence_moves(position, position.side_to_move(), begin);
+    Move* end = generate_moves(position, position.side_to_move(), begin);
+
+    bool is_in_check = position.is_in_check(position.side_to_move());
 
     if (begin == end)
-        return {NO_MOVE, scorer.score(position)};
+    {
+        if (is_in_check)
+            return LOST;
+        return DRAW;
+    }
 
-    ScoredMove best = {NO_MOVE, 2LL * LOST};
-
-    /* if (transposition::contains(position.zobrist_hash)) */
-    /* { */
-    /*     transposition::Entry entry = transposition::get(position.zobrist_hash); */
-    /*     if (entry.position == position) */
-    /*     { */
-    /*         if (entry.depth >= depth) */
-    /*         { */
-    /*             best = {entry.best_move, entry.value}; */
-    /*             alpha = best.score > alpha ? best.score : alpha; */
-    /*             if (alpha >= beta) */
-    /*                 return best; */
-    /*         } */
-    /*     } */
-    /* } */
+    int64_t best = 2LL * LOST;
 
     MovePicker movepicker(position, begin, end);
 
     while (movepicker.has_next())
     {
         Move move = movepicker.get_next();
+
+        if (position.piece_at(to(move)) == NO_PIECE &&
+                promotion(move) == NO_PIECE_KIND &&
+                !is_in_check)
+            continue;
+
         MoveInfo moveinfo = position.do_move(move);
-        int64_t result = -quiescence_search(position, depth - 1, -beta, -alpha).score;
+        int64_t result = -quiescence_search(position, depth - 1, -beta, -alpha);
         position.undo_move(move, moveinfo);
 
-        if (result > best.score)
-            best = {move, result};
-        alpha = result > alpha ? result : alpha;
+        best = std::max(best, result);
+        alpha = std::max(alpha, result);
         if (alpha >= beta)
             break;
     }
+
+    if (best == 2LL * LOST)
+        best = scorer.score(position);
 
     return best;
 }
