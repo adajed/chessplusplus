@@ -63,8 +63,8 @@ class Position
 
         Color _current_side;
 
-        uint32_t _half_move_counter;
-        uint32_t _ply_counter;
+        uint8_t _half_move_counter;
+        int32_t _ply_counter;
 
         Piece _board[SQUARE_NUM];
         Square _piece_position[PIECE_NUM][10];
@@ -78,7 +78,7 @@ class Position
 
         HashKey _zobrist_hash;
 
-        uint32_t _history_counter;
+        int32_t _history_counter;
         HashKey _history[MAX_PLIES];
 };
 
