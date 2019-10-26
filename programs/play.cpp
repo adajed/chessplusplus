@@ -65,7 +65,7 @@ int main(int argc, char** argv)
     Weights weights = load(weights_path);
     PositionScorer scorer(weights);
     Search search(scorer);
-    search.set_thinking_time(120ULL * 1000000ULL);
+    search.set_thinking_time(10LL * 1000LL);
 
     for (int i = 3; i < argc; ++i)
     {

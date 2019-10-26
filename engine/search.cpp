@@ -8,52 +8,65 @@
 namespace engine
 {
 
-using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
-
-uint64_t duration(TimePoint start, TimePoint end)
+Score mate_in(int ply)
 {
-    return std::chrono::duration_cast<
-        std::chrono::microseconds>(end - start).count();
+    return INFINITY_SCORE - ply;
+}
+
+bool is_score_mate(Score score)
+{
+    return (score < (-INFINITY_SCORE + MAX_DEPTH)) ||
+           (score > (INFINITY_SCORE - MAX_DEPTH));
 }
 
 Search::Search(const PositionScorer& scorer)
-    : scorer(scorer), thinking_time(120ULL * 1000000ULL)
+    : check_limits_counter(4096)
+    , stop_search(false)
+    , scorer(scorer)
+    , thinking_time(120ULL * 1000000ULL)
 {
+}
+
+void Search::stop()
+{
+    stop_search = true;
 }
 
 Move Search::select_move(const Position& position, int depth)
 {
     Position pos = position;
+    stop_search = false;
 
     if (depth > 0)
     {
-        search(pos, depth, LOST, WIN, pv_moves);
+        search(pos, depth, -INFINITY_SCORE, INFINITY_SCORE, pv_moves);
     }
     else
     {
-        TimePoint start_time = std::chrono::steady_clock::now();
+        start_time = std::chrono::steady_clock::now();
         TimePoint end_time = start_time;
-        uint64_t time = duration(start_time, end_time);
+        int64_t elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
-        depth = 3;
-        while (time < thinking_time / 2)
+        Move *my_pv = new Move[MAX_DEPTH];
+
+        depth = 1;
+        while (elapsed < (thinking_time / 2) && !stop_search)
         {
             depth++;
-            int64_t result = search(pos, depth, LOST, WIN, pv_moves);
-            end_time = std::chrono::steady_clock::now();
-            time = duration(start_time, end_time);
+            Score result = search(pos, depth, -INFINITY_SCORE, INFINITY_SCORE, my_pv);
 
-            if (result == LOST || result == WIN)
+            if (!stop_search)
+                std::memcpy(pv_moves, my_pv, depth * sizeof(Move));
+
+            end_time = std::chrono::steady_clock::now();
+            elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+
+            if (is_score_mate(result))
                 break;
 
-            /* std::cout << "[depth " << depth << "] " */
-            /*           << "time=" << time / 1000000ULL << "s " */
-            /*           << "score=" << result << " " */
-            /*           << "pv="; */
-            /* for (int i = 0; i < depth; ++i) */
-            /*     print_move(std::cout, pv_moves[i]) << " "; */
-            /* std::cout << std::endl; */
         }
+
+        delete [] my_pv;
     }
 
     return pv_moves[0];
@@ -71,6 +84,12 @@ uint64_t Search::get_thinking_time()
 
 int64_t Search::search(Position& position, int depth, int64_t alpha, int64_t beta, Move* pv_moves)
 {
+    if (stop_search || check_limits())
+    {
+        stop_search = true;
+        return 0;
+    }
+
     if (depth == 0)
         return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
 
@@ -80,11 +99,11 @@ int64_t Search::search(Position& position, int depth, int64_t alpha, int64_t bet
     if (begin == end)
     {
         if (position.is_in_check(position.side_to_move()))
-            return LOST;
-        return DRAW;
+            return -mate_in(depth);
+        return DRAW_SCORE;
     }
 
-    int64_t best = 2LL * LOST;
+    int64_t best = -INFINITY_SCORE;
     Move* my_pv = new Move[depth - 1];
 
     MovePicker movepicker(position, begin, end);
@@ -120,6 +139,12 @@ int64_t Search::search(Position& position, int depth, int64_t alpha, int64_t bet
 
 int64_t Search::quiescence_search(Position& position, int depth, int64_t alpha, int64_t beta)
 {
+    if (stop_search || check_limits())
+    {
+        stop_search = true;
+        return 0;
+    }
+
     if (depth <= 0)
         return scorer.score(position);
 
@@ -131,11 +156,11 @@ int64_t Search::quiescence_search(Position& position, int depth, int64_t alpha, 
     if (begin == end)
     {
         if (is_in_check)
-            return LOST;
-        return DRAW;
+            return -INFINITY_SCORE;
+        return DRAW_SCORE;
     }
 
-    int64_t best = 2LL * LOST;
+    int64_t best = -INFINITY_SCORE;
 
     MovePicker movepicker(position, begin, end);
 
@@ -158,10 +183,29 @@ int64_t Search::quiescence_search(Position& position, int depth, int64_t alpha, 
             break;
     }
 
-    if (best == 2LL * LOST)
+    if (best == -INFINITY_SCORE)
         best = scorer.score(position);
 
     return best;
+}
+
+bool Search::check_limits()
+{
+    if (--check_limits_counter > 0)
+        return false;
+
+    check_limits_counter = 4096;
+
+    TimePoint end_time = std::chrono::steady_clock::now();
+    int64_t elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+
+    if (elapsed >= thinking_time)
+    {
+        stop_search = true;
+        return true;
+    }
+
+    return false;
 }
 
 }
