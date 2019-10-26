@@ -33,8 +33,11 @@ class Position
 
         Color side_to_move() const { return _current_side; }
 
-        uint32_t half_moves_counter() const { return _half_move_counter; }
-        uint32_t moves_counter() const { return _move_counter; }
+        uint32_t half_moves() const { return _half_move_counter; }
+        uint32_t ply_count() const { return _ply_counter; }
+
+        bool threefold_repetition() const;
+        bool rule50() const;
 
         Piece piece_at(Square square) const { return _board[square]; }
         int number_of_pieces(Piece piece) const { return _piece_count[piece]; }
@@ -61,7 +64,7 @@ class Position
         Color _current_side;
 
         uint32_t _half_move_counter;
-        uint32_t _move_counter;
+        uint32_t _ply_counter;
 
         Piece _board[SQUARE_NUM];
         Square _piece_position[PIECE_NUM][10];
@@ -74,6 +77,9 @@ class Position
         Square _enpassant_square;
 
         HashKey _zobrist_hash;
+
+        uint32_t _history_counter;
+        HashKey _history[MAX_PLIES];
 };
 
 std::ostream& operator<< (std::ostream& stream, const Position& position);
