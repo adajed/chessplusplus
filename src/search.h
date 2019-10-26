@@ -5,8 +5,21 @@
 #include "score.h"
 #include "types.h"
 
+#include <chrono>
+
 namespace engine
 {
+
+using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
+
+
+using Score = int64_t;
+
+constexpr Score INFINITY_SCORE = 1LL << 32;
+constexpr Score DRAW_SCORE = 0LL;
+
+Score mate_in(int ply);
+bool is_score_mate(Score score);
 
 struct Limits
 {
@@ -27,7 +40,7 @@ struct Limits
     int timeinc[COLOR_NUM];
     int movestogo;
     int depth;
-    int nodes;
+    int64_t nodes;
     int mate;
     int movetime;
     bool infinite;
@@ -42,23 +55,23 @@ class Search
 
         void stop();
 
-        const static int64_t WIN = 1LL << 16;
-        const static int64_t LOST = -WIN;
-        const static int64_t DRAW = 0LL;
-
-
     private:
-        int64_t search(Position& position, int depth, int64_t alpha, int64_t beta, Move* pv);
+        Score search(Position& position, int depth, Score alpha, Score beta, Move* pv);
 
-        int64_t quiescence_search(Position& position, int depth, int64_t alpha, int64_t beta);
+        Score quiescence_search(Position& position, int depth, Score alpha, Score beta);
+
+        bool check_limits();
+
 
         Position position;
         PositionScorer scorer;
-
-        Move pv_moves[MAX_DEPTH];
-
         Limits limits;
 
+        Move pv_moves[MAX_DEPTH];
+        int64_t check_limits_counter;
+        bool stop_search;
+
+        TimePoint start_time;
         int64_t thinking_time;
         int64_t nodes_searched;
 };

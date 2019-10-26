@@ -74,7 +74,8 @@ Position::Position(std::string fen)
     stream >> token;
     _enpassant_square = token == "-" ? NO_SQUARE : notationToSquare(token);
 
-    stream >> _half_move_counter;
+    stream >> _ply_counter;
+    _half_move_counter = uint8_t(_ply_counter);
     stream >> _ply_counter;
 
     _ply_counter = 2 * _ply_counter - 1 + !!(_current_side == BLACK);
@@ -150,7 +151,7 @@ std::string Position::fen() const
     else
         stream << "-";
 
-    stream << " " << _half_move_counter << " " << _ply_counter / 2;
+    stream << " " << uint32_t(_half_move_counter) << " " << (_ply_counter - 1) / 2 + 1;
 
     return stream.str();
 }
@@ -167,7 +168,7 @@ bool Position::threefold_repetition() const
 
 bool Position::rule50() const
 {
-    return _half_move_counter >= 100;
+    return int(_half_move_counter) >= 100;
 }
 
 Bitboard Position::pieces() const
@@ -366,7 +367,6 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
     Color side = _current_side;
 
     _ply_counter--;
-    _zobrist_hash = _history[--_history_counter];
 
     _castling_rights = last_castling(moveinfo);
 
@@ -412,6 +412,9 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
         if (captured != NO_PIECE)
             add_piece(captured, to(move));
     }
+
+    _history_counter--;
+    _zobrist_hash = _history[_history_counter];
 }
 
 bool Position::is_in_check(Color side) const
