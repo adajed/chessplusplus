@@ -9,7 +9,9 @@ int main(int argc, char** argv)
     init_move_bitboards();
     zobrist::init();
 
-    Uci uci;
+    Weights weights = load("weights.txt");
+    PositionScorer scorer(weights);
+    Uci uci(scorer);
     uci.loop();
 
     return 0;

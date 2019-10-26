@@ -8,22 +8,39 @@
 namespace engine
 {
 
-struct ScoredMove
+struct Limits
 {
-    Move move;
-    int64_t score;
+    Limits()
+        : searchmovesnum(0)
+        , ponder(false)
+        , movestogo(0)
+        , depth(0)
+        , nodes(0)
+        , movetime(0)
+        , infinite(false)
+    {}
+
+    Move searchmoves[MAX_MOVES];
+    int searchmovesnum;
+    bool ponder;
+    int timeleft[COLOR_NUM];
+    int timeinc[COLOR_NUM];
+    int movestogo;
+    int depth;
+    int nodes;
+    int mate;
+    int movetime;
+    bool infinite;
 };
 
 class Search
 {
     public:
-        explicit Search(const PositionScorer& scorer);
+        Search(const Position& position, const PositionScorer& scorer, const Limits& limits);
 
-        Move select_move(const Position& position, int depth);
+        void go();
 
-        void set_thinking_time(uint64_t time);
-
-        uint64_t get_thinking_time();
+        void stop();
 
         const static int64_t WIN = 1LL << 16;
         const static int64_t LOST = -WIN;
@@ -35,10 +52,15 @@ class Search
 
         int64_t quiescence_search(Position& position, int depth, int64_t alpha, int64_t beta);
 
+        Position position;
         PositionScorer scorer;
-        uint64_t thinking_time;
 
         Move pv_moves[MAX_DEPTH];
+
+        Limits limits;
+
+        int64_t thinking_time;
+        int64_t nodes_searched;
 };
 
 }

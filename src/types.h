@@ -215,6 +215,8 @@ std::ostream& print_move(std::ostream& stream, Move move);
 
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb);
 
+Move string_to_move(std::string str);
+
 }
 
 #endif  // CHESS_ENGINE_TYPES_H_

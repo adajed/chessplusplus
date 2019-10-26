@@ -1,39 +1,49 @@
 #ifndef CHESS_ENGINE_UCI_H_
 #define CHESS_ENGINE_UCI_H_
 
+#include <memory>
 #include <sstream>
+
+#include "position.h"
+#include "search.h"
 
 namespace engine
 {
 
-struct Limits
-{
-};
-
 class Uci
 {
     public:
+        const std::string STARTPOS_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+        Uci(const PositionScorer& scorer);
+
         void loop();
 
     private:
 
-        void uci_command();
+        bool uci_command(std::istringstream& istream);
 
-        void ucinewgame_command();
+        bool ucinewgame_command(std::istringstream& istream);
 
-        void isready_command();
+        bool isready_command(std::istringstream& istream);
 
-        void setoption_command(std::istringstream& is);
+        bool setoption_command(std::istringstream& istream);
 
-        void position_command(std::istringstream& is);
+        bool position_command(std::istringstream& istream);
 
-        void go_command(std::istringstream& is);
+        bool go_command(std::istringstream& istream);
 
-        void stop_command();
+        bool stop_command(std::istringstream& istream);
 
-        void ponderhit_command();
+        bool ponderhit_command(std::istringstream& istream);
 
-        void quit_command();
+        bool quit_command(std::istringstream& istream);
+
+        PositionScorer scorer;
+        std::shared_ptr<Search> search;
+        Position position;
+        bool is_search;
+        bool quit;
 };
 
 }

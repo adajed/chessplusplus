@@ -16,57 +16,49 @@ uint64_t duration(TimePoint start, TimePoint end)
         std::chrono::microseconds>(end - start).count();
 }
 
-Search::Search(const PositionScorer& scorer)
-    : scorer(scorer), thinking_time(120ULL * 1000000ULL)
+Search::Search(const Position& position, const PositionScorer& scorer, const Limits& limits)
+    : position(position), scorer(scorer), limits(limits), thinking_time(10000LL), nodes_searched(0)
 {
 }
 
-Move Search::select_move(const Position& position, int depth)
+void Search::go()
 {
     Position pos = position;
 
-    if (depth > 0)
+    TimePoint start_time = std::chrono::steady_clock::now();
+    TimePoint end_time = start_time;
+    uint64_t time = duration(start_time, end_time);
+
+    int64_t result;
+
+    if (limits.depth > 0)
     {
-        search(pos, depth, LOST, WIN, pv_moves);
+        result = search(pos, limits.depth, LOST, WIN, pv_moves);
     }
     else
     {
-        TimePoint start_time = std::chrono::steady_clock::now();
-        TimePoint end_time = start_time;
-        uint64_t time = duration(start_time, end_time);
-
-        depth = 3;
+        int depth = 3;
         while (time < thinking_time / 2)
         {
             depth++;
-            int64_t result = search(pos, depth, LOST, WIN, pv_moves);
+            result = search(pos, depth, LOST, WIN, pv_moves);
             end_time = std::chrono::steady_clock::now();
             time = duration(start_time, end_time);
 
             if (result == LOST || result == WIN)
                 break;
-
-            /* std::cout << "[depth " << depth << "] " */
-            /*           << "time=" << time / 1000000ULL << "s " */
-            /*           << "score=" << result << " " */
-            /*           << "pv="; */
-            /* for (int i = 0; i < depth; ++i) */
-            /*     print_move(std::cout, pv_moves[i]) << " "; */
-            /* std::cout << std::endl; */
         }
     }
 
-    return pv_moves[0];
+    std::cout << "bestmove ";
+    print_move(std::cout, pv_moves[0]);
+    std::cout << " ponder ";
+    print_move(std::cout, pv_moves[1]);
+    std::cout << std::endl;
 }
 
-void Search::set_thinking_time(uint64_t time)
+void Search::stop()
 {
-    thinking_time = time;
-}
-
-uint64_t Search::get_thinking_time()
-{
-    return thinking_time;
 }
 
 int64_t Search::search(Position& position, int depth, int64_t alpha, int64_t beta, Move* pv_moves)
@@ -146,6 +138,7 @@ int64_t Search::quiescence_search(Position& position, int depth, int64_t alpha, 
     }
 
     int64_t best = scorer.score(position);
+    nodes_searched++;
 
     MovePicker movepicker(position, begin, end);
 
