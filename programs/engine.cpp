@@ -17,7 +17,7 @@ int main(int argc, char** argv)
     Weights weights = load(weights_path);
     PositionScorer scorer(weights);
     Search search(scorer);
-    search.set_thinking_time(120ULL * 1000000ULL);
+    search.set_thinking_time(5000LL);
 
     int move_number = 0;
     while (!position.is_checkmate() && move_number < 400)

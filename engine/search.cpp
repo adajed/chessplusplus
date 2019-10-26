@@ -23,7 +23,7 @@ Search::Search(const PositionScorer& scorer)
     : check_limits_counter(4096)
     , stop_search(false)
     , scorer(scorer)
-    , thinking_time(120LL * 1000LL)
+    , thinking_time(120000LL)
 {
 }
 
@@ -36,6 +36,7 @@ Move Search::select_move(const Position& position, int depth)
 {
     Position pos = position;
     stop_search = false;
+    start_time = std::chrono::steady_clock::now();
 
     if (depth > 0)
     {
@@ -43,7 +44,6 @@ Move Search::select_move(const Position& position, int depth)
     }
     else
     {
-        start_time = std::chrono::steady_clock::now();
         TimePoint end_time = start_time;
         int64_t elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
