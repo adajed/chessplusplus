@@ -74,6 +74,11 @@ int64_t Search::search(Position& position, int depth, int64_t alpha, int64_t bet
     if (depth == 0)
         return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
 
+    if (position.threefold_repetition())
+        return DRAW;
+    if (position.rule50())
+        return DRAW;
+
     Move* begin = MOVE_LIST[depth];
     Move* end = generate_moves(position, position.side_to_move(), begin);
 
@@ -123,6 +128,11 @@ int64_t Search::quiescence_search(Position& position, int depth, int64_t alpha, 
     if (depth <= 0)
         return scorer.score(position);
 
+    if (position.threefold_repetition())
+        return DRAW;
+    if (position.rule50())
+        return DRAW;
+
     Move* begin = QUIESCENCE_MOVE_LIST[depth];
     Move* end = generate_moves(position, position.side_to_move(), begin);
 
@@ -135,7 +145,7 @@ int64_t Search::quiescence_search(Position& position, int depth, int64_t alpha, 
         return DRAW;
     }
 
-    int64_t best = 2LL * LOST;
+    int64_t best = scorer.score(position);
 
     MovePicker movepicker(position, begin, end);
 
@@ -157,9 +167,6 @@ int64_t Search::quiescence_search(Position& position, int depth, int64_t alpha, 
         if (alpha >= beta)
             break;
     }
-
-    if (best == 2LL * LOST)
-        best = scorer.score(position);
 
     return best;
 }
