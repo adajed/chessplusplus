@@ -8,6 +8,8 @@
 namespace engine
 {
 
+const int32_t MAX_PLIES = 400;
+
 using HashKey = uint64_t;
 
 using Bitboard = uint64_t;
@@ -104,15 +106,18 @@ Move create_castling(Castling castling);
 // 7-12 - last enpassant square
 // 13-13 - last enpassant
 // 14-14 - enpassant
+// 15-22 - half move counter
 using MoveInfo = uint32_t;
 
-MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant, bool enpassant);
+MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant,
+                         bool enpassant, uint8_t half_move_counter);
 
 PieceKind captured_piece(MoveInfo moveinfo);
 Castling last_castling(MoveInfo moveinfo);
 Square last_enpassant_square(MoveInfo moveinfo);
 bool last_enpassant(MoveInfo moveinfo);
 bool enpassant(MoveInfo moveinfo);
+uint8_t half_move_counter(MoveInfo moveinfo);
 
 const Castling CASTLING_RIGHTS[COLOR_NUM]      = {W_CASTLING, B_CASTLING};
 const Square KING_SIDE_ROOK_SQUARE[COLOR_NUM]  = {SQ_H1, SQ_H8};

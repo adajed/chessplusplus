@@ -49,11 +49,12 @@ Castling castling(Move move)
            QUEEN_CASTLING;
 }
 
-MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant, bool enpassant)
+MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant,
+                         bool enpassant, uint8_t half_move_counter)
 {
     if (last_enpassant != NO_SQUARE)
-        return (!!enpassant) << 14 | 1 << 13 | last_enpassant << 7 | last_castling << 3 | captured;
-    return enpassant << 14 | last_castling << 3 | captured;
+        return half_move_counter << 15 | (!!enpassant) << 14 | 1 << 13 | last_enpassant << 7 | last_castling << 3 | captured;
+    return half_move_counter << 15 | enpassant << 14 | last_castling << 3 | captured;
 }
 
 PieceKind captured_piece(MoveInfo moveinfo)
@@ -79,6 +80,11 @@ bool last_enpassant(MoveInfo moveinfo)
 bool enpassant(MoveInfo moveinfo)
 {
     return (moveinfo >> 14) & 0x1;
+}
+
+uint8_t half_move_counter(MoveInfo moveinfo)
+{
+    return (moveinfo >> 15) & 0xFF;
 }
 
 std::string move_to_string(Move move)

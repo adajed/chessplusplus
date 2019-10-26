@@ -3,12 +3,14 @@
 #include "score.h"
 #include "search.h"
 #include "weights.h"
+#include "zobrist_hash.h"
 
 using namespace engine;
 
 int main(int argc, char** argv)
 {
     init_move_bitboards();
+    zobrist::init();
 
     std::string weights_path(argv[1]);
     std::string fen(argv[2]);
@@ -26,7 +28,7 @@ int main(int argc, char** argv)
         std::cout << "move number " << move_number << std::endl;
         std::cout << position;
 
-        Move move = search.select_move(position, 6);
+        Move move = search.select_move(position, 0);
 
         std::cout << "move = " << move_to_string(move) << std::endl;
 

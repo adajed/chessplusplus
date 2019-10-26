@@ -15,8 +15,8 @@ using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
 using Score = int64_t;
 
-constexpr Score INFINITY_SCORE = 1LL << 16;
-constexpr Score DRAW_SCORE = 0;
+constexpr Score INFINITY_SCORE = 1LL << 32;
+constexpr Score DRAW_SCORE = 0LL;
 
 Score mate_in(int ply);
 bool is_score_mate(Score score);
@@ -29,9 +29,9 @@ class Search
 
         Move select_move(const Position& position, int depth);
 
-        void set_thinking_time(uint64_t time);
+        void set_thinking_time(int64_t time);
 
-        uint64_t get_thinking_time();
+        int64_t get_thinking_time();
 
         void stop();
 
