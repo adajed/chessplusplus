@@ -87,24 +87,27 @@ uint8_t half_move_counter(MoveInfo moveinfo)
     return (moveinfo >> 15) & 0xFF;
 }
 
-std::ostream& print_move(std::ostream& stream, Move move)
+std::string move_to_string(Move move)
 {
     const std::string files = "abcdefgh";
     const std::string ranks = "12345678";
     const std::string promotions = "  NBRQ ";
 
     if (castling(move) & KING_CASTLING)
-        return stream << "OO";
+        return "OO";
     if (castling(move) & QUEEN_CASTLING)
-        return stream << "OOO";
+        return "OOO";
 
-    stream << files[file(from(move))] << ranks[rank(from(move))]
-           << files[file(to(move))]   << ranks[rank(to(move))];
+    std::string str = "";
+    str += files[file(from(move))];
+    str += ranks[rank(from(move))];
+    str += files[file(to(move))];
+    str += ranks[rank(to(move))];
 
     if (promotion(move) != NO_PIECE_KIND)
-        stream << promotions[promotion(move)];
+        str += promotions[promotion(move)];
 
-    return stream;
+    return str;
 }
 
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb)
