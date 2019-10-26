@@ -206,7 +206,7 @@ constexpr bool is_piece_slider(Piece piece)
     return piece_kind == BISHOP || piece_kind == ROOK || piece_kind == QUEEN;
 }
 
-std::ostream& print_move(std::ostream& stream, Move move);
+std::string move_to_string(Move move);
 
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb);
 

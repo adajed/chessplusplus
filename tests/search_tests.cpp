@@ -76,11 +76,7 @@ TEST_F(SearchTest, mate_in_1)
     {
         Position position(std::get<0>(test_case));
         Move move = search->select_move(position, 4);
-        print_move(std::cout, std::get<1>(test_case));
-        std::cout << " ";
-        print_move(std::cout, move);
-        std::cout << std::endl;
-        EXPECT_EQ(std::get<1>(test_case), move);
+        EXPECT_EQ(move_to_string(std::get<1>(test_case)), move_to_string(move));
     }
 }
 

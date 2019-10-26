@@ -86,9 +86,7 @@ int main(int argc, char** argv)
 
         Move move = search.select_move(position, 0);
 
-        std::cout << "move = ";
-        print_move(std::cout, move);
-        std::cout << std::endl;
+        std::cout << "move = " << move_to_string(move) << std::endl;
 
         position.do_move(move);
 

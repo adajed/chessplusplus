@@ -23,7 +23,7 @@ Search::Search(const PositionScorer& scorer)
     : check_limits_counter(4096)
     , stop_search(false)
     , scorer(scorer)
-    , thinking_time(120ULL * 1000000ULL)
+    , thinking_time(120LL * 1000LL)
 {
 }
 
