@@ -26,8 +26,7 @@ uint64_t perftBatched(Position& position, int depth)
         position.undo_move(move, moveinfo);
 
         sum += nodes;
-        print_move(std::cout, move);
-        std::cout << ": " << nodes << std::endl;
+        std::cout << move_to_string(move) << ": " << nodes << std::endl;
     }
 
     return sum;
