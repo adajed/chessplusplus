@@ -26,5 +26,5 @@ before_script:
     - make
 
 script:
-    - ./build/tests
+    - ./build/test
     - make tidy
