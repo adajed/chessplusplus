@@ -1,8 +1,7 @@
 #include "uci.h"
+#include "logger.h"
 
 #include <thread>
-
-#include <iostream>
 
 namespace engine
 {
@@ -17,8 +16,8 @@ Uci::Uci(const PositionScorer& scorer)
 
 void Uci::loop()
 {
-    std::cout << "Chess engine by Adam Jedrych"
-              << " (build " << __DATE__ << " " << __TIME__ << ")" << std::endl;
+    logger << "Chess engine by Adam Jedrych"
+           << " (build " << __DATE__ << " " << __TIME__ << ")" << std::endl;
 
     position = Position();
     quit = false;
@@ -28,6 +27,7 @@ void Uci::loop()
 
     while (!quit && std::getline(std::cin, line))
     {
+        logger.fout << line << std::endl;
         std::istringstream istream(line);
         istream >> token;
 
@@ -76,18 +76,18 @@ void Uci::loop()
 
         if (!b)
         {
-            std::cout << "Unknown command" << std::endl;
+            logger << "Unknown command" << std::endl;
         }
     }
 }
 
 bool Uci::uci_command(std::istringstream& istream)
 {
-    std::cout << "id name Deep Chess" << std::endl;
-    std::cout << "id author Adam Jedrych" << std::endl;
-    std::cout << std::endl;
+    logger << "id name Deep Chess" << std::endl;
+    logger << "id author Adam Jedrych" << std::endl;
+    logger << std::endl;
 
-    std::cout << "uciok" << std::endl;
+    logger << "uciok" << std::endl;
     return true;
 }
 
@@ -99,7 +99,7 @@ bool Uci::ucinewgame_command(std::istringstream& istream)
 
 bool Uci::isready_command(std::istringstream& istream)
 {
-    std::cout << "readyok" << std::endl;
+    logger << "readyok" << std::endl;
     return true;
 }
 
@@ -205,7 +205,7 @@ bool Uci::quit_command(std::istringstream& istream)
 
 bool Uci::printboard_command(std::istringstream& istream)
 {
-    std::cout << position << std::endl;
+    logger << position << std::endl;
     position.threefold_repetition();
     return true;
 }

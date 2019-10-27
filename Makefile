@@ -8,11 +8,13 @@ GTEST_LIB_PATH=/usr/lib
 
 #### compilation flags
 
-CFLAGS_RELEASE = -Wall -std=c++17 -flto -Ofast -DNDEBUG
-CFLAGS_DEBUG = -Wall -std=c++17 -flto -g
+CFLAGS = -Wall -std=c++17 -flto -DLOGFILE=\"$(BUILDDIR)/log.txt\"
+CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
+CFLAGS_DEBUG = $(CFLAGS) -g
 
-LFLAGS_RELEASE = -pthread -flto -Ofast
-LFLAGS_DEBUG = -pthread -flto -g
+LFLAGS = -pthread -flto
+LFLAGS_RELEASE = $(LFLAGS) -Ofast
+LFLAGS_DEBUG = $(LFLAGS) -g
 
 ENGINE_RELEASE=$(BUILDDIR)/deepchess
 ENGINE_DEBUG=$(BUILDDIR)/deepchess_debug
