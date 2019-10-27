@@ -444,6 +444,29 @@ GamePhase Position::game_phase() const
     return (value[WHITE] < 18 && value[BLACK] < 18) ? END_GAME : MIDDLE_GAME;
 }
 
+std::string Position::move_to_string(Move move) const
+{
+    const std::string files = "abcdefgh";
+    const std::string ranks = "12345678";
+    const std::string promotions = "  NBRQ ";
+
+    if (castling(move) & KING_CASTLING)
+        return _current_side == WHITE ? "e1g1" : "e8g8";
+    if (castling(move) & QUEEN_CASTLING)
+        return _current_side == WHITE ? "e1c1" : "e8c8";
+
+    std::string str = "";
+    str += files[file(from(move))];
+    str += ranks[rank(from(move))];
+    str += files[file(to(move))];
+    str += ranks[rank(to(move))];
+
+    if (promotion(move) != NO_PIECE_KIND)
+        str += promotions[promotion(move)];
+
+    return str;
+}
+
 std::ostream& operator<< (std::ostream& stream, const Position& position)
 {
     const std::string piece_to_char = ".PNBRQKpnbrqk";
