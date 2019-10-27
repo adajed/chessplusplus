@@ -467,6 +467,39 @@ std::string Position::move_to_string(Move move) const
     return str;
 }
 
+Move Position::parse_move(std::string str)
+{
+    Move move = NO_MOVE;
+    Square from = make_square(Rank(str[1] - '1'), File(str[0] - 'a'));
+    Square to = make_square(Rank(str[3] - '1'), File(str[2] - 'a'));
+    PieceKind promotion = NO_PIECE_KIND;
+
+    if (str.size() > 4)
+    {
+        switch (str[4])
+        {
+        case 'n': promotion = KNIGHT; break;
+        case 'b': promotion = BISHOP; break;
+        case 'r': promotion = ROOK; break;
+        case 'q': promotion = QUEEN; break;
+        }
+    }
+
+    move = create_promotion(from, to, promotion);
+
+    if (make_piece_kind(_board[from]) == KING && from == SQ_E1 && to == SQ_G1)
+        move = create_castling(KING_CASTLING);
+    if (make_piece_kind(_board[from]) == KING && from == SQ_E1 && to == SQ_C1)
+        move = create_castling(QUEEN_CASTLING);
+    if (make_piece_kind(_board[from]) == KING && from == SQ_E8 && to == SQ_G8)
+        move = create_castling(KING_CASTLING);
+    if (make_piece_kind(_board[from]) == KING && from == SQ_E8 && to == SQ_C8)
+        move = create_castling(QUEEN_CASTLING);
+
+    return move;
+}
+
+
 std::ostream& operator<< (std::ostream& stream, const Position& position)
 {
     const std::string piece_to_char = ".PNBRQKpnbrqk";
