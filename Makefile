@@ -101,8 +101,7 @@ ctags:
 	ctags -R --tag-relative=yes --exclude=.git $(ROOTDIR)
 
 tidy:
-	@+make -C engine tidy
-	@+make -C programs tidy
+	clang-tidy-8 $(ENGINE_SOURCES) -header-filter=src/*.h -checks='*' -warnings-as-errors='*'
 
 help:
 	@echo "Available commands:"

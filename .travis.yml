@@ -27,4 +27,3 @@ before_script:
 
 script:
     - ./build/test
-    - make tidy
