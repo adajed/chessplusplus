@@ -53,6 +53,8 @@ class Position
         Bitboard pieces(PieceKind p) const;
         Bitboard pieces(Color c, PieceKind p) const;
 
+        std::string move_to_string(Move move) const;
+
     private:
 
         void add_piece(Piece piece, Square square);

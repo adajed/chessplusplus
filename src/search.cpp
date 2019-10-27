@@ -41,15 +41,15 @@ Search::Search(const Position& position, const PositionScorer& scorer, const Lim
     else if (limits.timeleft[position.side_to_move()] != 0)
     {
         int our_time = limits.timeleft[position.side_to_move()];
-        int movestogo = limits.movestogo == 0 ? 20 : limits.movestogo;
+        int movestogo = limits.movestogo == 0 ? 10 : limits.movestogo;
 
-        _search_time = our_time / (movestogo + 3);
+        _search_time = our_time / (movestogo + 1);
         _search_depth = MAX_DEPTH;
     }
     else
     {
-        _search_time = INFINITY_SCORE;
         _search_depth = 7;
+        _search_time = INFINITE;
     }
 
 }
@@ -65,12 +65,15 @@ void Search::go()
     stop_search = false;
     start_time = std::chrono::steady_clock::now();
 
-    int64_t result;
     TimePoint end_time;
     int64_t elapsed = 0LL;
 
     MoveList pv_list;
     MoveList temp_pv_list;
+
+    Move* begin = MOVE_LIST[0];
+    generate_moves(position, position.side_to_move(), begin);
+    pv_list.push_back(begin[0]);
 
     int depth = 0;
     while (!stop_search)
@@ -87,12 +90,12 @@ void Search::go()
             pv_list = temp_pv_list;
             std::cout << "info "
                       << "depth " << depth << " "
-                      << "score cp " << result << " "
+                      << "score cp " << result / 2 << " "
                       << "nps " << (nodes_searched * 1000 / (elapsed + 1)) << " "
                       << "time " << elapsed << " "
                       << "pv ";
             for (int i = pv_list.size() - 1; i >= 0; --i)
-                std::cout << move_to_string(pv_list[i]) << " ";
+                std::cout << position.move_to_string(pv_list[i]) << " ";
             std::cout << std::endl;
         }
 
@@ -107,7 +110,7 @@ void Search::go()
     }
 
 
-    std::cout << "bestmove " << move_to_string(pv_list.back()) << std::endl;
+    std::cout << "bestmove " << position.move_to_string(pv_list.back()) << std::endl;
 }
 
 Score Search::search(Position& position, int depth, Score alpha, Score beta, MoveList& movelist)
@@ -118,8 +121,8 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
         return 0;
     }
 
-    if (position.threefold_repetition())
-        return DRAW_SCORE;
+    /* if (position.threefold_repetition()) */
+    /*     return DRAW_SCORE; */
     if (position.rule50())
         return DRAW_SCORE;
 
@@ -176,8 +179,8 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
         return 0;
     }
 
-    if (position.threefold_repetition())
-        return DRAW_SCORE;
+    /* if (position.threefold_repetition()) */
+    /*     return DRAW_SCORE; */
     if (position.rule50())
         return DRAW_SCORE;
 

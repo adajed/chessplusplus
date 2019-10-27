@@ -69,6 +69,10 @@ void Uci::loop()
         {
             b = quit_command(istream);
         }
+        else if (token == "printboard")
+        {
+            b = printboard_command(istream);
+        }
 
         if (!b)
         {
@@ -197,6 +201,13 @@ bool Uci::quit_command(std::istringstream& istream)
     if (search)
         search->stop();
     quit = true;
+    return true;
+}
+
+bool Uci::printboard_command(std::istringstream& istream)
+{
+    std::cout << position << std::endl;
+    position.threefold_repetition();
     return true;
 }
 

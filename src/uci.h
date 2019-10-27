@@ -39,6 +39,8 @@ class Uci
 
         bool quit_command(std::istringstream& istream);
 
+        bool printboard_command(std::istringstream& istream);
+
         PositionScorer scorer;
         std::shared_ptr<Search> search;
         Position position;

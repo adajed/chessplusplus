@@ -11,10 +11,11 @@ GTEST_LIB_PATH=/usr/lib
 CFLAGS_RELEASE = -Wall -std=c++17 -flto -Ofast -DNDEBUG
 CFLAGS_DEBUG = -Wall -std=c++17 -flto -g
 
-LFLAGS = -pthread -flto
+LFLAGS_RELEASE = -pthread -flto -Ofast
+LFLAGS_DEBUG = -pthread -flto -g
 
-ENGINE_RELEASE=$(BUILDDIR)/engine
-ENGINE_DEBUG=$(BUILDDIR)/engine_debug
+ENGINE_RELEASE=$(BUILDDIR)/deepchess
+ENGINE_DEBUG=$(BUILDDIR)/deepchess_debug
 
 TEST_RELEASE=$(BUILDDIR)/test
 TEST_DEBUG=$(BUILDDIR)/test_debug
@@ -36,21 +37,21 @@ debug: $(ENGINE_DEBUG) $(TEST_DEBUG)
 
 $(ENGINE_RELEASE): $(ENGINE_OBJS_RELEASE) | $(OBJS_DIR_RELEASE)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS)
+	@$(CXX) -o $@ $^ $(LFLAGS_RELEASE)
 
 $(ENGINE_DEBUG): $(ENGINE_OBJS_DEBUG) | $(OBJS_DIR_DEBUG)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS)
+	@$(CXX) -o $@ $^ $(LFLAGS_DEBUG)
 
 #### test
 
 $(TEST_RELEASE): $(TEST_OBJS_RELEASE) $(filter-out $(OBJS_DIR_RELEASE)/src/engine.o,$(ENGINE_OBJS_RELEASE)) | $(OBJS_DIR_RELEASE)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS) -L$(GTEST_LIB_PATH) -lgtest
+	@$(CXX) -o $@ $^ $(LFLAGS_RELEASE) -L$(GTEST_LIB_PATH) -lgtest
 
 $(TEST_DEBUG): $(TEST_OBJS_DEBUG) $(filter-out $(OBJS_DIR_DEBUG)/src/engine.o,$(ENGINE_OBJS_DEBUG)) | $(OBJS_DIR_DEBUG)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS) -L$(GTEST_LIB_PATH) -lgtest
+	@$(CXX) -o $@ $^ $(LFLAGS_DEBUG) -L$(GTEST_LIB_PATH) -lgtest
 
 #### objs
 

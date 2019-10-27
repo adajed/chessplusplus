@@ -17,6 +17,8 @@ struct Entry
     int64_t value;
 };
 
+void init(size_t size);
+
 void update(HashKey key, Entry entry);
 
 bool contains(HashKey key);

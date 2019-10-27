@@ -8,11 +8,14 @@ namespace engine
 namespace transposition
 {
 
-const uint64_t HASH_MAP_SIZE = 1000000000;
-
 using HashMap = std::unordered_map<HashKey, Entry>;
 
-HashMap hashmap(HASH_MAP_SIZE);
+HashMap hashmap;
+
+void init(size_t size)
+{
+    hashmap = HashMap(size);
+}
 
 void update(HashKey key, Entry entry)
 {
