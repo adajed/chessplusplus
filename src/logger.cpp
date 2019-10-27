@@ -3,6 +3,6 @@
 namespace engine
 {
 
-Logger logger("/home/adam/Projects/chess-engine/log.txt");
+Logger logger("/home/adam/Projects/chess-engine/build/log.txt");
 
 }

@@ -23,7 +23,7 @@ class Logger
         {
             // call the function, but we cannot return it's value
             manip(std::cout);
-            fout << "\n";
+            fout << std::endl;
 
             return *this;
         }

@@ -27,6 +27,7 @@ void Uci::loop()
 
     while (!quit && std::getline(std::cin, line))
     {
+        logger.fout << line << std::endl;
         std::istringstream istream(line);
         istream >> token;
 
