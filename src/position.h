@@ -27,6 +27,7 @@ class Position
 
         MoveInfo do_move(Move move);
         void undo_move(Move move, MoveInfo moveinfo);
+        Move parse_move(std::string str);
 
         bool is_in_check(Color side) const;
         bool is_checkmate() const;

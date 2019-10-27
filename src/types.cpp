@@ -106,24 +106,4 @@ std::ostream& print_bitboard(std::ostream& stream, Bitboard bb)
     return stream;
 }
 
-Move string_to_move(std::string str)
-{
-    Square from = make_square(Rank(str[1] - '1'), File(str[0] - 'a'));
-    Square to = make_square(Rank(str[3] - '1'), File(str[2] - 'a'));
-    PieceKind promotion = NO_PIECE_KIND;
-
-    if (str.size() > 4)
-    {
-        switch (str[4])
-        {
-        case 'n': promotion = KNIGHT; break;
-        case 'b': promotion = BISHOP; break;
-        case 'r': promotion = ROOK; break;
-        case 'q': promotion = QUEEN; break;
-        }
-    }
-
-    return create_promotion(from, to, promotion);
-}
-
 }

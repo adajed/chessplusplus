@@ -133,8 +133,7 @@ bool Uci::position_command(std::istringstream& istream)
         if (token == "moves")
             continue;
 
-        Move move = string_to_move(token);
-        position.do_move(move);
+        position.do_move(position.parse_move(token));
     }
 
     return true;
@@ -172,7 +171,7 @@ bool Uci::go_command(std::istringstream& istream)
         else if (token == "searchmoves")
         {
             while (istream >> token)
-                limits.searchmoves[limits.searchmovesnum++] = string_to_move(token);
+                limits.searchmoves[limits.searchmovesnum++] = position.parse_move(token);
         }
     }
 
