@@ -1,4 +1,5 @@
 #include "move_picker.h"
+#include "logger.h"
 #include "search.h"
 #include "transposition_table.h"
 
@@ -88,15 +89,15 @@ void Search::go()
         if (!stop_search)
         {
             pv_list = temp_pv_list;
-            std::cout << "info "
+            logger << "info "
                       << "depth " << depth << " "
                       << "score cp " << result / 2 << " "
                       << "nps " << (nodes_searched * 1000 / (elapsed + 1)) << " "
                       << "time " << elapsed << " "
                       << "pv ";
             for (int i = pv_list.size() - 1; i >= 0; --i)
-                std::cout << position.move_to_string(pv_list[i]) << " ";
-            std::cout << std::endl;
+                logger << position.move_to_string(pv_list[i]) << " ";
+            logger << std::endl;
         }
 
         if (is_score_mate(result))
@@ -110,7 +111,7 @@ void Search::go()
     }
 
 
-    std::cout << "bestmove " << position.move_to_string(pv_list.back()) << std::endl;
+    logger << "bestmove " << position.move_to_string(pv_list.back()) << std::endl;
 }
 
 Score Search::search(Position& position, int depth, Score alpha, Score beta, MoveList& movelist)
