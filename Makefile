@@ -72,6 +72,12 @@ $(OBJS_DIR_DEBUG)/tests/%.o : tests/%.cpp | $(OBJS_DIR_DEBUG)/tests
 
 #### dirs
 
+$(OBJS_DIR_RELEASE):
+	mkdir -p $@
+
+$(OBJS_DIR_DEBUG):
+	mkdir -p $@
+
 $(OBJS_DIR_RELEASE)/src:
 	mkdir -p $@
 

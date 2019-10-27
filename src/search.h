@@ -10,8 +10,9 @@
 namespace engine
 {
 
-using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
+using MoveList = std::vector<Move>;
 
+using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
 using Score = int64_t;
 
@@ -56,23 +57,24 @@ class Search
         void stop();
 
     private:
-        Score search(Position& position, int depth, Score alpha, Score beta, Move* pv);
+        Score search(Position& position, int depth, Score alpha, Score beta, MoveList& pv);
 
         Score quiescence_search(Position& position, int depth, Score alpha, Score beta);
 
         bool check_limits();
 
-
         Position position;
         PositionScorer scorer;
         Limits limits;
 
-        Move pv_moves[MAX_DEPTH];
+        MoveList pv_list;
         int64_t check_limits_counter;
         bool stop_search;
 
+        int64_t _search_time;
+        int64_t _search_depth;
+
         TimePoint start_time;
-        int64_t thinking_time;
         int64_t nodes_searched;
 };
 

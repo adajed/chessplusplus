@@ -17,7 +17,7 @@ Uci::Uci(const PositionScorer& scorer)
 
 void Uci::loop()
 {
-    std::cout << "Chess engine by Adam Jędrych"
+    std::cout << "Chess engine by Adam Jedrych"
               << " (build " << __DATE__ << " " << __TIME__ << ")" << std::endl;
 
     position = Position();
@@ -80,7 +80,7 @@ void Uci::loop()
 bool Uci::uci_command(std::istringstream& istream)
 {
     std::cout << "id name Deep Chess" << std::endl;
-    std::cout << "id author Adam Jędrych" << std::endl;
+    std::cout << "id author Adam Jedrych" << std::endl;
     std::cout << std::endl;
 
     std::cout << "uciok" << std::endl;
