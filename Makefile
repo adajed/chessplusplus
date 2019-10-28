@@ -8,7 +8,7 @@ GTEST_LIB_PATH=/usr/lib
 
 #### compilation flags
 
-CFLAGS = -Wall -std=c++17 -flto -DLOGFILE=\"$(BUILDDIR)/log.txt\"
+CFLAGS = -Wall -std=c++17 -flto -DLOGFILE=\"$(BUILDDIR)/log.txt\" -DWEIGHTSFILE=\"$(ROOTDIR)/weights.txt\"
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
 CFLAGS_DEBUG = $(CFLAGS) -g
 
@@ -32,8 +32,14 @@ TEST_OBJS_DEBUG=$(TEST_SOURCES:tests/%.cpp=$(OBJS_DIR_DEBUG)/tests/%.o)
 
 all: release debug
 
-release: $(ENGINE_RELEASE) $(TEST_RELEASE)
-debug: $(ENGINE_DEBUG) $(TEST_DEBUG)
+release: engine test
+debug: engine_debug test_debug
+
+engine: $(ENGINE_RELEASE)
+engine_debug: $(ENGINE_DEBUG)
+
+test: $(TEST_RELEASE)
+test_debug: $(TEST_DEBUG)
 
 #### engine
 
