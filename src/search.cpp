@@ -22,7 +22,7 @@ bool is_score_mate(Score score)
 const int64_t INFINITE = 1LL << 32;
 
 Search::Search(const Position& position, const PositionScorer& scorer, const Limits& limits)
-    : position(position), scorer(scorer), limits(limits), pv_list(), nodes_searched(0)
+    : position(position), scorer(scorer), limits(limits), pv_list(), nodes_searched(0), info()
 {
     if (limits.infinite)
     {
@@ -142,7 +142,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
     }
 
     Score best = -INFINITY_SCORE;
-    MovePicker movepicker(position, begin, end);
+    MovePicker movepicker(position, begin, end, info, true);
     MoveList temp_movelist;
 
     while (movepicker.has_next())
@@ -150,9 +150,19 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
         Move move = movepicker.get_next();
         MoveInfo moveinfo = position.do_move(move);
 
+        info.ply++;
         Score result = -search(position, depth - 1, -beta, -alpha, temp_movelist);
+        info.ply--;
 
         position.undo_move(move, moveinfo);
+
+        if (result >= beta)
+        {
+            info.update_killers(info.ply, move);
+            if (position.piece_at(to(move)) != NO_PIECE)
+                info.update_history(position.side_to_move(), from(move), to(move), depth);
+            return beta;
+        }
 
         if (result > best)
         {
@@ -162,11 +172,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
 
         }
         if (result > alpha)
-        {
             alpha = result;
-            if (alpha >= beta)
-                break;
-        }
     }
 
     return best;
@@ -204,7 +210,7 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
     Score best = scorer.score(position);
     nodes_searched++;
 
-    MovePicker movepicker(position, begin, end);
+    MovePicker movepicker(position, begin, end, info, false);
 
     while (movepicker.has_next())
     {

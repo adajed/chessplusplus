@@ -2,6 +2,7 @@
 #define CHESS_ENGINE_SEARCH_H_
 
 #include "position.h"
+#include "move_picker.h"
 #include "score.h"
 #include "types.h"
 
@@ -76,6 +77,8 @@ class Search
 
         TimePoint start_time;
         int64_t nodes_searched;
+
+        OrderingInfo info;
 };
 
 }

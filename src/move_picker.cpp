@@ -5,12 +5,12 @@
 namespace engine
 {
 
-MovePicker::MovePicker(const Position& position, Move* begin, Move* end)
+MovePicker::MovePicker(const Position& position, Move* begin, Move* end, OrderingInfo& info, bool use_info)
     : begin(begin), end(end), pos(0), scores(end - begin)
 {
     size_t n = end - begin;
     for (size_t i = 0; i < n; ++i)
-        scores[i] = score_move(position, begin[i]);
+        scores[i] = score_move(position, begin[i], info, use_info);
 }
 
 bool MovePicker::has_next()
@@ -40,7 +40,7 @@ Move MovePicker::get_next()
     return ret;
 }
 
-uint32_t MovePicker::score_move(const Position& position, Move move)
+uint32_t MovePicker::score_move(const Position& position, Move move, OrderingInfo& info, bool use_info)
 {
     PieceKind moved_piece = make_piece_kind(position.piece_at(from(move)));
     PieceKind captured_piece = make_piece_kind(position.piece_at(to(move)));
@@ -59,10 +59,16 @@ uint32_t MovePicker::score_move(const Position& position, Move move)
     const uint32_t promotion_bonus[PIECE_KIND_NUM] = {0, 0, 1, 2, 3, 4, 0};
 
     if (captured_piece != NO_PIECE_KIND)
-        return 2000 + capture_bonus[captured_piece][moved_piece];
+        return 2000000 + capture_bonus[captured_piece][moved_piece];
     if (promotion_piece != NO_PIECE_KIND)
-        return 1000 + promotion_bonus[promotion_piece];
-    return 1;
+        return 1000000 + promotion_bonus[promotion_piece];
+    if (!use_info)
+        return 1;
+    if (move == info.killers[info.ply][0])
+        return 900000;
+    if (move == info.killers[info.ply][1])
+        return 800000;
+    return 1 + info.history[position.side_to_move()][from(move)][to(move)];
 }
 
 }  // namespace engine
