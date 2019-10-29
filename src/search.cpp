@@ -9,14 +9,14 @@
 namespace engine
 {
 
-Score mate_in(int ply)
+constexpr Score lost_in(int64_t ply)
 {
-    return INFINITY_SCORE - 1;
+    return -INFINITY_SCORE + ply;
 }
 
-bool is_score_mate(Score score)
+constexpr Score win_in(int64_t ply)
 {
-    return score == INFINITY_SCORE - 1 || -score == INFINITY_SCORE - 1;
+    return -lost_in(ply);
 }
 
 const int64_t INFINITE = 1LL << 32;
@@ -71,12 +71,12 @@ void Search::go()
 
     MoveList temp_pv_list;
 
-    int depth = 0;
+    _current_depth = 0;
     while (!stop_search)
     {
-        depth++;
+        _current_depth++;
         nodes_searched = 0;
-        Score result = search(pos, depth, -INFINITY_SCORE, INFINITY_SCORE, temp_pv_list);
+        Score result = search(pos, _current_depth, -INFINITY_SCORE, INFINITY_SCORE, temp_pv_list);
 
         end_time = std::chrono::steady_clock::now();
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
@@ -84,9 +84,18 @@ void Search::go()
         if (!stop_search)
         {
             pv_list = temp_pv_list;
+
+            std::string score_str;
+            if (result < lost_in(MAX_DEPTH))
+                score_str = "mate -" + std::to_string(result + INFINITY_SCORE);
+            else if (result > win_in(MAX_DEPTH))
+                score_str = "mate " + std::to_string(INFINITY_SCORE - result);
+            else
+                score_str = "cp " + std::to_string(result * 100LL / 240LL);
+
             logger << "info "
-                      << "depth " << depth << " "
-                      << "score cp " << result / 2 << " "
+                      << "depth " << _current_depth << " "
+                      << "score " << score_str << " "
                       << "nodes " << nodes_searched << " "
                       << "nps " << (nodes_searched * 1000 / (elapsed + 1)) << " "
                       << "time " << elapsed << " "
@@ -96,10 +105,10 @@ void Search::go()
             logger << std::endl;
         }
 
-        if (is_score_mate(result))
+        if (result < lost_in(MAX_DEPTH) || result > win_in(MAX_DEPTH))
             break;
 
-        if (depth >= _search_depth)
+        if (_current_depth >= _search_depth)
             break;
 
         if (elapsed >= (_search_time / 2))
@@ -124,31 +133,41 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
     if (position.rule50())
         return DRAW_SCORE;
 
-    if (depth == 0)
-        return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
-
     Move* begin = MOVE_LIST[depth];
     Move* end = generate_moves(position, position.side_to_move(), begin);
-    assert(end - begin >= 0);
 
     if (begin == end)
     {
         if (position.is_in_check(position.side_to_move()))
-            return -mate_in(depth);
+            return lost_in(_current_depth - depth);
         return DRAW_SCORE;
     }
+
+    if (depth == 0)
+        return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
 
     Score best = -INFINITY_SCORE;
     MovePicker movepicker(position, begin, end, info, true);
     MoveList temp_movelist;
 
+    bool search_full_window = true;
     while (movepicker.has_next())
     {
         Move move = movepicker.get_next();
         MoveInfo moveinfo = position.do_move(move);
 
         info.ply++;
-        Score result = -search(position, depth - 1, -beta, -alpha, temp_movelist);
+        Score result;
+        if (search_full_window)
+        {
+            result = -search(position, depth - 1, -beta, -alpha, temp_movelist);
+        }
+        else
+        {
+            result = -search(position, depth -1, -alpha - 1, -alpha, temp_movelist);
+            if (alpha < result && result < beta)
+                result = -search(position, depth - 1, -beta, -alpha, temp_movelist);
+        }
         info.ply--;
 
         position.undo_move(move, moveinfo);
@@ -198,7 +217,7 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
     Move* end = generate_moves(position, position.side_to_move(), begin);
 
     if (begin == end)
-        return is_in_check ? -mate_in(1) : DRAW_SCORE;
+        return is_in_check ? lost_in(MAX_DEPTH) : DRAW_SCORE;
 
     end = generate_quiescence_moves(position, position.side_to_move(), begin);
 
