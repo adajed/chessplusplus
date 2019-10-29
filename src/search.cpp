@@ -101,7 +101,7 @@ void Search::go()
             else if (result > win_in(MAX_DEPTH))
                 score_str = "mate " + std::to_string(INFINITY_SCORE - result);
             else
-                score_str = "cp " + std::to_string(result * 100LL / 240LL);
+                score_str = "cp " + std::to_string(result);
 
             logger << "info "
                       << "depth " << _current_depth << " "
