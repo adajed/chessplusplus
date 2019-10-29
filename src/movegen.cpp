@@ -529,60 +529,45 @@ Move* generate_legal_moves(const Position& pos, Move* list)
 template <Color side>
 Move* generate_quiescence(const Position& pos, Move* list)
 {
-    const Piece C_KING = make_piece(side, KING);
     Bitboard checkers_bb = checkers<side>(pos);
 
     Bitboard pinned = 0ULL;
     Pin* pins_start = PINS;
     Pin* pins_end = generate_pins<side>(pos, pins_start, &pinned);
 
-    Bitboard attacked = forbidden_squares<side>(pos);
-
-    Bitboard push_mask = 0ULL;
     Bitboard capture_mask = 0ULL;
-
-    Square king_sq = pos.piece_position(C_KING, 0);
 
     if (checkers_bb)
     {
         if (popcount_more_than_one(checkers_bb))
-            return generate_king_moves(king_sq, attacked | pos.pieces(side), list);
-
+            return list;
 
         capture_mask = checkers_bb;
-
-        Square checker_square = Square(lsb(checkers_bb));
-        if (is_piece_slider(pos.piece_at(checker_square)))
-            push_mask = LINES[king_sq][checker_square] ^ square_bb(king_sq) ^ square_bb(checker_square);
     }
     else
     {
         capture_mask = pos.pieces(!side) & ~pos.pieces(!side, PAWN);
     }
 
-    Bitboard target = push_mask | capture_mask;
-
     Bitboard not_pinned_pawns = pos.pieces(side, PAWN) & ~pinned;
-    list = generate_pawn_moves<side>(not_pinned_pawns, ~pos.pieces(), push_mask, capture_mask, list);
+    list = generate_pawn_moves<side>(not_pinned_pawns, ~pos.pieces(), 0ULL, capture_mask, list);
 
     Bitboard not_pinned_knights = pos.pieces(side, KNIGHT) & ~pinned;
-    FOR_EACH_BIT(not_pinned_knights, list = generate_piece_moves<KNIGHT>(sq, pos, target, list));
+    FOR_EACH_BIT(not_pinned_knights, list = generate_piece_moves<KNIGHT>(sq, pos, capture_mask, list));
 
     Bitboard not_pinned_bishops = pos.pieces(side, BISHOP) & ~pinned;
-    FOR_EACH_BIT(not_pinned_bishops, list = generate_piece_moves<BISHOP>(sq, pos, target, list));
+    FOR_EACH_BIT(not_pinned_bishops, list = generate_piece_moves<BISHOP>(sq, pos, capture_mask, list));
 
     Bitboard not_pinned_rooks = pos.pieces(side, ROOK) & ~pinned;
-    FOR_EACH_BIT(not_pinned_rooks, list = generate_piece_moves<ROOK>(sq, pos, target, list));
+    FOR_EACH_BIT(not_pinned_rooks, list = generate_piece_moves<ROOK>(sq, pos, capture_mask, list));
 
     Bitboard not_pinned_queens = pos.pieces(side, QUEEN) & ~pinned;
-    FOR_EACH_BIT(not_pinned_queens, list = generate_piece_moves<QUEEN>(sq, pos, target, list));
+    FOR_EACH_BIT(not_pinned_queens, list = generate_piece_moves<QUEEN>(sq, pos, capture_mask, list));
 
-    if (checkers_bb)
-        list = generate_king_moves(king_sq, attacked | pos.pieces(side), list);
-    else
+    if (!checkers_bb)
     {
         for (Pin* iter = pins_start; iter != pins_end; ++iter)
-            list = generate_pinned_piece_moves<side>(*iter, pos, target, list);
+            list = generate_pinned_piece_moves<side>(*iter, pos, capture_mask, list);
     }
 
     return list;
