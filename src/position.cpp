@@ -250,7 +250,7 @@ void Position::move_piece(Square from, Square to)
     }
 
     _zobrist_hash ^= zobrist::PIECE_HASH[piece][from];
-    _zobrist_hash ^= zobrist::PIECE_HASH[piece][from];
+    _zobrist_hash ^= zobrist::PIECE_HASH[piece][to];
 }
 
 void Position::change_current_side()
@@ -413,8 +413,7 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
             add_piece(captured, to(move));
     }
 
-    _history_counter--;
-    _zobrist_hash = _history[_history_counter];
+    _zobrist_hash = _history[--_history_counter];
 }
 
 bool Position::is_in_check(Color side) const

@@ -42,7 +42,7 @@ Search::Search(const Position& position, const PositionScorer& scorer, const Lim
     else if (limits.timeleft[position.side_to_move()] != 0)
     {
         int our_time = limits.timeleft[position.side_to_move()];
-        int movestogo = limits.movestogo == 0 ? 10 : limits.movestogo;
+        int movestogo = limits.movestogo == 0 ? 20 : limits.movestogo;
 
         _search_time = our_time / (movestogo + 1);
         _search_depth = MAX_DEPTH;
@@ -69,12 +69,7 @@ void Search::go()
     TimePoint end_time;
     int64_t elapsed = 0LL;
 
-    MoveList pv_list;
     MoveList temp_pv_list;
-
-    Move* begin = MOVE_LIST[0];
-    generate_moves(position, position.side_to_move(), begin);
-    pv_list.push_back(begin[0]);
 
     int depth = 0;
     while (!stop_search)
@@ -92,6 +87,7 @@ void Search::go()
             logger << "info "
                       << "depth " << depth << " "
                       << "score cp " << result / 2 << " "
+                      << "nodes " << nodes_searched << " "
                       << "nps " << (nodes_searched * 1000 / (elapsed + 1)) << " "
                       << "time " << elapsed << " "
                       << "pv ";
@@ -116,14 +112,15 @@ void Search::go()
 
 Score Search::search(Position& position, int depth, Score alpha, Score beta, MoveList& movelist)
 {
+    movelist = MoveList();
     if (stop_search || check_limits())
     {
         stop_search = true;
         return 0;
     }
 
-    /* if (position.threefold_repetition()) */
-    /*     return DRAW_SCORE; */
+    if (position.threefold_repetition())
+        return DRAW_SCORE;
     if (position.rule50())
         return DRAW_SCORE;
 
@@ -158,16 +155,20 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
 
         if (result >= beta)
         {
-            info.update_killers(info.ply, move);
-            if (position.piece_at(to(move)) != NO_PIECE)
+            if (position.piece_at(to(move)) == NO_PIECE)
+            {
+                info.update_killers(info.ply, move);
                 info.update_history(position.side_to_move(), from(move), to(move), depth);
+            }
+            movelist = MoveList(temp_movelist);
+            movelist.push_back(move);
             return beta;
         }
 
         if (result > best)
         {
             best = result;
-            movelist = temp_movelist;
+            movelist = MoveList(temp_movelist);
             movelist.push_back(move);
 
         }
@@ -186,52 +187,48 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
         return 0;
     }
 
-    /* if (position.threefold_repetition()) */
-    /*     return DRAW_SCORE; */
+    if (position.threefold_repetition())
+        return DRAW_SCORE;
     if (position.rule50())
         return DRAW_SCORE;
 
-    if (depth <= 0)
-        return scorer.score(position);
+    bool is_in_check = position.is_in_check(position.side_to_move());
 
     Move* begin = QUIESCENCE_MOVE_LIST[depth];
     Move* end = generate_moves(position, position.side_to_move(), begin);
-    assert(end - begin >= 0);
-
-    bool is_in_check = position.is_in_check(position.side_to_move());
 
     if (begin == end)
-    {
-        if (is_in_check)
-            return -mate_in(1);
-        return DRAW_SCORE;
-    }
+        return is_in_check ? -mate_in(1) : DRAW_SCORE;
 
-    Score best = scorer.score(position);
+    end = generate_quiescence_moves(position, position.side_to_move(), begin);
+
+    Score standpat = scorer.score(position);
     nodes_searched++;
+
+    if (depth <= 0)
+        return standpat;
+
+    if (standpat >= beta)
+        return beta;
+    if (standpat > alpha)
+        alpha = standpat;
+
 
     MovePicker movepicker(position, begin, end, info, false);
 
     while (movepicker.has_next())
     {
         Move move = movepicker.get_next();
-
-        if (position.piece_at(to(move)) == NO_PIECE &&
-                promotion(move) == NO_PIECE_KIND &&
-                !is_in_check)
-            continue;
-
         MoveInfo moveinfo = position.do_move(move);
         Score result = -quiescence_search(position, depth - 1, -beta, -alpha);
         position.undo_move(move, moveinfo);
 
-        best = std::max(best, result);
         alpha = std::max(alpha, result);
         if (alpha >= beta)
             break;
     }
 
-    return best;
+    return alpha;
 }
 
 bool Search::check_limits()
