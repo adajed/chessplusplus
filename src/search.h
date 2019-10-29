@@ -20,8 +20,6 @@ using Score = int64_t;
 constexpr Score INFINITY_SCORE = 1LL << 32;
 constexpr Score DRAW_SCORE = 0LL;
 
-Score mate_in(int ply);
-bool is_score_mate(Score score);
 
 struct Limits
 {
@@ -77,6 +75,7 @@ class Search
 
         int64_t _search_time;
         int64_t _search_depth;
+        int _current_depth;
 
         Move _best_move;
         TimePoint start_time;
