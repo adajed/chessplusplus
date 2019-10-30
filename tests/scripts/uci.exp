@@ -1,0 +1,12 @@
+set timeout 1
+spawn ./build/deepchess
+expect -re "Chess engine by Adam Jedrych .*" {} timeout {exit 1}
+send "uci\n"
+expect -re "id name \W*" {} timeout {exit 1}
+expect -re "id author \W*" {} timeout {exit 1}
+expect "" {} timeout {exit 1}
+expect "uciok" {} timeout {exit 1}
+send "isready\n"
+expect "readyok" {} timeout {exit 1}
+send "quit\n"
+expect eof
