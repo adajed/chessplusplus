@@ -124,6 +124,8 @@ TEST(PositionTest, fen)
         "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1",
         "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 0 1",
         "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 1",
+        "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+        "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 1 2",
     };
 
     for (std::string fen : fens)
@@ -138,9 +140,19 @@ TEST(PositionTest, do_move)
     using TestCase = std::tuple<std::string, Move, MoveInfo, std::string>;
 
     std::vector<TestCase> test_cases = {
+        {"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+         create_move(SQ_E2, SQ_E4),
+         create_moveinfo(NO_PIECE_KIND, ALL_CASTLING, NO_SQUARE, false, 0),
+         "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+        },
+        {"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+         create_move(SQ_G8, SQ_F6),
+         create_moveinfo(NO_PIECE_KIND, ALL_CASTLING, SQ_E3, false, 0),
+         "rnbqkb1r/pppppppp/5n2/8/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 1 2",
+        },
         {"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
          create_move(SQ_E5, SQ_G6),
-         create_moveinfo(PAWN, ALL_CASTLING, NO_SQUARE, false),
+         create_moveinfo(PAWN, ALL_CASTLING, NO_SQUARE, false, 0),
          "r3k2r/p1ppqpb1/bn2pnN1/3P4/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 0 1"
         },
     };

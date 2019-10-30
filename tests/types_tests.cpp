@@ -59,13 +59,18 @@ TEST(TypesTest, create_moveinfo)
             {
                 for (bool b : {false, true})
                 {
-                    MoveInfo moveinfo = create_moveinfo(PieceKind(piecekind), Castling(castling), square, b);
-                    EXPECT_EQ(captured_piece(moveinfo), PieceKind(piecekind));
-                    EXPECT_EQ(last_castling(moveinfo), Castling(castling));
-                    EXPECT_EQ(last_enpassant(moveinfo), square != NO_SQUARE);
-                    if (square != NO_SQUARE)
-                        EXPECT_EQ(last_enpassant_square(moveinfo), square);
-                    EXPECT_EQ(enpassant(moveinfo), b);
+                    for (uint8_t half_move = 0; half_move < 100; ++half_move)
+                    {
+                        MoveInfo moveinfo = create_moveinfo(PieceKind(piecekind), Castling(castling),
+                                                            square, b, half_move);
+                        EXPECT_EQ(captured_piece(moveinfo), PieceKind(piecekind));
+                        EXPECT_EQ(last_castling(moveinfo), Castling(castling));
+                        EXPECT_EQ(last_enpassant(moveinfo), square != NO_SQUARE);
+                        if (square != NO_SQUARE)
+                            EXPECT_EQ(last_enpassant_square(moveinfo), square);
+                        EXPECT_EQ(enpassant(moveinfo), b);
+                        EXPECT_EQ(half_move_counter(moveinfo), half_move);
+                    }
                 }
             }
         }
