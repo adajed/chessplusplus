@@ -3,6 +3,9 @@
 
 #include <unordered_map>
 
+#include "position.h"
+#include "types.h"
+
 namespace engine
 {
 
@@ -13,7 +16,7 @@ class PolyglotBook
 
         PolyglotBook(std::string path);
 
-        HashKey hash(const Position& position) const;
+        static HashKey hash(const Position& position);
 
         bool contains(HashKey key) const;
 
