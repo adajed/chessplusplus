@@ -1,6 +1,6 @@
 set timeout 1
-lassign $argv pos depth move
-spawn ./build/deepchess
+lassign $argv program pos depth move
+spawn $program
 expect -re "Chess engine by Adam Jedrych .*" {} timeout {exit 1}
 send "uci\n"
 expect -re "id name \W*" {} timeout {exit 1}

@@ -181,6 +181,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
             }
             movelist = MoveList(temp_movelist);
             movelist.push_back(move);
+            info.update_pv(position.hash(), move);
             return beta;
         }
 
@@ -195,6 +196,8 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
             alpha = result;
     }
 
+    if (movelist.size() > 0)
+        info.update_pv(position.hash(), movelist.back());
     return best;
 }
 
