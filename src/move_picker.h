@@ -4,6 +4,7 @@
 #include "position.h"
 #include "types.h"
 
+#include <unordered_map>
 #include <vector>
 
 namespace engine
@@ -12,7 +13,7 @@ namespace engine
 struct OrderingInfo
 {
     public:
-        OrderingInfo()
+        OrderingInfo() : pv_moves()
         {
             for (int i = 0; i < 50; ++i)
                 killers[i][0] = killers[i][1] = NO_MOVE;
@@ -34,9 +35,15 @@ struct OrderingInfo
             history[c][from][to] += depth * depth;
         }
 
+        void update_pv(HashKey key, Move pv)
+        {
+            pv_moves[key] = pv;
+        }
+
         Move killers[50][2];
         int history[COLOR_NUM][SQUARE_NUM][SQUARE_NUM];
         int ply;
+        std::unordered_map<HashKey, Move> pv_moves;
 };
 
 

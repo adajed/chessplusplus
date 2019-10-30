@@ -45,6 +45,9 @@ uint32_t MovePicker::score_move(const Position& position, Move move, OrderingInf
     PieceKind moved_piece = make_piece_kind(position.piece_at(from(move)));
     PieceKind captured_piece = make_piece_kind(position.piece_at(to(move)));
     PieceKind promotion_piece = promotion(move);
+    Move pv_move = NO_MOVE;
+    if (info.pv_moves.find(position.hash()) != info.pv_moves.end())
+        pv_move = info.pv_moves[position.hash()];
 
     const uint32_t capture_bonus[PIECE_KIND_NUM][PIECE_KIND_NUM] = {
         {},
@@ -58,16 +61,18 @@ uint32_t MovePicker::score_move(const Position& position, Move move, OrderingInf
 
     const uint32_t promotion_bonus[PIECE_KIND_NUM] = {0, 0, 1, 2, 3, 4, 0};
 
+    if (move == pv_move)
+        return 30000;
     if (captured_piece != NO_PIECE_KIND)
-        return 2000000 + capture_bonus[captured_piece][moved_piece];
+        return 29000 + capture_bonus[captured_piece][moved_piece];
     if (promotion_piece != NO_PIECE_KIND)
-        return 1000000 + promotion_bonus[promotion_piece];
+        return 28000 + promotion_bonus[promotion_piece];
     if (!use_info)
         return 1;
     if (move == info.killers[info.ply][0])
-        return 900000;
+        return 27999;
     if (move == info.killers[info.ply][1])
-        return 800000;
+        return 27998;
     return 1 + info.history[position.side_to_move()][from(move)][to(move)];
 }
 

@@ -27,4 +27,6 @@ before_script:
 
 script:
     - ./build/test
-    - ./run_test_scripts.sh
+    - ./build/test_debug
+    - ./run_test_scripts.sh release
+    - ./run_test_scripts.sh debug
