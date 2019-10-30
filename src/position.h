@@ -18,8 +18,8 @@ namespace engine
 class Position
 {
     public:
-        Position();
-        Position(std::string fen);
+        explicit Position();
+        explicit Position(std::string fen);
 
         bool operator== (const Position& other) const;
 
@@ -27,14 +27,18 @@ class Position
 
         MoveInfo do_move(Move move);
         void undo_move(Move move, MoveInfo moveinfo);
+        Move parse_move(std::string str);
 
         bool is_in_check(Color side) const;
         bool is_checkmate() const;
 
         Color side_to_move() const { return _current_side; }
 
-        uint32_t half_moves_counter() const { return _half_move_counter; }
-        uint32_t moves_counter() const { return _move_counter; }
+        uint32_t half_moves() const { return _half_move_counter; }
+        uint32_t ply_count() const { return _ply_counter; }
+
+        bool threefold_repetition() const;
+        bool rule50() const;
 
         Piece piece_at(Square square) const { return _board[square]; }
         int number_of_pieces(Piece piece) const { return _piece_count[piece]; }
@@ -50,6 +54,8 @@ class Position
         Bitboard pieces(PieceKind p) const;
         Bitboard pieces(Color c, PieceKind p) const;
 
+        std::string move_to_string(Move move) const;
+
     private:
 
         void add_piece(Piece piece, Square square);
@@ -60,8 +66,8 @@ class Position
 
         Color _current_side;
 
-        uint32_t _half_move_counter;
-        uint32_t _move_counter;
+        uint8_t _half_move_counter;
+        int32_t _ply_counter;
 
         Piece _board[SQUARE_NUM];
         Square _piece_position[PIECE_NUM][10];
@@ -74,6 +80,9 @@ class Position
         Square _enpassant_square;
 
         HashKey _zobrist_hash;
+
+        int32_t _history_counter;
+        HashKey _history[MAX_PLIES];
 };
 
 std::ostream& operator<< (std::ostream& stream, const Position& position);

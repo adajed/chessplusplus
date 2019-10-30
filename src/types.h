@@ -8,6 +8,8 @@
 namespace engine
 {
 
+const int32_t MAX_PLIES = 400;
+
 using HashKey = uint64_t;
 
 using Bitboard = uint64_t;
@@ -104,19 +106,22 @@ Move create_castling(Castling castling);
 // 7-12 - last enpassant square
 // 13-13 - last enpassant
 // 14-14 - enpassant
+// 15-22 - half move counter
 using MoveInfo = uint32_t;
 
-MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant, bool enpassant);
+MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant,
+                         bool enpassant, uint8_t half_move_counter);
 
 PieceKind captured_piece(MoveInfo moveinfo);
 Castling last_castling(MoveInfo moveinfo);
 Square last_enpassant_square(MoveInfo moveinfo);
 bool last_enpassant(MoveInfo moveinfo);
 bool enpassant(MoveInfo moveinfo);
+uint8_t half_move_counter(MoveInfo moveinfo);
 
 const Castling CASTLING_RIGHTS[COLOR_NUM]      = {W_CASTLING, B_CASTLING};
 const Square KING_SIDE_ROOK_SQUARE[COLOR_NUM]  = {SQ_H1, SQ_H8};
-const Square QUEEN_SIDE_ROOK_SQUARE[COLOR_NUM] = {SQ_A1, SQ_A8};;
+const Square QUEEN_SIDE_ROOK_SQUARE[COLOR_NUM] = {SQ_A1, SQ_A8};
 
 constexpr Rank rank(Square sq)
 {
@@ -130,8 +135,6 @@ constexpr File file(Square sq)
 
 constexpr Square make_square(Rank rank, File file)
 {
-    if (!(RANK_1 <= rank && rank <= RANK_8))
-        std::cout << "Rank " << rank << std::endl;
     assert(RANK_1 <= rank && rank <= RANK_8);
     assert(FILE_A <= file && file <= FILE_H);
     return Square((rank << 3) + file);
@@ -207,8 +210,6 @@ constexpr bool is_piece_slider(Piece piece)
     PieceKind piece_kind = get_piece_kind(piece);
     return piece_kind == BISHOP || piece_kind == ROOK || piece_kind == QUEEN;
 }
-
-std::ostream& print_move(std::ostream& stream, Move move);
 
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb);
 

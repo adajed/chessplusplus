@@ -91,8 +91,8 @@ TEST(PositionTest, constructor_startpos)
     EXPECT_FALSE(position.is_in_check(BLACK));
     EXPECT_FALSE(position.is_checkmate());
 
-    EXPECT_EQ(position.half_moves_counter(), 0);
-    EXPECT_EQ(position.moves_counter(), 1);
+    EXPECT_EQ(position.half_moves(), 0);
+    EXPECT_EQ(position.ply_count(), 1);
 }
 
 TEST(PositionTest, constructor)

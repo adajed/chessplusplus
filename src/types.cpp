@@ -49,11 +49,12 @@ Castling castling(Move move)
            QUEEN_CASTLING;
 }
 
-MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant, bool enpassant)
+MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant,
+                         bool enpassant, uint8_t half_move_counter)
 {
     if (last_enpassant != NO_SQUARE)
-        return enpassant << 14 | 1 << 13 | last_enpassant << 7 | last_castling << 3 | captured;
-    return enpassant << 14 | last_castling << 3 | captured;
+        return half_move_counter << 15 | (!!enpassant) << 14 | 1 << 13 | last_enpassant << 7 | last_castling << 3 | captured;
+    return half_move_counter << 15 | enpassant << 14 | last_castling << 3 | captured;
 }
 
 PieceKind captured_piece(MoveInfo moveinfo)
@@ -81,24 +82,9 @@ bool enpassant(MoveInfo moveinfo)
     return (moveinfo >> 14) & 0x1;
 }
 
-std::ostream& print_move(std::ostream& stream, Move move)
+uint8_t half_move_counter(MoveInfo moveinfo)
 {
-    const std::string files = "abcdefgh";
-    const std::string ranks = "12345678";
-    const std::string promotions = "  NBRQ ";
-
-    if (castling(move) & KING_CASTLING)
-        return stream << "OO";
-    if (castling(move) & QUEEN_CASTLING)
-        return stream << "OOO";
-
-    stream << files[file(from(move))] << ranks[rank(from(move))]
-           << files[file(to(move))]   << ranks[rank(to(move))];
-
-    if (promotion(move) != NO_PIECE_KIND)
-        stream << promotions[promotion(move)];
-
-    return stream;
+    return (moveinfo >> 15) & 0xFF;
 }
 
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb)

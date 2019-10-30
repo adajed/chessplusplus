@@ -28,7 +28,7 @@ int64_t PositionScorer::score(const Position& position) const
 
     GamePhase phase = position.game_phase();
 
-    Move* begin = QUIESCENCE_MOVE_LIST[0];
+    Move* begin = const_cast<Move*>(move_list);
     Move* end = generate_moves(position, side, begin);
     uint32_t mobility[PIECE_KIND_NUM];
     for (PieceKind piecekind = PAWN; piecekind != KING; ++piecekind)
