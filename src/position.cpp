@@ -416,6 +416,34 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
     _zobrist_hash = _history[--_history_counter];
 }
 
+MoveInfo Position::do_null_move()
+{
+    change_current_side();
+    _ply_counter++;
+    _half_move_counter++;
+
+    Square enpassant_sq = _enpassant_square;
+
+    if (_enpassant_square != NO_SQUARE)
+        _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
+    _enpassant_square = NO_SQUARE;
+
+    return create_moveinfo(NO_PIECE_KIND, NO_CASTLING, enpassant_sq, false, 0);
+}
+
+void Position::undo_null_move(MoveInfo moveinfo)
+{
+    change_current_side();
+    _ply_counter--;
+    _half_move_counter--;
+
+    _enpassant_square = last_enpassant_square(moveinfo);
+    if (_enpassant_square != NO_SQUARE)
+        _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
+}
+
+
+
 bool Position::is_in_check(Color side) const
 {
     Bitboard attacked = attacked_squares(*this, side);
