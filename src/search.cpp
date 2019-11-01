@@ -71,12 +71,37 @@ void Search::go()
 
     MoveList temp_pv_list;
 
+    Score min = -INFINITY_SCORE;
+    Score max = INFINITY_SCORE;
+
     _current_depth = 0;
     while (!stop_search)
     {
         _current_depth++;
         nodes_searched = 0;
-        Score result = search<true>(pos, _current_depth, -INFINITY_SCORE, INFINITY_SCORE, temp_pv_list);
+
+        Score result;
+        bool repeat;
+        do
+        {
+            result = search<true>(pos, _current_depth, min, max, temp_pv_list);
+            repeat = true;
+            if (min == result)
+            {
+                max = (min + max) / 2;
+                min -= 30;
+            }
+            else if (max == result)
+            {
+                min = (min + max) / 2;
+                max += 30;
+            }
+            else
+                repeat = false;
+        } while (repeat && !stop_search);
+
+        min = result - 50;
+        max = result + 50;
 
         end_time = std::chrono::steady_clock::now();
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
