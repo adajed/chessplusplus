@@ -11,24 +11,18 @@ class SearchTest : public ::testing::Test
     protected:
         static void SetUpTestCase()
         {
-            weights = new Weights;
-            *weights = load("weights.txt");
-            scorer = new PositionScorer(*weights);
+            scorer = new PositionScorer;
         }
         static void TearDownTestCase()
         {
-            delete weights;
             delete scorer;
 
-            weights = nullptr;
             scorer = nullptr;
         }
 
-        static Weights* weights;
         static PositionScorer* scorer;
 };
 
-Weights* SearchTest::weights = nullptr;
 PositionScorer* SearchTest::scorer = nullptr;
 
 namespace

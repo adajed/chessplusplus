@@ -91,7 +91,7 @@ void Search::go()
             else if (result > win_in(MAX_DEPTH))
                 score_str = "mate " + std::to_string(INFINITY_SCORE - result);
             else
-                score_str = "cp " + std::to_string(result * 100LL / 240LL);
+                score_str = "cp " + std::to_string(result * 100LL / 120LL);
 
             logger << "info "
                       << "depth " << _current_depth << " "
@@ -194,6 +194,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
             }
             movelist = MoveList(temp_movelist);
             movelist.push_back(move);
+            info.update_pv(position.hash(), move);
             return beta;
         }
 
@@ -205,9 +206,14 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
 
         }
         if (result > alpha)
+        {
             alpha = result;
+            search_full_window = false;
+        }
     }
 
+    if (movelist.size() > 0)
+        info.update_pv(position.hash(), movelist.back());
     return best;
 }
 
