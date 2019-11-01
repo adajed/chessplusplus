@@ -30,3 +30,4 @@ script:
     - ./build/test_debug
     - ./run_test_scripts.sh release
     - ./run_test_scripts.sh debug
+    - ./run_test_scripts.sh
