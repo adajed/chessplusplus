@@ -56,6 +56,7 @@ class Search
         void stop();
 
     private:
+        template <bool allow_null_move>
         Score search(Position& position, int depth, Score alpha, Score beta, MoveList& pv);
 
         Score quiescence_search(Position& position, int depth, Score alpha, Score beta);
