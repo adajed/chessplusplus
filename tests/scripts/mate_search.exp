@@ -1,5 +1,5 @@
-set timeout 1
-lassign $argv program pos depth move
+set timeout 10
+lassign $argv program pos move
 spawn $program
 expect -re "Chess engine by Adam Jedrych .*" {} timeout {exit 1}
 send "uci\n"
@@ -10,7 +10,7 @@ expect "uciok" {} timeout {exit 1}
 send "isready\n"
 expect "readyok" {} timeout {exit 1}
 send "position fen $pos\n"
-send "go depth $depth\n"
+send "go movetime 9000\n"
 expect -re {(info (((depth \d+)|(score ((cp \d+)|(mate -?\d+)))|(nodes \d+)|(nps \d+)|(time \d+)) )* pv \W*\n)*} {} timeout {exit 1}
 expect "bestmove $move" {} timeout {exit 1}
 send "quit\n"
