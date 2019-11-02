@@ -103,7 +103,7 @@ run_test "8/p1ppk1p1/2n2p2/8/4B3/2P1KPP1/1P5P/8 w - - 0 1" e4c6
 run_test "8/3nk3/3pp3/1B6/8/3PPP2/4K3/8 w - - 0 1" b5d7
 
 echo "Tests passed: ${TESTS_PASSED}/${NUMBER_OF_TESTS}"
-if [ ${TESTS_PASSED} -gt 20 ]
+if [ ${TESTS_PASSED} -gt 19 ]
 then
     exit 0
 else
