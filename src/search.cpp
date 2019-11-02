@@ -80,28 +80,7 @@ void Search::go()
         _current_depth++;
         nodes_searched = 0;
 
-        Score result;
-        bool repeat;
-        do
-        {
-            result = search<true>(pos, _current_depth, min, max, temp_pv_list);
-            repeat = true;
-            if (min == result)
-            {
-                max = (min + max) / 2;
-                min -= 30;
-            }
-            else if (max == result)
-            {
-                min = (min + max) / 2;
-                max += 30;
-            }
-            else
-                repeat = false;
-        } while (repeat && !stop_search);
-
-        min = result - 50;
-        max = result + 50;
+        Score result = search<true>(pos, _current_depth, min, max, temp_pv_list);
 
         end_time = std::chrono::steady_clock::now();
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
@@ -116,7 +95,7 @@ void Search::go()
             else if (result > win_in(MAX_DEPTH))
                 score_str = "mate " + std::to_string(INFINITY_SCORE - result);
             else
-                score_str = "cp " + std::to_string(result * 100LL / 120LL);
+                score_str = "cp " + std::to_string(result * 100LL / PIECE_BASE_VALUES[END_GAME][PAWN]);
 
             logger << "info "
                       << "depth " << _current_depth << " "
@@ -147,6 +126,8 @@ void Search::go()
 template <bool allow_null_move>
 Score Search::search(Position& position, int depth, Score alpha, Score beta, MoveList& movelist)
 {
+    assert(alpha < beta);
+
     movelist = MoveList();
     if (stop_search || check_limits())
     {
@@ -175,7 +156,12 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
 
     if (allow_null_move)
     {
-        if (!is_in_check && depth > 4)
+        Color side = position.side_to_move();
+        int n = position.number_of_pieces(make_piece(side, KNIGHT))
+              + position.number_of_pieces(make_piece(side, BISHOP))
+              + position.number_of_pieces(make_piece(side, ROOK))
+              + position.number_of_pieces(make_piece(side, QUEEN));
+        if (!is_in_check && n > 0 && depth > 4)
         {
             info.ply++;
             MoveInfo moveinfo = position.do_null_move();
@@ -202,7 +188,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
         }
         else
         {
-            result = -search<true>(position, depth -1, -alpha - 1, -alpha, temp_movelist);
+            result = -search<true>(position, depth - 1, -alpha - 1, -alpha, temp_movelist);
             if (alpha < result && result < beta)
                 result = -search<true>(position, depth - 1, -beta, -alpha, temp_movelist);
         }

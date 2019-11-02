@@ -5,19 +5,24 @@
 namespace engine
 {
 
-constexpr int64_t PIECE_WEIGHTS[PIECE_KIND_NUM] = {0, 0, 2, 2, 4, 8, 0};
-constexpr int64_t MAX_WEIGHT = 2 * (2 * PIECE_WEIGHTS[KNIGHT] +
-                                    2 * PIECE_WEIGHTS[BISHOP] +
-                                    2 * PIECE_WEIGHTS[ROOK] +
-                                    1 * PIECE_WEIGHTS[QUEEN]);
+int64_t PIECE_WEIGHTS[PIECE_KIND_NUM] = {0, 0, 2, 2, 4, 8, 0};
+int64_t MAX_WEIGHT = 2 * (2 * PIECE_WEIGHTS[KNIGHT] +
+                          2 * PIECE_WEIGHTS[BISHOP] +
+                          2 * PIECE_WEIGHTS[ROOK] +
+                          1 * PIECE_WEIGHTS[QUEEN]);
 
 
-const int64_t PIECE_BASE_VALUES[GAME_PHASE_NUM][PIECE_KIND_NUM] = {
+int64_t PIECE_BASE_VALUES[GAME_PHASE_NUM][PIECE_KIND_NUM] = {
     {0, 100, 300, 315, 500, 900, 0},
     {0, 120, 300, 300, 500, 900, 0}
 };
 
-const int64_t PIECE_POSITIONAL_VALUES[GAME_PHASE_NUM][PIECE_KIND_NUM][SQUARE_NUM] = {
+int64_t PIECE_MOBILITY_BONUS[GAME_PHASE_NUM][PIECE_KIND_NUM] = {
+    {0, 2, 6, 3, 3, 2, 2},
+    {0, 2, 6, 4, 4, 6, 2},
+};
+
+int64_t PIECE_POSITIONAL_VALUES[GAME_PHASE_NUM][PIECE_KIND_NUM][SQUARE_NUM] = {
     { // middle game
         { },
         { // pawn
@@ -146,13 +151,13 @@ const int64_t PIECE_POSITIONAL_VALUES[GAME_PHASE_NUM][PIECE_KIND_NUM][SQUARE_NUM
     }
 };
 
-const int64_t ROOK_SEMIOPEN_FILE_BONUS[GAME_PHASE_NUM] = {10, 20};
-const int64_t ROOK_OPEN_FILE_BONUS[GAME_PHASE_NUM]     = {20, 40};
-const int64_t BISHOP_PAIR_BONUS[GAME_PHASE_NUM]        = {50, 60};
-const int64_t PASSED_PAWN_BONUS[GAME_PHASE_NUM]        = {0, 50};
-const int64_t DOUBLED_PAWN_PENALTY[GAME_PHASE_NUM]     = {-30, -60};
-const int64_t ISOLATED_PAWN_PENALTY[GAME_PHASE_NUM]    = {-40, -80};
-const int64_t CONNECTED_ROOKS_BONUS[GAME_PHASE_NUM]    = {40, 20};
+int64_t ROOK_SEMIOPEN_FILE_BONUS[GAME_PHASE_NUM] = {10, 20};
+int64_t ROOK_OPEN_FILE_BONUS[GAME_PHASE_NUM]     = {20, 40};
+int64_t BISHOP_PAIR_BONUS[GAME_PHASE_NUM]        = {50, 60};
+int64_t PASSED_PAWN_BONUS[GAME_PHASE_NUM]        = {0, 50};
+int64_t DOUBLED_PAWN_PENALTY[GAME_PHASE_NUM]     = {-30, -60};
+int64_t ISOLATED_PAWN_PENALTY[GAME_PHASE_NUM]    = {-40, -80};
+int64_t CONNECTED_ROOKS_BONUS[GAME_PHASE_NUM]    = {40, 20};
 
 Square flip(Square square)
 {
@@ -163,14 +168,29 @@ PositionScorer::PositionScorer()
 {
 }
 
-int64_t PositionScorer::score(const Position& position) const
+int64_t PositionScorer::score(const Position& position)
 {
+    for (Color side : {WHITE, BLACK})
+        for (PieceKind piecekind : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING})
+            move_count[side][piecekind] = 0;
+
+    for (Color side : {WHITE, BLACK})
+    {
+        Move* begin = move_list;
+        Move* end = generate_moves(position, side, begin);
+        for (Move* it = begin; it != end; ++it)
+        {
+            PieceKind piecekind = make_piece_kind(position.piece_at(from(*it)));
+            move_count[side][piecekind]++;
+        }
+    }
+
     int64_t value = score_side<WHITE>(position) - score_side<BLACK>(position);
     return position.side_to_move() == WHITE ? value : -value;
 }
 
 template <Color side>
-int64_t PositionScorer::score_side(const Position& position) const
+int64_t PositionScorer::score_side(const Position& position)
 {
     int64_t phase_weight = game_phase_weight(position);
     int64_t mg = score<side, MIDDLE_GAME>(position);
@@ -180,7 +200,7 @@ int64_t PositionScorer::score_side(const Position& position) const
 }
 
 template <Color side, GamePhase phase>
-int64_t PositionScorer::score(const Position& position) const
+int64_t PositionScorer::score(const Position& position)
 {
     int64_t value = 0LL;
 
@@ -189,6 +209,7 @@ int64_t PositionScorer::score(const Position& position) const
         Piece piece = make_piece(side, piecekind);
         int num_pieces = position.number_of_pieces(piece);
         value += PIECE_BASE_VALUES[phase][piecekind] * num_pieces;
+        value += PIECE_MOBILITY_BONUS[phase][piecekind] * move_count[side][piecekind];
 
         for (int i = 0; i < num_pieces; ++i)
         {
@@ -253,7 +274,7 @@ int64_t PositionScorer::score(const Position& position) const
     return value;
 }
 
-int64_t PositionScorer::game_phase_weight(const Position& position) const
+int64_t PositionScorer::game_phase_weight(const Position& position)
 {
     int64_t weight = 0;
     weight += position.number_of_pieces(W_KNIGHT) * PIECE_WEIGHTS[KNIGHT];
