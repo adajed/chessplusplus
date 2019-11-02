@@ -2,9 +2,9 @@
 
 if [ "$1" == "release" ]
 then
-    program="./build/deepchess"
+    program="./build/chessplusplus"
 else
-    program="./build/deepchess_debug"
+    program="./build/chessplusplus_debug"
 fi
 
 NUMBER_OF_TESTS=0
