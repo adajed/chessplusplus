@@ -73,6 +73,10 @@ void Uci::loop()
         {
             b = printboard_command(istream);
         }
+        else if (token == "hash")
+        {
+            b = hash_command(istream);
+        }
 
         if (!b)
         {
@@ -206,7 +210,12 @@ bool Uci::quit_command(std::istringstream& istream)
 bool Uci::printboard_command(std::istringstream& istream)
 {
     logger << position << std::endl;
-    position.threefold_repetition();
+    return true;
+}
+
+bool Uci::hash_command(std::istringstream& istream)
+{
+    logger << "Hex: " << std::hex << position.hash() << std::dec << std::endl;
     return true;
 }
 

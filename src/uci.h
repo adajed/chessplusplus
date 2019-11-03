@@ -41,6 +41,8 @@ class Uci
 
         bool printboard_command(std::istringstream& istream);
 
+        bool hash_command(std::istringstream& istream);
+
         PositionScorer scorer;
         std::shared_ptr<Search> search;
         Position position;
