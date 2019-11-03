@@ -158,11 +158,9 @@ std::string Position::fen() const
 
 bool Position::threefold_repetition() const
 {
-    int count = 0;
-    for (int i = 0; i < _history_counter; ++i)
+    for (int i = 0; i < _history_counter - 1; ++i)
         if (_history[i] == _zobrist_hash)
-            if (++count == 3)
-                return true;
+            return true;
     return false;
 }
 
@@ -413,7 +411,8 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
             add_piece(captured, to(move));
     }
 
-    _zobrist_hash = _history[--_history_counter];
+    _history_counter--;
+    _zobrist_hash = _history[_history_counter - 1];
 }
 
 MoveInfo Position::do_null_move()
@@ -475,7 +474,7 @@ std::string Position::move_to_string(Move move) const
 {
     const std::string files = "abcdefgh";
     const std::string ranks = "12345678";
-    const std::string promotions = "  NBRQ ";
+    const std::string promotions = "  nbrq ";
 
     if (castling(move) & KING_CASTLING)
         return _current_side == WHITE ? "e1g1" : "e8g8";
@@ -545,6 +544,7 @@ std::ostream& operator<< (std::ostream& stream, const Position& position)
     stream << "   A B C D E F G H" << std::endl;
     stream << std::endl;
     stream << "Fen: \"" << position.fen() << "\"" << std::endl;
+    stream << "Hash: " << std::hex << position.hash() << std::dec << std::endl;
     if (position.side_to_move() == WHITE)
         stream << "White to move" << std::endl;
     else

@@ -104,8 +104,12 @@ void Search::go()
                       << "nps " << (nodes_searched * 1000 / (elapsed + 1)) << " "
                       << "time " << elapsed << " "
                       << "pv ";
+            Position temp_position = position;
             for (int i = pv_list.size() - 1; i >= 0; --i)
-                logger << position.move_to_string(pv_list[i]) << " ";
+            {
+                logger << temp_position.move_to_string(pv_list[i]) << " ";
+                temp_position.do_move(pv_list[i]);
+            }
             logger << std::endl;
         }
 
