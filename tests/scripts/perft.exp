@@ -1,0 +1,17 @@
+set timeout 60
+lassign $argv program pos depth nodes
+spawn $program
+expect -re "Chess engine by Adam Jedrych .*" {} timeout {exit 1}
+send "uci\n"
+expect -re "id name \W*" {} timeout {exit 1}
+expect -re "id author \W*" {} timeout {exit 1}
+expect "" {} timeout {exit 1}
+expect "uciok" {} timeout {exit 1}
+send "isready\n"
+expect "readyok" {} timeout {exit 1}
+send "position fen $pos\n"
+send "perft $depth\n"
+expect -re {([a-h][1-8][a-h][1-8][nbrq]?: \d+\n)*} {} timeout {exit 1}
+expect "Number of nodes: $nodes" {} timeout {exit 1}
+send "quit\n"
+expect eof

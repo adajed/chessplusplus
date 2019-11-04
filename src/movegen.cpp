@@ -622,11 +622,11 @@ Bitboard attacked_squares(const Position& position, Color side)
 
 uint64_t perft(Position& position, int depth)
 {
+    if (depth == 0)
+        return 1;
+
     Move* begin = MOVE_LIST[depth];
     Move* end = generate_moves(position, position.side_to_move(), begin);
-
-    if (depth == 1)
-        return end - begin;
 
     uint64_t sum = 0;
     for (Move* it = begin; it != end; ++it)
