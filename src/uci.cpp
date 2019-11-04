@@ -33,50 +33,26 @@ void Uci::loop()
 
         bool b = false;
 
-        if (token == "uci")
-        {
-            b = uci_command(istream);
-        }
-        else if (token == "ucinewgame")
-        {
-            b = ucinewgame_command(istream);
-        }
-        else if (token == "isready")
-        {
-            b = isready_command(istream);
-        }
-        else if (token == "setoption")
-        {
-            b = setoption_command(istream);
-        }
-        else if (token == "position")
-        {
-            b = position_command(istream);
-        }
-        else if (token == "go")
-        {
-            b = go_command(istream);
-        }
-        else if (token == "stop")
-        {
-            b = stop_command(istream);
-        }
-        else if (token == "ponderhit")
-        {
-            b = ponderhit_command(istream);
-        }
-        else if (token == "quit")
-        {
-            b = quit_command(istream);
-        }
-        else if (token == "printboard")
-        {
-            b = printboard_command(istream);
-        }
-        else if (token == "hash")
-        {
-            b = hash_command(istream);
-        }
+#define COMMAND(name)                       \
+        if (token == #name)                 \
+        {                                   \
+            b = name##_command(istream);    \
+        }                                   \
+
+        COMMAND(uci)
+        COMMAND(ucinewgame)
+        COMMAND(isready)
+        COMMAND(setoption)
+        COMMAND(position)
+        COMMAND(go)
+        COMMAND(stop)
+        COMMAND(ponderhit)
+        COMMAND(quit)
+        COMMAND(printboard)
+        COMMAND(hash)
+        COMMAND(perft)
+
+#undef COMMAND
 
         if (!b)
         {
@@ -216,6 +192,37 @@ bool Uci::printboard_command(std::istringstream& istream)
 bool Uci::hash_command(std::istringstream& istream)
 {
     logger << "Hex: " << std::hex << position.hash() << std::dec << std::endl;
+    return true;
+}
+
+bool Uci::perft_command(std::istringstream& istream)
+{
+    int depth;
+    istream >> depth;
+
+    uint64_t sum = 0;
+    if (depth > 0)
+    {
+        Move* begin = MOVE_LIST[depth];
+        Move* end = generate_moves(position, position.side_to_move(), begin);
+
+        for (Move* it = begin; it != end; ++it)
+        {
+            Move move = *it;
+            MoveInfo moveinfo = position.do_move(move);
+
+            uint64_t n = perft(position, depth - 1);
+
+            position.undo_move(move, moveinfo);
+
+            logger << position.move_to_string(move) << ": " << n << std::endl;
+            sum += n;
+        }
+    }
+
+    logger << std::endl;
+    logger << "Number of nodes: " << sum << std::endl;
+
     return true;
 }
 
