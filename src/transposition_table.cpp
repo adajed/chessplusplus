@@ -12,8 +12,16 @@ using HashMap = std::unordered_map<HashKey, Entry>;
 
 HashMap hashmap;
 
+const size_t MEGABYTE = 1ULL << 20;
+
 void init(size_t size)
 {
+    hashmap = HashMap(size * MEGABYTE / sizeof(Entry));
+}
+
+void clear()
+{
+    size_t size = hashmap.size();
     hashmap = HashMap(size);
 }
 
