@@ -1,7 +1,7 @@
 <h1 align="center">chessplusplus</h1>
 
 <p align="center">
-  <a href="https://travis-ci.com/adajed/chess-engine"><img src="https://travis-ci.com/adajed/chess-engine.svg?branch=master"></a>
+  <a href="https://travis-ci.com/adajed/chessplusplus"><img src="https://travis-ci.com/adajed/chessplusplus.svg?branch=master"></a>
 </p>
 <p align="center">
   A UCI chess engine written in C++.
