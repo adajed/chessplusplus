@@ -3,6 +3,7 @@
 #include "search.h"
 #include "transposition_table.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstring>
 
@@ -22,7 +23,7 @@ constexpr Score win_in(int64_t ply)
 const int64_t INFINITE = 1LL << 32;
 
 Search::Search(const Position& position, const PositionScorer& scorer, const Limits& limits)
-    : position(position), scorer(scorer), limits(limits), pv_list(), nodes_searched(0), info()
+    : position(position), scorer(scorer), limits(limits), pv_list(), nodes_searched(0), info(), _root_moves()
 {
     if (limits.infinite)
     {
@@ -44,7 +45,7 @@ Search::Search(const Position& position, const PositionScorer& scorer, const Lim
         int our_time = limits.timeleft[position.side_to_move()];
         int movestogo = limits.movestogo == 0 ? 20 : limits.movestogo;
 
-        _search_time = our_time / (movestogo + 1);
+        _search_time = our_time / (movestogo + 1) + limits.timeinc[position.side_to_move()];
         _search_depth = MAX_DEPTH;
     }
     else
@@ -71,18 +72,27 @@ void Search::go()
 
     MoveList temp_pv_list;
 
+    Move* begin = MOVE_LIST[0];
+    Move* end = generate_moves(position, position.side_to_move(), begin);
+
+    for (Move* it = begin; it != end; ++it)
+        _root_moves.push_back(std::make_pair(DRAW_SCORE, *it));
+
     _current_depth = 0;
     while (!stop_search)
     {
         _current_depth++;
         nodes_searched = 0;
-        Score result = search(pos, _current_depth, -INFINITY_SCORE, INFINITY_SCORE, temp_pv_list);
+
+        std::stable_sort(_root_moves.begin(), _root_moves.end(), std::greater<>());
+        Score result = root_search(pos, _current_depth, -INFINITY_SCORE, INFINITY_SCORE, temp_pv_list);
 
         end_time = std::chrono::steady_clock::now();
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
         if (!stop_search)
         {
+            Position temp = position;
             pv_list = temp_pv_list;
 
             std::string score_str;
@@ -91,7 +101,7 @@ void Search::go()
             else if (result > win_in(MAX_DEPTH))
                 score_str = "mate " + std::to_string(INFINITY_SCORE - result);
             else
-                score_str = "cp " + std::to_string(result * 100LL / 240LL);
+                score_str = "cp " + std::to_string(result * 100LL / PIECE_BASE_VALUES[END_GAME][PAWN]);
 
             logger << "info "
                       << "depth " << _current_depth << " "
@@ -100,8 +110,12 @@ void Search::go()
                       << "nps " << (nodes_searched * 1000 / (elapsed + 1)) << " "
                       << "time " << elapsed << " "
                       << "pv ";
+            Position temp_position = position;
             for (int i = pv_list.size() - 1; i >= 0; --i)
-                logger << position.move_to_string(pv_list[i]) << " ";
+            {
+                logger << temp_position.move_to_string(pv_list[i]) << " ";
+                temp_position.do_move(pv_list[i]);
+            }
             logger << std::endl;
         }
 
@@ -119,8 +133,91 @@ void Search::go()
     logger << "bestmove " << position.move_to_string(pv_list.back()) << std::endl;
 }
 
+Score Search::root_search(Position& position, int depth, Score alpha, Score beta, MoveList& movelist)
+{
+    movelist = MoveList();
+
+    if (position.threefold_repetition())
+        return DRAW_SCORE;
+    if (position.rule50())
+        return DRAW_SCORE;
+
+    bool is_in_check = position.is_in_check(position.side_to_move());
+    if (_root_moves.size() == 0)
+        return is_in_check ? lost_in(0) : DRAW_SCORE;
+
+    if (is_in_check)
+        depth++;
+
+    if (depth == 0)
+        return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
+
+    _best_move = _root_moves[0].second;
+
+    Score bestscore = -INFINITY_SCORE;
+    MoveList temp_movelist;
+
+    bool search_full_window = true;
+    for (int pos = 0; pos < _root_moves.size(); ++pos)
+    {
+        Move move = _root_moves[pos].second;
+        MoveInfo moveinfo = position.do_move(move);
+
+        info.ply++;
+        Score result;
+        if (search_full_window)
+        {
+            result = -search<true>(position, depth - 1, -beta, -alpha, temp_movelist);
+        }
+        else
+        {
+            result = -search<true>(position, depth - 1, -alpha - 1, -alpha, temp_movelist);
+            if (alpha < result && result < beta)
+                result = -search<true>(position, depth - 1, -beta, -alpha, temp_movelist);
+        }
+        info.ply--;
+
+        position.undo_move(move, moveinfo);
+
+        if (stop_search || check_limits())
+        {
+            stop_search = true;
+            return bestscore;
+        }
+        _root_moves[pos].first = result;
+
+        if (result >= beta)
+        {
+            movelist = MoveList(temp_movelist);
+            movelist.push_back(move);
+            _best_move = move;
+            return beta;
+        }
+
+        if (result > bestscore)
+        {
+            _best_move = move;
+            bestscore = result;
+            movelist = MoveList(temp_movelist);
+            movelist.push_back(move);
+
+        }
+        if (result > alpha)
+        {
+            alpha = result;
+            search_full_window = false;
+        }
+    }
+
+    return bestscore;
+
+}
+
+template <bool allow_null_move>
 Score Search::search(Position& position, int depth, Score alpha, Score beta, MoveList& movelist)
 {
+    assert(alpha < beta);
+
     movelist = MoveList();
     if (stop_search || check_limits())
     {
@@ -133,15 +230,16 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
     if (position.rule50())
         return DRAW_SCORE;
 
-    Move* begin = MOVE_LIST[depth];
+    std::vector<Move> moves(MAX_MOVES, NO_MOVE);
+    Move* begin = moves.data();
     Move* end = generate_moves(position, position.side_to_move(), begin);
+    bool is_in_check = position.is_in_check(position.side_to_move());
+
+    if (is_in_check)
+        depth++;
 
     if (begin == end)
-    {
-        if (position.is_in_check(position.side_to_move()))
-            return lost_in(_current_depth - depth);
-        return DRAW_SCORE;
-    }
+        return is_in_check ? lost_in(_current_depth - depth) : DRAW_SCORE;
 
     if (depth == 0)
         return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
@@ -149,6 +247,26 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
     Score best = -INFINITY_SCORE;
     MovePicker movepicker(position, begin, end, info, true);
     MoveList temp_movelist;
+
+    if (allow_null_move)
+    {
+        Color side = position.side_to_move();
+        int n = position.number_of_pieces(make_piece(side, KNIGHT))
+              + position.number_of_pieces(make_piece(side, BISHOP))
+              + position.number_of_pieces(make_piece(side, ROOK))
+              + position.number_of_pieces(make_piece(side, QUEEN));
+        if (!is_in_check && n > 0 && depth > 4)
+        {
+            info.ply++;
+            MoveInfo moveinfo = position.do_null_move();
+            Score result = -search<false>(position, depth - 4, -beta, -alpha, temp_movelist);
+            position.undo_null_move(moveinfo);
+            info.ply--;
+
+            if (result >= beta)
+                return beta;
+        }
+    }
 
     bool search_full_window = true;
     while (movepicker.has_next())
@@ -160,13 +278,13 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
         Score result;
         if (search_full_window)
         {
-            result = -search(position, depth - 1, -beta, -alpha, temp_movelist);
+            result = -search<true>(position, depth - 1, -beta, -alpha, temp_movelist);
         }
         else
         {
-            result = -search(position, depth -1, -alpha - 1, -alpha, temp_movelist);
+            result = -search<true>(position, depth - 1, -alpha - 1, -alpha, temp_movelist);
             if (alpha < result && result < beta)
-                result = -search(position, depth - 1, -beta, -alpha, temp_movelist);
+                result = -search<true>(position, depth - 1, -beta, -alpha, temp_movelist);
         }
         info.ply--;
 
@@ -181,6 +299,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
             }
             movelist = MoveList(temp_movelist);
             movelist.push_back(move);
+            info.update_pv(position.hash(), move);
             return beta;
         }
 
@@ -192,9 +311,14 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
 
         }
         if (result > alpha)
+        {
             alpha = result;
+            search_full_window = false;
+        }
     }
 
+    if (movelist.size() > 0)
+        info.update_pv(position.hash(), movelist.back());
     return best;
 }
 
@@ -213,7 +337,8 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
 
     bool is_in_check = position.is_in_check(position.side_to_move());
 
-    Move* begin = QUIESCENCE_MOVE_LIST[depth];
+    std::vector<Move> moves(MAX_MOVES, NO_MOVE);
+    Move* begin = moves.data();
     Move* end = generate_moves(position, position.side_to_move(), begin);
 
     if (begin == end)
@@ -235,16 +360,30 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
 
     MovePicker movepicker(position, begin, end, info, false);
 
+    bool search_full_window = true;
     while (movepicker.has_next())
     {
         Move move = movepicker.get_next();
         MoveInfo moveinfo = position.do_move(move);
-        Score result = -quiescence_search(position, depth - 1, -beta, -alpha);
+
+        Score result;
+        if (search_full_window)
+            result = -quiescence_search(position, depth - 1, -beta, -alpha);
+        else
+        {
+            result = -quiescence_search(position, depth - 1, -alpha - 1, -alpha);
+            if (alpha < result && result < beta)
+                result = -quiescence_search(position, depth - 1, -beta, -alpha);
+        }
         position.undo_move(move, moveinfo);
 
-        alpha = std::max(alpha, result);
-        if (alpha >= beta)
-            break;
+        if (result >= beta)
+            return beta;
+        if (result > alpha)
+        {
+            alpha = result;
+            search_full_window = false;
+        }
     }
 
     return alpha;

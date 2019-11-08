@@ -158,11 +158,9 @@ std::string Position::fen() const
 
 bool Position::threefold_repetition() const
 {
-    int count = 0;
-    for (int i = 0; i < _history_counter; ++i)
+    for (int i = 0; i < _history_counter - 1; ++i)
         if (_history[i] == _zobrist_hash)
-            if (++count == 3)
-                return true;
+            return true;
     return false;
 }
 
@@ -413,8 +411,37 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
             add_piece(captured, to(move));
     }
 
-    _zobrist_hash = _history[--_history_counter];
+    _history_counter--;
+    _zobrist_hash = _history[_history_counter - 1];
 }
+
+MoveInfo Position::do_null_move()
+{
+    change_current_side();
+    _ply_counter++;
+    _half_move_counter++;
+
+    Square enpassant_sq = _enpassant_square;
+
+    if (_enpassant_square != NO_SQUARE)
+        _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
+    _enpassant_square = NO_SQUARE;
+
+    return create_moveinfo(NO_PIECE_KIND, NO_CASTLING, enpassant_sq, false, 0);
+}
+
+void Position::undo_null_move(MoveInfo moveinfo)
+{
+    change_current_side();
+    _ply_counter--;
+    _half_move_counter--;
+
+    _enpassant_square = last_enpassant_square(moveinfo);
+    if (_enpassant_square != NO_SQUARE)
+        _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
+}
+
+
 
 bool Position::is_in_check(Color side) const
 {
@@ -447,7 +474,7 @@ std::string Position::move_to_string(Move move) const
 {
     const std::string files = "abcdefgh";
     const std::string ranks = "12345678";
-    const std::string promotions = "  NBRQ ";
+    const std::string promotions = "  nbrq ";
 
     if (castling(move) & KING_CASTLING)
         return _current_side == WHITE ? "e1g1" : "e8g8";
@@ -517,6 +544,7 @@ std::ostream& operator<< (std::ostream& stream, const Position& position)
     stream << "   A B C D E F G H" << std::endl;
     stream << std::endl;
     stream << "Fen: \"" << position.fen() << "\"" << std::endl;
+    stream << "Hash: " << std::hex << position.hash() << std::dec << std::endl;
     if (position.side_to_move() == WHITE)
         stream << "White to move" << std::endl;
     else

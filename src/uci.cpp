@@ -1,5 +1,6 @@
 #include "uci.h"
 #include "logger.h"
+#include "transposition_table.h"
 
 #include <thread>
 
@@ -11,7 +12,12 @@ Uci::Uci(const PositionScorer& scorer)
     , search(nullptr)
     , position()
     , quit(false)
+    , options()
 {
+    options["Hash"] = UciOption(1, 1, 1024, [](int size) {
+                transposition::init(size);
+                });
+    options["Clear Hash"] = UciOption([](){ transposition::clear(); });
 }
 
 void Uci::loop()
@@ -33,46 +39,26 @@ void Uci::loop()
 
         bool b = false;
 
-        if (token == "uci")
-        {
-            b = uci_command(istream);
-        }
-        else if (token == "ucinewgame")
-        {
-            b = ucinewgame_command(istream);
-        }
-        else if (token == "isready")
-        {
-            b = isready_command(istream);
-        }
-        else if (token == "setoption")
-        {
-            b = setoption_command(istream);
-        }
-        else if (token == "position")
-        {
-            b = position_command(istream);
-        }
-        else if (token == "go")
-        {
-            b = go_command(istream);
-        }
-        else if (token == "stop")
-        {
-            b = stop_command(istream);
-        }
-        else if (token == "ponderhit")
-        {
-            b = ponderhit_command(istream);
-        }
-        else if (token == "quit")
-        {
-            b = quit_command(istream);
-        }
-        else if (token == "printboard")
-        {
-            b = printboard_command(istream);
-        }
+#define COMMAND(name)                       \
+        if (token == #name)                 \
+        {                                   \
+            b = name##_command(istream);    \
+        }                                   \
+
+        COMMAND(uci)
+        COMMAND(ucinewgame)
+        COMMAND(isready)
+        COMMAND(setoption)
+        COMMAND(position)
+        COMMAND(go)
+        COMMAND(stop)
+        COMMAND(ponderhit)
+        COMMAND(quit)
+        COMMAND(printboard)
+        COMMAND(hash)
+        COMMAND(perft)
+
+#undef COMMAND
 
         if (!b)
         {
@@ -86,6 +72,35 @@ bool Uci::uci_command(std::istringstream& istream)
     logger << "id name Deep Chess" << std::endl;
     logger << "id author Adam Jedrych" << std::endl;
     logger << std::endl;
+
+    for (auto option_pair : options)
+    {
+        std::string name = option_pair.first;
+        UciOption option = option_pair.second;
+        OptionType optiontype = option.get_type();
+
+        logger << "option ";
+        logger << "name " << name << " ";
+        logger << "type " << optiontype_to_string(optiontype) << " ";
+        if (optiontype == kCHECK)
+            logger << "default " << (option.get_check() ? "true" : "false") << " ";
+        else if (optiontype == kSPIN)
+        {
+            logger << "default " << option.get_spin_initial() << " ";
+            logger << "min " << option.get_spin_min() << " ";
+            logger << "max " << option.get_spin_max() << " ";
+        }
+        else if (optiontype == kCOMBO)
+        {
+            logger << "default " << option.get_string() << " ";
+            for (std::string s : option.get_combo_options())
+                logger << "var " << s << " ";
+        }
+        else if (optiontype == kSTRING)
+            logger << "default " << option.get_string() << " ";
+
+        logger << std::endl;
+    }
 
     logger << "uciok" << std::endl;
     return true;
@@ -105,6 +120,50 @@ bool Uci::isready_command(std::istringstream& istream)
 
 bool Uci::setoption_command(std::istringstream& istream)
 {
+    std::string token;
+    istream >> token;
+
+    if (token != "name")
+        return false;
+
+    std::string name = "";
+
+    while (istream >> token && token != "value")
+        name += token + " ";
+    name.pop_back(); // remove last space
+
+    if (options.find(name) == options.end())
+        return false;
+
+
+    OptionType optiontype = options[name].get_type();
+
+    if (optiontype == kCHECK)
+    {
+        istream >> token;
+        options[name].set(token == "true");
+    }
+    else if (optiontype == kSPIN)
+    {
+        int value;
+        istream >> value;
+        options[name].set(value);
+    }
+    else if (optiontype == kCOMBO)
+    {
+        istream >> token;
+        options[name].set(token);
+    }
+    else if (optiontype == kBUTTON)
+    {
+        options[name].set();
+    }
+    else if (optiontype == kSTRING)
+    {
+        istream >> token;
+        options[name].set(token);
+    }
+
     return true;
 }
 
@@ -206,7 +265,43 @@ bool Uci::quit_command(std::istringstream& istream)
 bool Uci::printboard_command(std::istringstream& istream)
 {
     logger << position << std::endl;
-    position.threefold_repetition();
+    return true;
+}
+
+bool Uci::hash_command(std::istringstream& istream)
+{
+    logger << "Hex: " << std::hex << position.hash() << std::dec << std::endl;
+    return true;
+}
+
+bool Uci::perft_command(std::istringstream& istream)
+{
+    int depth;
+    istream >> depth;
+
+    uint64_t sum = 0;
+    if (depth > 0)
+    {
+        Move* begin = MOVE_LIST[depth];
+        Move* end = generate_moves(position, position.side_to_move(), begin);
+
+        for (Move* it = begin; it != end; ++it)
+        {
+            Move move = *it;
+            MoveInfo moveinfo = position.do_move(move);
+
+            uint64_t n = perft(position, depth - 1);
+
+            position.undo_move(move, moveinfo);
+
+            logger << position.move_to_string(move) << ": " << n << std::endl;
+            sum += n;
+        }
+    }
+
+    logger << std::endl;
+    logger << "Number of nodes: " << sum << std::endl;
+
     return true;
 }
 

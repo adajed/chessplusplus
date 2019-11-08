@@ -1,11 +1,13 @@
 #ifndef CHESS_ENGINE_UCI_H_
 #define CHESS_ENGINE_UCI_H_
 
+#include <map>
 #include <memory>
 #include <sstream>
 
 #include "position.h"
 #include "search.h"
+#include "ucioption.h"
 
 namespace engine
 {
@@ -41,11 +43,17 @@ class Uci
 
         bool printboard_command(std::istringstream& istream);
 
+        bool hash_command(std::istringstream& istream);
+
+        bool perft_command(std::istringstream& istream);
+
         PositionScorer scorer;
         std::shared_ptr<Search> search;
         Position position;
         bool is_search;
         bool quit;
+
+        std::map<std::string, UciOption> options;
 };
 
 }
