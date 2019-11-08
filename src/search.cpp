@@ -84,7 +84,7 @@ void Search::go()
         _current_depth++;
         nodes_searched = 0;
 
-        std::sort(_root_moves.begin(), _root_moves.end(), std::greater<>());
+        std::stable_sort(_root_moves.begin(), _root_moves.end(), std::greater<>());
         Score result = root_search(pos, _current_depth, -INFINITY_SCORE, INFINITY_SCORE, temp_pv_list);
 
         end_time = std::chrono::steady_clock::now();
@@ -157,13 +157,24 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
     Score bestscore = -INFINITY_SCORE;
     MoveList temp_movelist;
 
+    bool search_full_window = true;
     for (int pos = 0; pos < _root_moves.size(); ++pos)
     {
         Move move = _root_moves[pos].second;
         MoveInfo moveinfo = position.do_move(move);
 
         info.ply++;
-        Score result = -search(position, depth - 1, -beta, -alpha, temp_movelist);
+        Score result;
+        if (search_full_window)
+        {
+            result = -search<true>(position, depth - 1, -beta, -alpha, temp_movelist);
+        }
+        else
+        {
+            result = -search<true>(position, depth - 1, -alpha - 1, -alpha, temp_movelist);
+            if (alpha < result && result < beta)
+                result = -search<true>(position, depth - 1, -beta, -alpha, temp_movelist);
+        }
         info.ply--;
 
         position.undo_move(move, moveinfo);
@@ -192,7 +203,10 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
 
         }
         if (result > alpha)
+        {
             alpha = result;
+            search_full_window = false;
+        }
     }
 
     return bestscore;
