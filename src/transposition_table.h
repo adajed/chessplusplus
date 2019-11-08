@@ -11,13 +11,14 @@ namespace transposition
 
 struct Entry
 {
-    Position position;
     Move best_move;
     int32_t depth;
     int64_t value;
 };
 
 void init(size_t size);
+
+void clear();
 
 void update(HashKey key, Entry entry);
 
