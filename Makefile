@@ -16,8 +16,8 @@ LFLAGS = -pthread -flto
 LFLAGS_RELEASE = $(LFLAGS) -Ofast
 LFLAGS_DEBUG = $(LFLAGS) -g
 
-ENGINE_RELEASE=$(BUILDDIR)/deepchess
-ENGINE_DEBUG=$(BUILDDIR)/deepchess_debug
+ENGINE_RELEASE=$(BUILDDIR)/chessplusplus
+ENGINE_DEBUG=$(BUILDDIR)/chessplusplus_debug
 
 TEST_RELEASE=$(BUILDDIR)/test
 TEST_DEBUG=$(BUILDDIR)/test_debug
