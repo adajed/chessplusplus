@@ -45,7 +45,7 @@ Search::Search(const Position& position, const PositionScorer& scorer, const Lim
         int our_time = limits.timeleft[position.side_to_move()];
         int movestogo = limits.movestogo == 0 ? 20 : limits.movestogo;
 
-        _search_time = our_time / (movestogo + 1);
+        _search_time = our_time / (movestogo + 1) + limits.timeinc[position.side_to_move()];
         _search_depth = MAX_DEPTH;
     }
     else
