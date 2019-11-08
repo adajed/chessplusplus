@@ -142,12 +142,12 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
     if (position.rule50())
         return DRAW_SCORE;
 
+    bool is_in_check = position.is_in_check(position.side_to_move());
     if (_root_moves.size() == 0)
-    {
-        if (position.is_in_check(position.side_to_move()))
-            return -lost_in(0);
-        return DRAW_SCORE;
-    }
+        return is_in_check ? lost_in(0) : DRAW_SCORE;
+
+    if (is_in_check)
+        depth++;
 
     if (depth == 0)
         return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
@@ -230,9 +230,13 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
     if (position.rule50())
         return DRAW_SCORE;
 
-    Move* begin = MOVE_LIST[depth];
+    std::vector<Move> moves(MAX_MOVES, NO_MOVE);
+    Move* begin = moves.data();
     Move* end = generate_moves(position, position.side_to_move(), begin);
     bool is_in_check = position.is_in_check(position.side_to_move());
+
+    if (is_in_check)
+        depth++;
 
     if (begin == end)
         return is_in_check ? lost_in(_current_depth - depth) : DRAW_SCORE;
@@ -333,7 +337,8 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
 
     bool is_in_check = position.is_in_check(position.side_to_move());
 
-    Move* begin = QUIESCENCE_MOVE_LIST[depth];
+    std::vector<Move> moves(MAX_MOVES, NO_MOVE);
+    Move* begin = moves.data();
     Move* end = generate_moves(position, position.side_to_move(), begin);
 
     if (begin == end)
