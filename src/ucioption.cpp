@@ -1,6 +1,7 @@
 #include "ucioption.h"
 
 #include <algorithm>
+#include <cassert>
 
 namespace engine
 {
