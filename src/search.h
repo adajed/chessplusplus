@@ -56,6 +56,9 @@ class Search
         void stop();
 
     private:
+
+        Score root_search(Position& position, int depth, Score alpha, Score beta, MoveList& pv);
+
         template <bool allow_null_move>
         Score search(Position& position, int depth, Score alpha, Score beta, MoveList& pv);
 
@@ -75,10 +78,14 @@ class Search
         int64_t _search_depth;
         int _current_depth;
 
+        Move _best_move;
         TimePoint start_time;
         int64_t nodes_searched;
 
         OrderingInfo info;
+
+        std::vector<std::pair<Score, Move>> _root_moves;
+
 };
 
 }
