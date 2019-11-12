@@ -13,11 +13,23 @@ Uci::Uci(const PositionScorer& scorer)
     , position()
     , quit(false)
     , options()
+    , polyglot()
 {
-    options["Hash"] = UciOption(1, 1, 1024, [](int size) {
+    options["Hash"] = UciOption(1, 1, 1024,
+            [](int size) {
                 transposition::init(size);
-                });
-    options["Clear Hash"] = UciOption([](){ transposition::clear(); });
+            });
+    options["Clear Hash"] = UciOption(
+            [](){
+                transposition::clear();
+            });
+    options["Polyglot Book"] = UciOption("",
+            [this](std::string path) {
+                if (path == "")
+                    this->polyglot = PolyglotBook();
+                else
+                    this->polyglot = PolyglotBook(path);
+            });
 }
 
 void Uci::loop()
@@ -236,7 +248,17 @@ bool Uci::go_command(std::istringstream& istream)
 
     search = std::make_shared<Search>(position, scorer, limits);
 
-    std::thread search_thread([this](){ this->search->go(); });
+    std::thread search_thread(
+            [this](){
+                HashKey key = PolyglotBook::hash(this->position);
+                if (this->polyglot.contains(key))
+                {
+                    Move move = this->polyglot.sample_move(key, this->position);
+                    logger << "bestmove " << this->position.move_to_string(move) << std::endl;
+                }
+                else
+                    this->search->go();
+            });
     search_thread.detach();
 
     return true;
