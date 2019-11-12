@@ -138,11 +138,6 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
 {
     movelist = MoveList();
 
-    if (position.threefold_repetition())
-        return DRAW_SCORE;
-    if (position.rule50())
-        return DRAW_SCORE;
-
     bool is_in_check = position.is_in_check(position.side_to_move());
     if (_root_moves.size() == 0)
         return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
