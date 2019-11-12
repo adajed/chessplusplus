@@ -1,7 +1,7 @@
 #ifndef CHESS_ENGINE_POLYGLOT_H_
 #define CHESS_ENGINE_POLYGLOT_H_
 
-#include <unordered_map>
+#include <map>
 
 #include "position.h"
 #include "types.h"
@@ -13,6 +13,8 @@ class PolyglotBook
 {
     public:
         using WeightedMove = std::pair<Move, int>;
+
+        PolyglotBook() = default;
 
         PolyglotBook(std::string path);
 
@@ -26,7 +28,7 @@ class PolyglotBook
 
         Move decode_move(Move move, const Position& position) const;
 
-        std::unordered_map<HashKey, std::vector<WeightedMove>> _hashmap;
+        std::map<HashKey, std::vector<WeightedMove>> _hashmap;
 };
 
 

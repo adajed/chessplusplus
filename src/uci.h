@@ -5,6 +5,7 @@
 #include <memory>
 #include <sstream>
 
+#include "polyglot.h"
 #include "position.h"
 #include "search.h"
 #include "ucioption.h"
@@ -54,6 +55,7 @@ class Uci
         bool quit;
 
         std::map<std::string, UciOption> options;
+        PolyglotBook polyglot;
 };
 
 }

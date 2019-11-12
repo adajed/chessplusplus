@@ -86,6 +86,8 @@ class Search
 
         std::vector<std::pair<Score, Move>> _root_moves;
 
+        int _ply_counter;
+
 };
 
 }

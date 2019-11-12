@@ -85,6 +85,7 @@ void Search::go()
         nodes_searched = 0;
 
         std::stable_sort(_root_moves.begin(), _root_moves.end(), std::greater<>());
+        _ply_counter = 0;
         Score result = root_search(pos, _current_depth, -INFINITY_SCORE, INFINITY_SCORE, temp_pv_list);
 
         end_time = std::chrono::steady_clock::now();
@@ -144,7 +145,7 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
 
     bool is_in_check = position.is_in_check(position.side_to_move());
     if (_root_moves.size() == 0)
-        return is_in_check ? lost_in(0) : DRAW_SCORE;
+        return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
 
     if (is_in_check)
         depth++;
@@ -164,6 +165,7 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
         MoveInfo moveinfo = position.do_move(move);
 
         info.ply++;
+        _ply_counter++;
         Score result;
         if (search_full_window)
         {
@@ -176,6 +178,7 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
                 result = -search<true>(position, depth - 1, -beta, -alpha, temp_movelist);
         }
         info.ply--;
+        _ply_counter--;
 
         position.undo_move(move, moveinfo);
 
@@ -239,7 +242,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
         depth++;
 
     if (begin == end)
-        return is_in_check ? lost_in(_current_depth - depth) : DRAW_SCORE;
+        return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
 
     if (depth == 0)
         return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
@@ -275,6 +278,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
         MoveInfo moveinfo = position.do_move(move);
 
         info.ply++;
+        _ply_counter++;
         Score result;
         if (search_full_window)
         {
@@ -287,6 +291,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
                 result = -search<true>(position, depth - 1, -beta, -alpha, temp_movelist);
         }
         info.ply--;
+        _ply_counter--;
 
         position.undo_move(move, moveinfo);
 
@@ -342,7 +347,7 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
     Move* end = generate_moves(position, position.side_to_move(), begin);
 
     if (begin == end)
-        return is_in_check ? lost_in(MAX_DEPTH) : DRAW_SCORE;
+        return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
 
     end = generate_quiescence_moves(position, position.side_to_move(), begin);
 
@@ -367,6 +372,7 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
         MoveInfo moveinfo = position.do_move(move);
 
         Score result;
+        _ply_counter++;
         if (search_full_window)
             result = -quiescence_search(position, depth - 1, -beta, -alpha);
         else
@@ -376,6 +382,7 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
                 result = -quiescence_search(position, depth - 1, -beta, -alpha);
         }
         position.undo_move(move, moveinfo);
+        _ply_counter--;
 
         if (result >= beta)
             return beta;

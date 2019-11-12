@@ -246,21 +246,20 @@ PolyglotBook::PolyglotBook(std::string path)
 
     char entry[16];
 
-
     while (stream)
     {
         stream.read(entry, 16);
 
-        HashKey key = ((uint64_t)entry[0] << 56) |
-                      ((uint64_t)entry[1] << 48) |
-                      ((uint64_t)entry[2] << 40) |
-                      ((uint64_t)entry[3] << 32) |
-                      ((uint64_t)entry[4] << 24) |
-                      ((uint64_t)entry[5] << 16) |
-                      ((uint64_t)entry[6] <<  8) |
-                      ((uint64_t)entry[7]);
+        HashKey key = (((uint64_t)entry[0] & 0xFF) << 56) |
+                      (((uint64_t)entry[1] & 0xFF) << 48) |
+                      (((uint64_t)entry[2] & 0xFF) << 40) |
+                      (((uint64_t)entry[3] & 0xFF) << 32) |
+                      (((uint64_t)entry[4] & 0xFF) << 24) |
+                      (((uint64_t)entry[5] & 0xFF) << 16) |
+                      (((uint64_t)entry[6] & 0xFF) <<  8) |
+                      (((uint64_t)entry[7] & 0xFF));
 
-        uint16_t move_code = (uint16_t)entry[8] << 8 | (uint16_t)entry[9];
+        uint16_t move_code = (entry[8] & 0xFF) << 8 | (entry[9] & 0xFF);
 
         Rank fromRank = Rank((move_code >> 9) & 0x7);
         File fromFile = File((move_code >> 6) & 0x7);
@@ -273,7 +272,7 @@ PolyglotBook::PolyglotBook(std::string path)
             promotion = PAWN + PieceKind(promotion_code);
 
         Move move = create_promotion(make_square(fromRank, fromFile), make_square(toRank, toFile), promotion);
-        int weight  = int((uint16_t)entry[10] << 8 | (uint16_t)entry[11]);
+        int weight = (entry[10] & 0xFF) << 8 | (entry[11] & 0xFF);
 
         if (_hashmap.find(key) == _hashmap.end())
             _hashmap[key] = std::vector<WeightedMove>();
@@ -327,7 +326,6 @@ bool PolyglotBook::contains(HashKey key) const
     return _hashmap.find(key) != _hashmap.end();
 }
 
-
 Move PolyglotBook::sample_move(HashKey key, const Position& position) const
 {
     assert(contains(key));
@@ -337,10 +335,12 @@ Move PolyglotBook::sample_move(HashKey key, const Position& position) const
     for (WeightedMove wmove : moves)
         sum_of_weights += wmove.second;
 
+    assert(sum_of_weights > 0);
+
     int sample = rand() % sum_of_weights;
     int w = 0;
     int i = 0;
-    for (; i < moves.size() && w < sample; ++i)
+    for (; i < moves.size() && w + moves[i].second < sample; ++i)
         w += moves[i].second;
 
     return decode_move(moves[i].first, position);
