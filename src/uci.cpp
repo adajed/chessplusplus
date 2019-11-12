@@ -23,7 +23,7 @@ Uci::Uci(const PositionScorer& scorer)
             [](){
                 transposition::clear();
             });
-    options["Polyglot Book"] = UciOption("/home/adam/Projects/polyglot/final-book.bin",
+    options["Polyglot Book"] = UciOption("",
             [this](std::string path) {
                 if (path == "")
                     this->polyglot = PolyglotBook();
