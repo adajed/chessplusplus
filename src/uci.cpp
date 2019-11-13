@@ -301,6 +301,8 @@ bool Uci::perft_command(std::istringstream& istream)
     int depth;
     istream >> depth;
 
+    TimePoint start_time = std::chrono::steady_clock::now();
+
     uint64_t sum = 0;
     if (depth > 0)
     {
@@ -321,8 +323,14 @@ bool Uci::perft_command(std::istringstream& istream)
         }
     }
 
+    TimePoint end_time = std::chrono::steady_clock::now();
+    uint64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+
     logger << std::endl;
     logger << "Number of nodes: " << sum << std::endl;
+    logger << "Time: " << duration << "ms" << std::endl;
+    logger << "Speed: " << sum * 1000LL / duration << "nps" << std::endl;
+
 
     return true;
 }
