@@ -4,6 +4,6 @@
 namespace engine
 {
 
-Logger logger(LOGFILE);
+Logger logger("");
 
 }

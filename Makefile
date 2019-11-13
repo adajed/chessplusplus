@@ -8,7 +8,7 @@ GTEST_LIB_PATH=/usr/lib
 
 #### compilation flags
 
-CFLAGS = -Wall -std=c++17 -flto -DLOGFILE=\"$(BUILDDIR)/log.txt\" -DWEIGHTSFILE=\"$(ROOTDIR)/weights.txt\"
+CFLAGS = -Wall -std=c++17 -flto
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
 CFLAGS_DEBUG = $(CFLAGS) -g
 
