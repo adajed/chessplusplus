@@ -30,6 +30,13 @@ Uci::Uci(const PositionScorer& scorer)
                 else
                     this->polyglot = PolyglotBook(path);
             });
+    options["Logfile"] = UciOption("",
+            [](std::string path) {
+                if (path == "")
+                    logger.close_file();
+                else
+                    logger.open_file(path);
+            });
 }
 
 void Uci::loop()
