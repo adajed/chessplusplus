@@ -35,7 +35,9 @@ Move MovePicker::get_next()
 
     Move ret = begin[best_index];
     begin[best_index] = begin[pos];
+    scores[best_index] = scores[pos];
     begin[pos] = ret;
+
     pos++;
     return ret;
 }
