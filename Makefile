@@ -16,6 +16,9 @@ LFLAGS = -pthread -flto
 LFLAGS_RELEASE = $(LFLAGS) -Ofast
 LFLAGS_DEBUG = $(LFLAGS) -g
 
+LCOV_CFLAGS = -fprofile-arcs -ftest-coverage
+LCOV_LFLAGS = --coverage
+
 ENGINE_RELEASE=$(BUILDDIR)/chessplusplus
 ENGINE_DEBUG=$(BUILDDIR)/chessplusplus_debug
 
@@ -49,7 +52,7 @@ $(ENGINE_RELEASE): $(ENGINE_OBJS_RELEASE) | $(OBJS_DIR_RELEASE)
 
 $(ENGINE_DEBUG): $(ENGINE_OBJS_DEBUG) | $(OBJS_DIR_DEBUG)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS_DEBUG)
+	@$(CXX) -o $@ $^ $(LFLAGS_DEBUG) $(LCOV_LFLAGS)
 
 #### test
 
@@ -59,7 +62,7 @@ $(TEST_RELEASE): $(TEST_OBJS_RELEASE) $(filter-out $(OBJS_DIR_RELEASE)/src/engin
 
 $(TEST_DEBUG): $(TEST_OBJS_DEBUG) $(filter-out $(OBJS_DIR_DEBUG)/src/engine.o,$(ENGINE_OBJS_DEBUG)) | $(OBJS_DIR_DEBUG)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS_DEBUG) -L$(GTEST_LIB_PATH) -lgtest
+	@$(CXX) -o $@ $^ $(LFLAGS_DEBUG) $(LCOV_LFLAGS) -L$(GTEST_LIB_PATH) -lgtest
 
 #### objs
 
@@ -69,7 +72,7 @@ $(OBJS_DIR_RELEASE)/src/%.o : src/%.cpp | $(OBJS_DIR_RELEASE)/src
 
 $(OBJS_DIR_DEBUG)/src/%.o : src/%.cpp | $(OBJS_DIR_DEBUG)/src
 	@echo "Compiling debug $<"
-	@$(CXX) -c -o $@ $< $(CFLAGS_DEBUG)
+	@$(CXX) -c -o $@ $< $(CFLAGS_DEBUG) $(LCOV_CFLAGS)
 
 $(OBJS_DIR_RELEASE)/tests/%.o : tests/%.cpp | $(OBJS_DIR_RELEASE)/tests
 	@echo "Compiling release $<"
@@ -77,7 +80,7 @@ $(OBJS_DIR_RELEASE)/tests/%.o : tests/%.cpp | $(OBJS_DIR_RELEASE)/tests
 
 $(OBJS_DIR_DEBUG)/tests/%.o : tests/%.cpp | $(OBJS_DIR_DEBUG)/tests
 	@echo "Compiling debug $<"
-	@$(CXX) -c -o $@ $< $(CFLAGS_DEBUG) -Isrc
+	@$(CXX) -c -o $@ $< $(CFLAGS_DEBUG) $(LCOV_CFLAGS) -Isrc
 
 #### dirs
 
@@ -110,6 +113,11 @@ ctags:
 
 tidy:
 	clang-tidy-8 $(ENGINE_SOURCES) -header-filter=src/*.h -checks='*' -warnings-as-errors='*'
+
+coverage: test_debug
+	$(TEST_DEBUG)
+	lcov -c -d . -o coverage.info --no-external --exclude "*/tests/*"
+	genhtml coverage.info --output-directory coverage --demangle-cpp
 
 help:
 	@echo "Available commands:"
