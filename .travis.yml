@@ -9,20 +9,6 @@ branches:
     only:
         - master
 
-addons:
-    apt:
-        sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-6.0
-        packages:
-            - g++-7.4
-            - clang-6.0
-
-install:
-    - "[ $CXX = g++ ] && export CXX=g++-7.4 || true"
-    - "[ $CXX = clang++ ] && export CXX=clang++-6.0 || true"
-
-
 before_install:
     - sudo apt-get update -y
     - sudo apt-get install -y libgtest-dev valgrind cmake clang-tidy-8 expect
