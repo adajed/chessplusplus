@@ -8,11 +8,11 @@ GTEST_LIB_PATH=/usr/lib
 
 #### compilation flags
 
-CFLAGS = -Wall -std=c++17 -flto
+CFLAGS = -Wall -std=c++17 -flto -I/usr/local/include
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
 CFLAGS_DEBUG = $(CFLAGS) -g
 
-LFLAGS = -pthread -flto
+LFLAGS = -pthread -flto -L/usr/local/lib -ltensorflow
 LFLAGS_RELEASE = $(LFLAGS) -Ofast
 LFLAGS_DEBUG = $(LFLAGS) -g
 

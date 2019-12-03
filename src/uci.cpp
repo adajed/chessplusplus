@@ -14,6 +14,7 @@ Uci::Uci(const PositionScorer& scorer)
     , quit(false)
     , options()
     , polyglot()
+    , runner()
 {
     options["Hash"] = UciOption(1, 1, 1024,
             [](int size) {
@@ -37,6 +38,19 @@ Uci::Uci(const PositionScorer& scorer)
                 else
                     logger.open_file(path);
             });
+
+    std::vector<int64_t> input1_shape = {1, 8, 8, 12};
+    std::vector<int64_t> input2_shape = {1, 2};
+    std::vector<int64_t> output_shape = {1, 8, 8, 76};
+
+    TF_Tensor* input1 = TF_AllocateTensor(TF_FLOAT, input1_shape.data(), 4, 1 * 8 * 8 * 12 * sizeof(float));
+    TF_Tensor* input2 = TF_AllocateTensor(TF_FLOAT, input2_shape.data(), 2, 1 * 2 * sizeof(float));
+    TF_Tensor* output = TF_AllocateTensor(TF_FLOAT, output_shape.data(), 2, 1 * 8 * 8 * 76 * sizeof(float));
+
+    runner = tensorflow::Runner(
+            "/home/adam/Projects/rlchess/move_net.pb",
+            {{"Placeholder", 0, input1}, {"Placeholder_2", 0, input2}},
+            {{"Softmax", 0, output}});
 }
 
 void Uci::loop()
@@ -76,6 +90,7 @@ void Uci::loop()
         COMMAND(printboard)
         COMMAND(hash)
         COMMAND(perft)
+        COMMAND(scoremoves)
 
 #undef COMMAND
 
@@ -253,7 +268,7 @@ bool Uci::go_command(std::istringstream& istream)
         }
     }
 
-    search = std::make_shared<Search>(position, scorer, limits);
+    search = std::make_shared<Search>(position, scorer, limits, runner);
 
     std::thread search_thread(
             [this](){
@@ -338,6 +353,38 @@ bool Uci::perft_command(std::istringstream& istream)
     logger << "Time: " << duration << "ms" << std::endl;
     logger << "Speed: " << sum * 1000LL / duration << "nps" << std::endl;
 
+
+    return true;
+}
+
+bool Uci::scoremoves_command(std::istringstream& istream)
+{
+    position.fill_buffers(runner.get_input_buffer(0), runner.get_input_buffer(1));
+    runner.run();
+    float* prob = runner.get_output_buffer(0);
+
+    std::vector<Move> moves(MAX_MOVES, NO_MOVE);
+    Move* begin = moves.data();
+    Move* end = generate_moves(position, position.side_to_move(), begin);
+    std::vector<std::pair<float, Move>> scores(end - begin);
+    for (int i = 0; i < end - begin; ++i)
+        scores[i] = std::make_pair(prob[position.move_to_pos(begin[i])], begin[i]);
+    std::stable_sort(scores.begin(), scores.end(), std::greater<>());
+
+    int pos = 0;
+    float m = 0.;
+    for (int i = 0; i < 1 * 8 * 8 * 76; ++i)
+    {
+        if (prob[i] > m)
+        {
+            m = prob[i];
+            pos = i;
+        }
+    }
+
+    logger << "max(prob[" << pos << "]) : " << m << std::endl;
+    for (const auto& p : scores)
+        logger << position.move_to_string(p.second) << "[" << position.move_to_pos(p.second) << "] : " << p.first << std::endl;
 
     return true;
 }

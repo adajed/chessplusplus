@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 
 namespace engine
 {
@@ -14,6 +15,7 @@ class Logger
         {
             if (path != "")
                 fout = std::ofstream(path);
+            std::cout << std::fixed << std::setprecision(4);
         }
 
         void close_file()

@@ -59,6 +59,10 @@ class Position
 
         std::string move_to_string(Move move) const;
 
+        void fill_buffers(float* board, float* side) const;
+
+        int move_to_pos(Move move) const;
+
     private:
 
         void add_piece(Piece piece, Square square);

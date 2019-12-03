@@ -22,8 +22,10 @@ constexpr Score win_in(int64_t ply)
 
 const int64_t INFINITE = 1LL << 32;
 
-Search::Search(const Position& position, const PositionScorer& scorer, const Limits& limits)
+Search::Search(const Position& position, const PositionScorer& scorer, const Limits& limits,
+               const tensorflow::Runner& runner)
     : position(position), scorer(scorer), limits(limits), pv_list(), nodes_searched(0), info(), _root_moves()
+    , _tfrunner(runner)
 {
     if (limits.infinite)
     {
@@ -228,9 +230,19 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
     if (position.rule50())
         return DRAW_SCORE;
 
+    position.fill_buffers(_tfrunner.get_input_buffer(0), _tfrunner.get_input_buffer(1));
+    _tfrunner.run();
+
+    float* prob = _tfrunner.get_output_buffer(0);
+
     std::vector<Move> moves(MAX_MOVES, NO_MOVE);
     Move* begin = moves.data();
     Move* end = generate_moves(position, position.side_to_move(), begin);
+    std::vector<std::pair<float, Move>> scores(end - begin);
+    for (int i = 0; i < end - begin; ++i)
+        scores[i] = std::make_pair(prob[position.move_to_pos(begin[i])], begin[i]);
+    std::stable_sort(scores.begin(), scores.end(), std::greater<>());
+
     bool is_in_check = position.is_in_check(position.side_to_move());
 
     if (is_in_check)
@@ -243,7 +255,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
         return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
 
     Score best = -INFINITY_SCORE;
-    MovePicker movepicker(position, begin, end, info, true);
+    /* MovePicker movepicker(position, begin, end, info, true); */
     MoveList temp_movelist;
 
     if (allow_null_move)
@@ -267,9 +279,10 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
     }
 
     bool search_full_window = true;
-    while (movepicker.has_next())
+    int move_counter = 0;
+    while (move_counter < end - begin && move_counter < 4)
     {
-        Move move = movepicker.get_next();
+        Move move = scores[move_counter++].second;
         MoveInfo moveinfo = position.do_move(move);
 
         info.ply++;

@@ -5,6 +5,7 @@
 #include "move_picker.h"
 #include "score.h"
 #include "types.h"
+#include "tensorflow_runner.h"
 
 #include <chrono>
 
@@ -49,7 +50,8 @@ struct Limits
 class Search
 {
     public:
-        Search(const Position& position, const PositionScorer& scorer, const Limits& limits);
+        Search(const Position& position, const PositionScorer& scorer, const Limits& limits,
+               const tensorflow::Runner& runner);
 
         void go();
 
@@ -88,6 +90,7 @@ class Search
 
         int _ply_counter;
 
+        tensorflow::Runner _tfrunner;
 };
 
 }

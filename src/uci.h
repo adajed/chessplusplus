@@ -9,6 +9,7 @@
 #include "position.h"
 #include "search.h"
 #include "ucioption.h"
+#include "tensorflow_runner.h"
 
 namespace engine
 {
@@ -48,6 +49,8 @@ class Uci
 
         bool perft_command(std::istringstream& istream);
 
+        bool scoremoves_command(std::istringstream& istream);
+
         PositionScorer scorer;
         std::shared_ptr<Search> search;
         Position position;
@@ -56,6 +59,8 @@ class Uci
 
         std::map<std::string, UciOption> options;
         PolyglotBook polyglot;
+
+        tensorflow::Runner runner;
 };
 
 }
