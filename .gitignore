@@ -1,7 +1,16 @@
 build/
 compile_commands.json
+
+# list of things to fix
+fix-me.log
+
+# ctags file
+tags
+
+# test coverage
 coverage.info
 coverage/
+*.gcno
 
 # Prerequisites
 *.d
