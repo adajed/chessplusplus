@@ -11,7 +11,9 @@ class SearchTest : public ::testing::Test
     protected:
         static void SetUpTestCase()
         {
-            scorer = new PositionScorer;
+            std::string test_weights = "test_weights.w";
+            weights = new Weights(test_weights);
+            scorer = new PositionScorer(*weights);
         }
         static void TearDownTestCase()
         {
@@ -21,9 +23,11 @@ class SearchTest : public ::testing::Test
         }
 
         static PositionScorer* scorer;
+        static Weights* weights;
 };
 
 PositionScorer* SearchTest::scorer = nullptr;
+Weights* SearchTest::weights = nullptr;
 
 namespace
 {

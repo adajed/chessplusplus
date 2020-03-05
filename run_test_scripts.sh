@@ -2,11 +2,28 @@
 
 EXIT_VALUE=0
 
+throw_wrong_arguments()
+{
+    echo "Usage: $0 release|debug weights_path"
+    exit 1
+}
+
+if [ "$#" -ne 2 ]
+then
+    throw_wrong_arguments
+fi
+
+BUILD_TYPE=$1
+WEIGHTS_PATH=$2
+
 if [ "$1" == "release" ]
 then
-    program="./build/chessplusplus"
+    PROGRAM="./build/chessplusplus"
+elif [ "$2" == "debug" ]
+then
+    PROGRAM="./build/chessplusplus_debug"
 else
-    program="./build/chessplusplus_debug"
+    throw_wrong_arguments
 fi
 
 NUMBER_OF_SEARCH_TESTS=0
@@ -22,7 +39,7 @@ run_search_test()
     move=$2
 
     NUMBER_OF_SEARCH_TESTS=$((NUMBER_OF_SEARCH_TESTS + 1))
-    expect tests/scripts/mate_search.exp ${program} "${fen}" ${move} >/dev/null
+    expect tests/scripts/mate_search.exp ${PROGRAM} ${WEIGHTS_PATH} "${fen}" ${move} >/dev/null
     if [ $? -eq 0 ]
     then
         SEARCH_TESTS_PASSED=$((SEARCH_TESTS_PASSED + 1))
@@ -38,7 +55,7 @@ run_perft_test()
     nodes=$3
 
     NUMBER_OF_PERFT_TESTS=$((NUMBER_OF_PERFT_TESTS + 1))
-    expect tests/scripts/perft.exp ${program} "${fen}" ${depth} ${nodes} >/dev/null
+    expect tests/scripts/perft.exp ${PROGRAM} ${WEIGHTS_PATH} "${fen}" ${depth} ${nodes} >/dev/null
     if [ $? -eq 0 ]
     then
         PERFT_TESTS_PASSED=$((PERFT_TESTS_PASSED + 1))
@@ -47,7 +64,7 @@ run_perft_test()
     fi
 }
 
-expect tests/scripts/uci.exp >/dev/null
+expect tests/scripts/uci.exp ${PROGRAM} ${WEIGHTS_PATH} >/dev/null
 
 # basic mate search
 run_search_test "6k1/5ppp/8/8/8/8/8/1RK5 w - - 0 1" b1b8
@@ -56,8 +73,8 @@ run_search_test "rr4k1/5ppp/8/8/8/2R5/2R5/2RK4 w - - 0 1" c3c8
 
 # bratko-kopec test
 run_search_test "1k1r4/pp1b1R2/3q2pp/4p3/2B5/4Q3/PPP2B2/2K5 b - - 0 1" d6d1
-run_search_test "3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - 0 1" 7 d4d5
-run_search_test "2q1rr1k/3bbnnp/p2p1pp1/2pPp3/PpP1P1P1/1P2BNNP/2BQ1PRK/7R b - - 0 1" 7 f6f5
+run_search_test "3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - 0 1" d4d5
+run_search_test "2q1rr1k/3bbnnp/p2p1pp1/2pPp3/PpP1P1P1/1P2BNNP/2BQ1PRK/7R b - - 0 1" f6f5
 run_search_test "rnbqkb1r/p3pppp/1p6/2ppP3/3N4/2P5/PPP1QPPP/R1B1KB1R w KQkq - 0 1" e5e6
 run_search_test "r1b2rk1/2q1b1pp/p2ppn2/1p6/3QP3/1BN1B3/PPP3PP/R4RK1 w - - 0 1" d5a4
 run_search_test "2r3k1/pppR1pp1/4p3/4P1P1/5P2/1P4K1/P1P5/8 w - - 0 1" g5g6

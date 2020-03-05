@@ -1,4 +1,5 @@
 build/
+weights/
 compile_commands.json
 
 # list of things to fix
