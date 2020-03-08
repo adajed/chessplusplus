@@ -115,7 +115,6 @@ MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last
 PieceKind captured_piece(MoveInfo moveinfo);
 Castling last_castling(MoveInfo moveinfo);
 Square last_enpassant_square(MoveInfo moveinfo);
-bool last_enpassant(MoveInfo moveinfo);
 bool enpassant(MoveInfo moveinfo);
 uint8_t half_move_counter(MoveInfo moveinfo);
 
@@ -125,11 +124,13 @@ const Square QUEEN_SIDE_ROOK_SQUARE[COLOR_NUM] = {SQ_A1, SQ_A8};
 
 constexpr Rank rank(Square sq)
 {
+    assert(sq != NO_SQUARE);
     return Rank(sq >> 3);
 }
 
 constexpr File file(Square sq)
 {
+    assert(sq != NO_SQUARE);
     return File(sq & 7);
 }
 
