@@ -69,12 +69,9 @@ Castling last_castling(MoveInfo moveinfo)
 
 Square last_enpassant_square(MoveInfo moveinfo)
 {
-    return Square((moveinfo >> 7) & 0x3F);
-}
-
-bool last_enpassant(MoveInfo moveinfo)
-{
-    return (moveinfo >> 13) & 0x1;
+    if ((moveinfo >> 13) & 0x1)
+        return Square((moveinfo >> 7) & 0x3F);
+    return NO_SQUARE;
 }
 
 bool enpassant(MoveInfo moveinfo)
