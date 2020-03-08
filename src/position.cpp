@@ -414,7 +414,7 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
 
 void Position::set_enpassant_square(Square sq)
 {
-    assert(sq == NO_SQUARE || rank(sq) == (_current_side == WHITE ? RANK_3 : RANK_6));
+    assert(sq == NO_SQUARE || rank(sq) == RANK_3 || rank(sq) == RANK_6);
     _enpassant_square = sq;
 }
 
