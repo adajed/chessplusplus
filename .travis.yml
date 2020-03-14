@@ -19,7 +19,7 @@ matrix:
                       - clang-7
                       - llvm-7-dev
           env:
-              - MATRIX_EVAL="CC=clang-7.0 && CXX=clang++-7.0"
+              - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
 
 branches:
     only:
