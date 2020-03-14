@@ -1,4 +1,5 @@
 language: cpp
+dist: bionic
 
 matrix:
     include:
@@ -6,8 +7,6 @@ matrix:
         - os: linux
           addons:
               apt:
-                  sources:
-                      - ubuntu-toolchain-r-test
                   packages:
                       - g++-7
           env:
@@ -16,13 +15,11 @@ matrix:
         - os: linux
           addons:
               apt:
-                  sources:
-                      - llvm-toolchain-bionic-6.0
                   packages:
-                      - clang-6.0
+                      - clang-7.0
                       - llvm-7-dev
           env:
-              - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+              - MATRIX_EVAL="CC=clang-7.0 && CXX=clang++-7.0"
 
 branches:
     only:
