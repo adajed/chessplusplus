@@ -1,15 +1,34 @@
 language: cpp
-compiler: gcc
-
 dist: bionic
+
+matrix:
+    include:
+
+        - os: linux
+          addons:
+              apt:
+                  packages:
+                      - g++-7
+          env:
+              - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+
+        - os: linux
+          addons:
+              apt:
+                  packages:
+                      - clang-7
+                      - llvm-7-dev
+          env:
+              - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
 
 branches:
     only:
         - master
 
 before_install:
-    - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-    - sudo apt-get update -qq
+    - eval "${MATRIX_EVAL}"
+    - sudo sed -i '/^Defaults\tsecure_path.*$/ d' /etc/sudoers
+    - sudo apt-get update -y
     - sudo apt-get install -y libgtest-dev valgrind cmake clang-tidy-8 expect
     - sudo wget https://github.com/google/googletest/archive/release-1.7.0.tar.gz
     - sudo tar xf release-1.7.0.tar.gz
