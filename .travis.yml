@@ -16,7 +16,7 @@ matrix:
           addons:
               apt:
                   packages:
-                      - clang-7.0
+                      - clang-7
                       - llvm-7-dev
           env:
               - MATRIX_EVAL="CC=clang-7.0 && CXX=clang++-7.0"
