@@ -66,6 +66,7 @@ class Position
         void move_piece(Square from, Square to);
 
         void change_current_side();
+        void set_enpassant_square(Square sq);
 
         Color _current_side;
 

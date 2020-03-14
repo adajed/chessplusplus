@@ -65,9 +65,7 @@ TEST(TypesTest, create_moveinfo)
                                                             square, b, half_move);
                         EXPECT_EQ(captured_piece(moveinfo), PieceKind(piecekind));
                         EXPECT_EQ(last_castling(moveinfo), Castling(castling));
-                        EXPECT_EQ(last_enpassant(moveinfo), square != NO_SQUARE);
-                        if (square != NO_SQUARE)
-                            EXPECT_EQ(last_enpassant_square(moveinfo), square);
+                        EXPECT_EQ(last_enpassant_square(moveinfo), square);
                         EXPECT_EQ(enpassant(moveinfo), b);
                         EXPECT_EQ(half_move_counter(moveinfo), half_move);
                     }

@@ -48,6 +48,8 @@ class Uci
 
         bool perft_command(std::istringstream& istream);
 
+        bool moves_command(std::istringstream& istream);
+
         PositionScorer scorer;
         std::shared_ptr<Search> search;
         Position position;
