@@ -5,6 +5,12 @@ compiler:
 
 dist: bionic
 
+addons:
+    apt:
+        packages:
+            - clang-7
+            - llvm-7-dev
+
 branches:
     only:
         - master
