@@ -26,7 +26,7 @@ Position::Position(std::string fen)
     std::fill_n(_by_piece_kind_bb, PIECE_KIND_NUM, 0ULL);
     std::fill_n(_by_color_bb, COLOR_NUM, 0ULL);
     _castling_rights = NO_CASTLING;
-    _enpassant_square = NO_SQUARE;
+    set_enpassant_square(NO_SQUARE);
 
     std::istringstream stream(fen);
     std::string token;
@@ -72,7 +72,7 @@ Position::Position(std::string fen)
     }
 
     stream >> token;
-    _enpassant_square = token == "-" ? NO_SQUARE : notationToSquare(token);
+    set_enpassant_square(token == "-" ? NO_SQUARE : notationToSquare(token));
 
     stream >> _ply_counter;
     _half_move_counter = uint8_t(_ply_counter);
@@ -291,7 +291,7 @@ MoveInfo Position::do_move(Move move)
         _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
         _castling_rights &= !CASTLING_RIGHTS[side];
         _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
-        _enpassant_square = NO_SQUARE;
+        set_enpassant_square(NO_SQUARE);
     }
     else
     {
@@ -347,11 +347,11 @@ MoveInfo Position::do_move(Move move)
         Rank rank2 = (side == WHITE) ? RANK_2 : RANK_7;
         if (get_piece_kind(moved_piece) == PAWN && rank(from(move)) == rank2 && rank(to(move)) == enpassant_rank)
         {
-            _enpassant_square = Square(to(move) + (side == WHITE ? -8 : 8));
+            set_enpassant_square(Square(to(move) + (side == WHITE ? -8 : 8)));
             _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
         }
         else
-            _enpassant_square = NO_SQUARE;
+            set_enpassant_square(NO_SQUARE);
     }
 
     _history[_history_counter++] = _zobrist_hash;
@@ -368,10 +368,7 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
 
     _castling_rights = last_castling(moveinfo);
 
-    if (last_enpassant(moveinfo))
-        _enpassant_square = last_enpassant_square(moveinfo);
-    else
-        _enpassant_square = NO_SQUARE;
+    set_enpassant_square(last_enpassant_square(moveinfo));
 
     _half_move_counter = half_move_counter(moveinfo);
 
@@ -415,6 +412,12 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
     _zobrist_hash = _history[_history_counter - 1];
 }
 
+void Position::set_enpassant_square(Square sq)
+{
+    assert(sq == NO_SQUARE || rank(sq) == RANK_3 || rank(sq) == RANK_6);
+    _enpassant_square = sq;
+}
+
 MoveInfo Position::do_null_move()
 {
     change_current_side();
@@ -425,7 +428,7 @@ MoveInfo Position::do_null_move()
 
     if (_enpassant_square != NO_SQUARE)
         _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
-    _enpassant_square = NO_SQUARE;
+    set_enpassant_square(NO_SQUARE);
 
     return create_moveinfo(NO_PIECE_KIND, NO_CASTLING, enpassant_sq, false, 0);
 }
@@ -436,7 +439,7 @@ void Position::undo_null_move(MoveInfo moveinfo)
     _ply_counter--;
     _half_move_counter--;
 
-    _enpassant_square = last_enpassant_square(moveinfo);
+    set_enpassant_square(last_enpassant_square(moveinfo));
     if (_enpassant_square != NO_SQUARE)
         _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
 }

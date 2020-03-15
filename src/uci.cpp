@@ -76,6 +76,7 @@ void Uci::loop()
         COMMAND(printboard)
         COMMAND(hash)
         COMMAND(perft)
+        COMMAND(moves)
 
 #undef COMMAND
 
@@ -211,6 +212,17 @@ bool Uci::position_command(std::istringstream& istream)
         if (token == "moves")
             continue;
 
+        position.do_move(position.parse_move(token));
+    }
+
+    return true;
+}
+
+bool Uci::moves_command(std::istringstream& istream)
+{
+    std::string token;
+    while (istream >> token)
+    {
         position.do_move(position.parse_move(token));
     }
 
