@@ -2,19 +2,28 @@
 
 EXIT_VALUE=0
 
-if [ "$1" == "release" ]
+print_usage_and_exit()
+{
+    echo "Usage: $0 release|debug"
+    exit 1
+}
+
+if [ "$#" -ne 1 ]
 then
-    program="./build/chessplusplus"
-else
-    program="./build/chessplusplus_debug"
+    print_usage_and_exit
 fi
 
-NUMBER_OF_SEARCH_TESTS=0
-SEARCH_TESTS_PASSED=0
+BUILD_TYPE=$1
 
-NUMBER_OF_PERFT_TESTS=0
-PERFT_TESTS_PASSED=0
-
+if [ "$BUILD_TYPE" == "release" ]
+then
+    PROGRAM="./build/chessplusplus"
+elif [ "$BUILD_TYPE" == "debug" ]
+then
+    PROGRAM="./build/chessplusplus_debug"
+else
+    print_usage_and_exit
+fi
 
 run_search_test()
 {
@@ -22,32 +31,20 @@ run_search_test()
     move=$2
 
     NUMBER_OF_SEARCH_TESTS=$((NUMBER_OF_SEARCH_TESTS + 1))
-    expect tests/scripts/mate_search.exp ${program} "${fen}" ${move} >/dev/null
+    expect tests/scripts/best_move_search.exp ${PROGRAM} "${fen}" ${move} >/dev/null
     if [ $? -eq 0 ]
     then
         SEARCH_TESTS_PASSED=$((SEARCH_TESTS_PASSED + 1))
+        echo "Search test \"${fen}\" passed"
     else
         echo "Search test \"${fen}\" failed"
     fi
 }
 
-run_perft_test()
-{
-    fen=$1
-    depth=$2
-    nodes=$3
-
-    NUMBER_OF_PERFT_TESTS=$((NUMBER_OF_PERFT_TESTS + 1))
-    expect tests/scripts/perft.exp ${program} "${fen}" ${depth} ${nodes} >/dev/null
-    if [ $? -eq 0 ]
-    then
-        PERFT_TESTS_PASSED=$((PERFT_TESTS_PASSED + 1))
-    else
-        echo "Perft test \"${fen}\" ${depth} failed"
-    fi
-}
-
 expect tests/scripts/uci.exp >/dev/null
+
+NUMBER_OF_SEARCH_TESTS=0
+SEARCH_TESTS_PASSED=0
 
 # basic mate search
 run_search_test "6k1/5ppp/8/8/8/8/8/1RK5 w - - 0 1" b1b8
@@ -56,8 +53,8 @@ run_search_test "rr4k1/5ppp/8/8/8/2R5/2R5/2RK4 w - - 0 1" c3c8
 
 # bratko-kopec test
 run_search_test "1k1r4/pp1b1R2/3q2pp/4p3/2B5/4Q3/PPP2B2/2K5 b - - 0 1" d6d1
-run_search_test "3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - 0 1" 7 d4d5
-run_search_test "2q1rr1k/3bbnnp/p2p1pp1/2pPp3/PpP1P1P1/1P2BNNP/2BQ1PRK/7R b - - 0 1" 7 f6f5
+run_search_test "3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - 0 1" d4d5
+run_search_test "2q1rr1k/3bbnnp/p2p1pp1/2pPp3/PpP1P1P1/1P2BNNP/2BQ1PRK/7R b - - 0 1" f6f5
 run_search_test "rnbqkb1r/p3pppp/1p6/2ppP3/3N4/2P5/PPP1QPPP/R1B1KB1R w KQkq - 0 1" e5e6
 run_search_test "r1b2rk1/2q1b1pp/p2ppn2/1p6/3QP3/1BN1B3/PPP3PP/R4RK1 w - - 0 1" d5a4
 run_search_test "2r3k1/pppR1pp1/4p3/4P1P1/5P2/1P4K1/P1P5/8 w - - 0 1" g5g6
@@ -125,20 +122,7 @@ run_search_test "8/p1ppk1p1/2n2p2/8/4B3/2P1KPP1/1P5P/8 w - - 0 1" e4c6
 run_search_test "8/3nk3/3pp3/1B6/8/3PPP2/4K3/8 w - - 0 1" b5d7
 
 echo "Search tests passed: ${SEARCH_TESTS_PASSED}/${NUMBER_OF_SEARCH_TESTS}"
-if [ ${SEARCH_TESTS_PASSED} -lt 20 ]
-then
-    EXIT_VALUE=1
-fi
-
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 1 20
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 2 400
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 3 8902
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 4 197281
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 5 4865609
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 6 119060324
-
-echo "Perft tests passed: ${PERFT_TESTS_PASSED}/${NUMBER_OF_PERFT_TESTS}"
-if [ ${PERFT_TESTS_PASSED} -ne ${NUMBER_OF_PERFT_TESTS} ]
+if [ ${SEARCH_TESTS_PASSED} -lt 25 ]
 then
     EXIT_VALUE=1
 fi
