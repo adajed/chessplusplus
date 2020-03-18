@@ -25,19 +25,13 @@ else
     print_usage_and_exit
 fi
 
-NUMBER_OF_SEARCH_TESTS=0
-SEARCH_TESTS_PASSED=0
-
-NUMBER_OF_PERFT_TESTS=0
-PERFT_TESTS_PASSED=0
-
 run_search_test()
 {
     fen=$1
     move=$2
 
     NUMBER_OF_SEARCH_TESTS=$((NUMBER_OF_SEARCH_TESTS + 1))
-    expect tests/scripts/mate_search.exp ${PROGRAM} "${fen}" ${move} >/dev/null
+    expect tests/scripts/best_move_search.exp ${PROGRAM} "${fen}" ${move} >/dev/null
     if [ $? -eq 0 ]
     then
         SEARCH_TESTS_PASSED=$((SEARCH_TESTS_PASSED + 1))
@@ -47,24 +41,10 @@ run_search_test()
     fi
 }
 
-run_perft_test()
-{
-    fen=$1
-    depth=$2
-    nodes=$3
-
-    NUMBER_OF_PERFT_TESTS=$((NUMBER_OF_PERFT_TESTS + 1))
-    expect tests/scripts/perft.exp ${PROGRAM} "${fen}" ${depth} ${nodes} >/dev/null
-    if [ $? -eq 0 ]
-    then
-        PERFT_TESTS_PASSED=$((PERFT_TESTS_PASSED + 1))
-        echo "Perft test \"${fen}\" ${depth} passed"
-    else
-        echo "Perft test \"${fen}\" ${depth} failed"
-    fi
-}
-
 expect tests/scripts/uci.exp >/dev/null
+
+NUMBER_OF_SEARCH_TESTS=0
+SEARCH_TESTS_PASSED=0
 
 # basic mate search
 run_search_test "6k1/5ppp/8/8/8/8/8/1RK5 w - - 0 1" b1b8
@@ -73,8 +53,8 @@ run_search_test "rr4k1/5ppp/8/8/8/2R5/2R5/2RK4 w - - 0 1" c3c8
 
 # bratko-kopec test
 run_search_test "1k1r4/pp1b1R2/3q2pp/4p3/2B5/4Q3/PPP2B2/2K5 b - - 0 1" d6d1
-run_search_test "3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - 0 1" 7 d4d5
-run_search_test "2q1rr1k/3bbnnp/p2p1pp1/2pPp3/PpP1P1P1/1P2BNNP/2BQ1PRK/7R b - - 0 1" 7 f6f5
+run_search_test "3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - 0 1" d4d5
+run_search_test "2q1rr1k/3bbnnp/p2p1pp1/2pPp3/PpP1P1P1/1P2BNNP/2BQ1PRK/7R b - - 0 1" f6f5
 run_search_test "rnbqkb1r/p3pppp/1p6/2ppP3/3N4/2P5/PPP1QPPP/R1B1KB1R w KQkq - 0 1" e5e6
 run_search_test "r1b2rk1/2q1b1pp/p2ppn2/1p6/3QP3/1BN1B3/PPP3PP/R4RK1 w - - 0 1" d5a4
 run_search_test "2r3k1/pppR1pp1/4p3/4P1P1/5P2/1P4K1/P1P5/8 w - - 0 1" g5g6
@@ -142,67 +122,7 @@ run_search_test "8/p1ppk1p1/2n2p2/8/4B3/2P1KPP1/1P5P/8 w - - 0 1" e4c6
 run_search_test "8/3nk3/3pp3/1B6/8/3PPP2/4K3/8 w - - 0 1" b5d7
 
 echo "Search tests passed: ${SEARCH_TESTS_PASSED}/${NUMBER_OF_SEARCH_TESTS}"
-if [ ${SEARCH_TESTS_PASSED} -lt 20 ]
-then
-    EXIT_VALUE=1
-fi
-
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 1 20
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 2 400
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 3 8902
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 4 197281
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 5 4865609
-run_perft_test "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" 6 119060324
-
-
-run_perft_test "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - " 1 48
-run_perft_test "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - " 2 2039
-run_perft_test "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - " 3 97862
-run_perft_test "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - " 4 4085603
-run_perft_test "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - " 5 193690690
-
-
-run_perft_test "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - " 1 14
-run_perft_test "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - " 2 191
-run_perft_test "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - " 3 2812
-run_perft_test "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - " 4 43238
-run_perft_test "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - " 5 674624
-run_perft_test "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - " 6 11030083
-run_perft_test "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - " 7 178633661
-
-
-run_perft_test "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - " 1 6
-run_perft_test "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - " 2 264
-run_perft_test "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - " 3 9467
-run_perft_test "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - " 4 422333
-run_perft_test "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - " 5 15833292
-run_perft_test "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - " 6 706045033
-
-
-run_perft_test "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1" 1 6
-run_perft_test "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1" 2 264
-run_perft_test "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1" 3 9467
-run_perft_test "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1" 4 422333
-run_perft_test "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1" 5 15833292
-run_perft_test "r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1" 6 706045033
-
-
-run_perft_test "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - " 1 144
-run_perft_test "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - " 2 11486
-run_perft_test "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - " 3 162379
-run_perft_test "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - " 4 12103487
-run_perft_test "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - " 5 189941194
-
-
-run_perft_test "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - " 1 46
-run_perft_test "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - " 2 2079
-run_perft_test "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - " 3 89890
-run_perft_test "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - " 4 3894594
-run_perft_test "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - " 5 164075551
-
-
-echo "Perft tests passed: ${PERFT_TESTS_PASSED}/${NUMBER_OF_PERFT_TESTS}"
-if [ ${PERFT_TESTS_PASSED} -ne ${NUMBER_OF_PERFT_TESTS} ]
+if [ ${SEARCH_TESTS_PASSED} -lt 25 ]
 then
     EXIT_VALUE=1
 fi
