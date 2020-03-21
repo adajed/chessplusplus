@@ -102,7 +102,7 @@ void Search::go()
             else if (result > win_in(MAX_DEPTH))
                 score_str = "mate " + std::to_string(INFINITY_SCORE - result);
             else
-                score_str = "cp " + std::to_string(result * 100LL / PIECE_BASE_VALUES[END_GAME][PAWN]);
+                score_str = "cp " + std::to_string(result * 100LL / scorer.weights.piece_values[END_GAME][PAWN]);
 
             logger << "info "
                       << "depth " << _current_depth << " "

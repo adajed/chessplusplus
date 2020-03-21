@@ -7,23 +7,14 @@
 namespace engine
 {
 
-extern int64_t PIECE_BASE_VALUES[GAME_PHASE_NUM][PIECE_KIND_NUM];
-extern int64_t PIECE_POSITIONAL_VALUES[GAME_PHASE_NUM][PIECE_KIND_NUM][SQUARE_NUM];
-extern int64_t PIECE_MOBILITY_BONUS[GAME_PHASE_NUM][PIECE_KIND_NUM];
-extern int64_t ROOK_SEMIOPEN_FILE_BONUS[GAME_PHASE_NUM];
-extern int64_t ROOK_OPEN_FILE_BONUS[GAME_PHASE_NUM];
-extern int64_t BISHOP_PAIR_BONUS[GAME_PHASE_NUM];
-extern int64_t PASSED_PAWN_BONUS[GAME_PHASE_NUM];
-extern int64_t DOUBLED_PAWN_PENALTY[GAME_PHASE_NUM];
-extern int64_t ISOLATED_PAWN_PENALTY[GAME_PHASE_NUM];
-extern int64_t CONNECTED_ROOKS_BONUS[GAME_PHASE_NUM];
-
 class PositionScorer
 {
     public:
-        explicit PositionScorer();
+        PositionScorer(Weights& weights);
 
         int64_t score(const Position& position);
+
+        Weights& weights;
 
     private:
 

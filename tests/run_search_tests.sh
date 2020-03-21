@@ -1,15 +1,26 @@
 #!/bin/bash
 
-EXIT_VALUE=0
-
 print_usage_and_exit()
 {
-    echo "Usage: $0 release|debug"
+    echo "Usage: $0 release|debug weights_path"
     exit 1
 }
 
-if [ "$#" -ne 1 ]
+if [ "$#" -ne 2 ]
 then
+    print_usage_and_exit
+fi
+
+BUILD_TYPE=$1
+WEIGHTS_PATH=$2
+
+if [ "$1" == "release" ]
+then
+    PROGRAM="./build/chessplusplus"
+elif [ "$2" == "debug" ]
+then
+    PROGRAM="./build/chessplusplus_debug"
+else
     print_usage_and_exit
 fi
 
@@ -31,7 +42,7 @@ run_search_test()
     move=$2
 
     NUMBER_OF_SEARCH_TESTS=$((NUMBER_OF_SEARCH_TESTS + 1))
-    expect tests/scripts/best_move_search.exp ${PROGRAM} "${fen}" ${move} >/dev/null
+    expect tests/scripts/best_move_search.exp ${PROGRAM} ${WEIGHTS_PATH} "${fen}" ${move} >/dev/null
     if [ $? -eq 0 ]
     then
         SEARCH_TESTS_PASSED=$((SEARCH_TESTS_PASSED + 1))
@@ -41,7 +52,7 @@ run_search_test()
     fi
 }
 
-expect tests/scripts/uci.exp >/dev/null
+expect tests/scripts/uci.exp ${PROGRAM} ${WEIGHTS_PATH} >/dev/null
 
 NUMBER_OF_SEARCH_TESTS=0
 SEARCH_TESTS_PASSED=0
@@ -124,7 +135,5 @@ run_search_test "8/3nk3/3pp3/1B6/8/3PPP2/4K3/8 w - - 0 1" b5d7
 echo "Search tests passed: ${SEARCH_TESTS_PASSED}/${NUMBER_OF_SEARCH_TESTS}"
 if [ ${SEARCH_TESTS_PASSED} -lt 25 ]
 then
-    EXIT_VALUE=1
+    exit 1
 fi
-
-exit $EXIT_VALUE
