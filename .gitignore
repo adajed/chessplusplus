@@ -1,5 +1,7 @@
 build/
-weights/
+weights/*
+!weights/basic.w
+!weights/test_weights.w
 compile_commands.json
 
 # list of things to fix
