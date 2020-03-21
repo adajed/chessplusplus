@@ -11,7 +11,7 @@ class SearchTest : public ::testing::Test
     protected:
         static void SetUpTestCase()
         {
-            std::string test_weights = "test_weights.w";
+            std::string test_weights = "weights/test_weights.w";
             weights = new Weights(test_weights);
             scorer = new PositionScorer(*weights);
         }
