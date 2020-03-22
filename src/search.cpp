@@ -75,6 +75,14 @@ void Search::go()
     Move* begin = MOVE_LIST[0];
     Move* end = generate_moves(position, position.side_to_move(), begin);
 
+    // check if there is only one move to make
+    if ((end - begin) == 1)
+    {
+        Move bestmove = begin[0];
+        logger << "bestmove " << position.move_to_string(bestmove) << std::endl;
+        return;
+    }
+
     for (Move* it = begin; it != end; ++it)
         _root_moves.push_back(std::make_pair(DRAW_SCORE, *it));
 
