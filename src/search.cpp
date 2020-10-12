@@ -20,6 +20,11 @@ constexpr Score win_in(int64_t ply)
     return -lost_in(ply);
 }
 
+const bool is_mate(Score score)
+{
+    return score < lost_in(MAX_DEPTH) || score > win_in(MAX_DEPTH);
+}
+
 const int64_t INFINITE = 1LL << 32;
 
 Search::Search(const Position& position, const PositionScorer& scorer, const Limits& limits)
@@ -86,6 +91,9 @@ void Search::go()
     for (Move* it = begin; it != end; ++it)
         _root_moves.push_back(std::make_pair(DRAW_SCORE, *it));
 
+    Score min_bound = -INFINITY_SCORE;
+    Score max_bound = INFINITY_SCORE;
+
     _current_depth = 0;
     while (!stop_search)
     {
@@ -94,14 +102,43 @@ void Search::go()
 
         std::stable_sort(_root_moves.begin(), _root_moves.end(), std::greater<>());
         _ply_counter = 0;
-        Score result = root_search(pos, _current_depth, -INFINITY_SCORE, INFINITY_SCORE, temp_pv_list);
+
+        Score result;
+        Score update = 25;
+        bool repeat = true;
+
+        do
+        {
+            repeat = true;
+
+            result = root_search(pos, _current_depth, min_bound, max_bound, temp_pv_list);
+
+            if (result <= min_bound)
+            {
+                min_bound -= update;
+                update *= 2;
+            }
+            else if (result >= max_bound)
+            {
+                max_bound += update;
+                update *= 2;
+            }
+            else
+                repeat = false;
+
+            if (check_limits())
+                break;
+        }
+        while ( repeat );
+
+        min_bound = result - 25;
+        max_bound = result + 25;
 
         end_time = std::chrono::steady_clock::now();
         elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
         if (!stop_search)
         {
-            Position temp = position;
             pv_list = temp_pv_list;
 
             std::string score_str;
@@ -241,11 +278,11 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
     Move* end = generate_moves(position, position.side_to_move(), begin);
     bool is_in_check = position.is_in_check(position.side_to_move());
 
-    if (is_in_check)
-        depth++;
-
     if (begin == end)
         return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
+
+    if (is_in_check)
+        depth++;
 
     if (depth == 0)
         return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
@@ -257,14 +294,14 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta, Mov
     if (allow_null_move)
     {
         Color side = position.side_to_move();
-        int n = position.number_of_pieces(make_piece(side, KNIGHT))
+        int num_of_pieces = position.number_of_pieces(make_piece(side, KNIGHT))
               + position.number_of_pieces(make_piece(side, BISHOP))
               + position.number_of_pieces(make_piece(side, ROOK))
               + position.number_of_pieces(make_piece(side, QUEEN));
-        if (!is_in_check && n > 0 && depth > 4)
+        if (!is_in_check && num_of_pieces > 0 && depth > 4)
         {
-            info.ply++;
             MoveInfo moveinfo = position.do_null_move();
+            info.ply++;
             Score result = -search<false>(position, depth - 4, -beta, -alpha, temp_movelist);
             position.undo_null_move(moveinfo);
             info.ply--;
