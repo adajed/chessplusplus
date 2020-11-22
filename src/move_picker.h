@@ -3,8 +3,9 @@
 
 #include "position.h"
 #include "types.h"
+#include "transposition_table.h"
 
-#include <unordered_map>
+#include <algorithm>
 #include <vector>
 
 namespace engine
@@ -13,7 +14,7 @@ namespace engine
 struct OrderingInfo
 {
     public:
-        OrderingInfo() : pv_moves()
+        OrderingInfo(tt::TTable& ttable) : ttable(ttable)
         {
             for (int i = 0; i < 50; ++i)
                 killers[i][0] = killers[i][1] = NO_MOVE;
@@ -35,15 +36,11 @@ struct OrderingInfo
             history[c][from][to] += depth * depth;
         }
 
-        void update_pv(HashKey key, Move pv)
-        {
-            pv_moves[key] = pv;
-        }
-
         Move killers[50][2];
         int history[COLOR_NUM][SQUARE_NUM][SQUARE_NUM];
         int ply;
-        std::unordered_map<HashKey, Move> pv_moves;
+
+        tt::TTable& ttable;
 };
 
 
@@ -58,12 +55,10 @@ class MovePicker
 
     private:
 
-        uint32_t score_move(const Position& position, Move move, OrderingInfo& info, bool use_info);
+        void score_moves(const Position& position, OrderingInfo& info, bool use_info);
 
-        Move* begin;
-        Move* end;
-        size_t pos;
-        std::vector<uint32_t> scores;
+        std::vector<std::pair<uint32_t, Move>> _moves;
+        size_t _pos;
 };
 
 }  // namespace engine

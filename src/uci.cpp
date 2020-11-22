@@ -15,14 +15,6 @@ Uci::Uci(const PositionScorer& scorer)
     , options()
     , polyglot()
 {
-    options["Hash"] = UciOption(1, 1, 1024,
-            [](int size) {
-                transposition::init(size);
-            });
-    options["Clear Hash"] = UciOption(
-            [](){
-                transposition::clear();
-            });
     options["Polyglot Book"] = UciOption("",
             [this](std::string path) {
                 if (path == "")
