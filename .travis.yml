@@ -42,7 +42,7 @@ before_install:
 
 before_script:
     - compiledb -n make
-    - make GTEST_LIB_PATH=/usr/lib GTEST_INCLUDE_PATH=/usr/include
+    - make GTEST_LIB_PATH=/usr/local/lib GTEST_INCLUDE_PATH=/usr/local/include
 
 script:
     - ./build/test
