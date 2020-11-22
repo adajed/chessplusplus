@@ -1,51 +1,41 @@
 #include "transposition_table.h"
 
-#include <algorithm>
 #include <cassert>
 #include <unordered_map>
 
+#include <iostream>
+
 namespace engine
 {
-namespace transposition
+namespace tt
 {
 
-const size_t MEGABYTE = 1024ULL * 1024ULL;
-
-std::vector<Entry> hashmap;
-
-const Entry EMPTY_ENTRY = {NO_MOVE, 0, 0};
-
-size_t position(HashKey key)
+TTable::TTable() : _hashmap()
 {
-    return key % hashmap.size();
 }
 
-void init(size_t size)
+void TTable::update(HashKey key, TTEntry entry)
 {
-    assert(size > 0);
-    hashmap = std::vector<Entry>(size * MEGABYTE / sizeof(Entry), EMPTY_ENTRY);
+   auto result = _hashmap.insert(std::make_pair(key, entry));
+
+   if (!result.second)
+   {
+        result.first->second = entry;
+   }
 }
 
-void clear()
+const TTEntry* TTable::get(HashKey key) const
 {
-    std::fill(hashmap.begin(), hashmap.end(), EMPTY_ENTRY);
+    auto result = _hashmap.find(key);
+    if (result != _hashmap.end())
+        return &_hashmap.at(key);
+    return nullptr;
 }
 
-void update(HashKey key, Entry entry)
+void TTable::clear()
 {
-    hashmap[position(key)] = entry;
+    _hashmap.clear();
 }
 
-bool contains(HashKey key)
-{
-    return hashmap[position(key)].best_move != NO_MOVE;
-}
-
-Entry get(HashKey key)
-{
-    assert(contains(key));
-    return hashmap[position(key)];
-}
-
-}  // namespace transposition
+}  // namespace tt
 }  // namespace engine

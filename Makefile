@@ -10,7 +10,7 @@ GTEST_LIB_PATH=/usr/lib
 
 CFLAGS = -Wall -std=c++17 -flto
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
-CFLAGS_DEBUG = $(CFLAGS) -g
+CFLAGS_DEBUG = $(CFLAGS) -g -DDEBUG
 
 LFLAGS = -pthread -flto
 LFLAGS_RELEASE = $(LFLAGS) -Ofast

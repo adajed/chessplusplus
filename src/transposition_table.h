@@ -1,32 +1,54 @@
 #ifndef CHESS_ENGINE_TRANSPOSITION_TABLE_H_
 #define CHESS_ENGINE_TRANSPOSITION_TABLE_H_
 
+#include <unordered_map>
+
 #include "types.h"
 #include "position.h"
 
 namespace engine
 {
-namespace transposition
+namespace tt
 {
 
-struct Entry
+enum class Flag
 {
-    Move best_move;
-    int32_t depth;
-    int64_t value;
+    kEXACT = 0,
+    kLOWER_BOUND = 1,
+    kUPPER_BOUND = 2
 };
 
-void init(size_t size);
+struct TTEntry
+{
+    TTEntry(int64_t score, int32_t depth, Flag flag, Move move)
+        : score(score), depth(depth), flag(flag), move(move)
+    {
+    }
 
-void clear();
+    int64_t score;
+    int32_t depth;
+    Flag flag;
+    Move move;
 
-void update(HashKey key, Entry entry);
+};
 
-bool contains(HashKey key);
+class TTable
+{
+    public:
+        TTable();
 
-Entry get(HashKey key);
+        void update(HashKey key, TTEntry entry);
 
-}  // namespace transposition
+        const TTEntry* get(HashKey key) const;
+
+        void clear();
+
+
+    private:
+        std::unordered_map<HashKey, TTEntry> _hashmap;
+};
+
+}  // namespace tt
 }  // namespace engine
 
 #endif  // CHESS_ENGINE_TRANSPOSITION_TABLE_H_

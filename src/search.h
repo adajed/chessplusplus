@@ -4,6 +4,7 @@
 #include "position.h"
 #include "move_picker.h"
 #include "score.h"
+#include "transposition_table.h"
 #include "types.h"
 
 #include <chrono>
@@ -57,36 +58,40 @@ class Search
 
     private:
 
-        Score root_search(Position& position, int depth, Score alpha, Score beta, MoveList& pv);
+        Score root_search(Position& position, int depth, Score alpha, Score beta);
 
         template <bool allow_null_move>
-        Score search(Position& position, int depth, Score alpha, Score beta, MoveList& pv);
+        Score search(Position& position, int depth, Score alpha, Score beta);
 
         Score quiescence_search(Position& position, int depth, Score alpha, Score beta);
 
+        MoveList get_pv(int length);
+
         bool check_limits();
 
-        Position position;
-        PositionScorer scorer;
+        Position _position;
+        PositionScorer _scorer;
         Limits limits;
 
-        MoveList pv_list;
         int64_t check_limits_counter;
         bool stop_search;
 
         int64_t _search_time;
         int64_t _search_depth;
+        int64_t _max_nodes_searched;
         int _current_depth;
 
         Move _best_move;
-        TimePoint start_time;
-        int64_t nodes_searched;
+        TimePoint _start_time;
+        int64_t _nodes_searched;
 
-        OrderingInfo info;
-
-        std::vector<std::pair<Score, Move>> _root_moves;
+        std::vector<Move> _root_moves;
 
         int _ply_counter;
+
+        tt::TTable _ttable;
+        OrderingInfo _info;
+
 
 };
 
