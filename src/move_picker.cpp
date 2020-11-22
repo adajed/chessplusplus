@@ -2,8 +2,6 @@
 
 #include "types.h"
 
-#include <algorithm>
-
 namespace engine
 {
 
