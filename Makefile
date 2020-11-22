@@ -3,8 +3,8 @@ BUILDDIR=$(ROOTDIR)/build
 OBJS_DIR_RELEASE=$(BUILDDIR)/.objs
 OBJS_DIR_DEBUG=$(BUILDDIR)/.dobjs
 
-GTEST_INCLUDE_PATH=/usr/include
-GTEST_LIB_PATH=/usr/lib
+GTEST_INCLUDE_PATH ?= /usr/local/include
+GTEST_LIB_PATH     ?= /usr/local/lib
 
 #### compilation flags
 

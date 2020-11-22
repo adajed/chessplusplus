@@ -5,6 +5,7 @@
 #include "types.h"
 #include "transposition_table.h"
 
+#include <algorithm>
 #include <vector>
 
 namespace engine
