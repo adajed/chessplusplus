@@ -1,5 +1,7 @@
 #!/bin/bash
 
+trap "{ exit 255; }" INT
+
 print_usage_and_exit()
 {
     echo "Usage: $0 release|debug weights_path"

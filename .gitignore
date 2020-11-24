@@ -3,6 +3,7 @@ weights/*
 !weights/basic.w
 !weights/test_weights.w
 compile_commands.json
+Logfile.log
 
 # list of things to fix
 fix-me.log

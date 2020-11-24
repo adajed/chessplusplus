@@ -21,6 +21,18 @@ using Score = int64_t;
 constexpr Score INFINITY_SCORE = 1LL << 32;
 constexpr Score DRAW_SCORE = 0LL;
 
+std::string score2str(Score score);
+
+constexpr Score win_in(int ply)
+{
+    return INFINITY_SCORE - ply;
+}
+
+constexpr Score lost_in(int ply)
+{
+    return -win_in(ply);
+}
+
 
 struct Limits
 {
@@ -58,6 +70,8 @@ class Search
 
     private:
 
+        void iter_search();
+
         Score root_search(Position& position, int depth, Score alpha, Score beta);
 
         template <bool allow_null_move>
@@ -66,6 +80,8 @@ class Search
         Score quiescence_search(Position& position, int depth, Score alpha, Score beta);
 
         MoveList get_pv(int length);
+
+        void print_info(Score score, int depth, int64_t nodes_searched, int64_t elapsed);
 
         bool check_limits();
 
