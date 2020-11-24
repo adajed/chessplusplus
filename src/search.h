@@ -62,7 +62,7 @@ struct Limits
 class Search
 {
     public:
-        Search(const Position& position, const PositionScorer& scorer, const Limits& limits);
+        Search(const Position& position, const Limits& limits);
 
         void go();
 

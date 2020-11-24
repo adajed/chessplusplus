@@ -40,9 +40,9 @@ const bool is_mate(Score score)
 
 const int64_t INFINITE = 1LL << 32;
 
-Search::Search(const Position& position, const PositionScorer& scorer, const Limits& limits)
+Search::Search(const Position& position, const Limits& limits)
     : _position(position)
-    , _scorer(scorer)
+    , _scorer()
     , limits(limits)
     , check_limits_counter(4096)
     , stop_search(false)

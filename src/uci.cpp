@@ -7,9 +7,8 @@
 namespace engine
 {
 
-Uci::Uci(const PositionScorer& scorer)
-    : scorer(scorer)
-    , search(nullptr)
+Uci::Uci()
+    : search(nullptr)
     , position()
     , quit(false)
     , options()
@@ -257,7 +256,7 @@ bool Uci::go_command(std::istringstream& istream)
         }
     }
 
-    search = std::make_shared<Search>(position, scorer, limits);
+    search = std::make_shared<Search>(position, limits);
 
     std::thread search_thread(
             [this](){

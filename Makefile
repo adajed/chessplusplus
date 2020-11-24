@@ -56,11 +56,11 @@ $(ENGINE_DEBUG): $(ENGINE_OBJS_DEBUG) | $(OBJS_DIR_DEBUG)
 
 #### test
 
-$(TEST_RELEASE): $(TEST_OBJS_RELEASE) $(filter-out $(OBJS_DIR_RELEASE)/src/engine.o,$(ENGINE_OBJS_RELEASE)) | $(OBJS_DIR_RELEASE)
+$(TEST_RELEASE): $(TEST_OBJS_RELEASE) $(filter-out $(OBJS_DIR_RELEASE)/src/main.o,$(ENGINE_OBJS_RELEASE)) | $(OBJS_DIR_RELEASE)
 	@echo "Linking $@"
 	@$(CXX) -o $@ $^ $(LFLAGS_RELEASE) -L$(GTEST_LIB_PATH) -lgtest
 
-$(TEST_DEBUG): $(TEST_OBJS_DEBUG) $(filter-out $(OBJS_DIR_DEBUG)/src/engine.o,$(ENGINE_OBJS_DEBUG)) | $(OBJS_DIR_DEBUG)
+$(TEST_DEBUG): $(TEST_OBJS_DEBUG) $(filter-out $(OBJS_DIR_DEBUG)/src/main.o,$(ENGINE_OBJS_DEBUG)) | $(OBJS_DIR_DEBUG)
 	@echo "Linking $@"
 	@$(CXX) -o $@ $^ $(LFLAGS_DEBUG) $(LCOV_LFLAGS) -L$(GTEST_LIB_PATH) -lgtest
 

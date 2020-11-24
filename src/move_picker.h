@@ -19,8 +19,8 @@ struct OrderingInfo
             for (int i = 0; i < 50; ++i)
                 killers[i][0] = killers[i][1] = NO_MOVE;
             for (int c = 0; c < 2; ++c)
-                for (int from = 0; from < SQUARE_NUM; ++from)
-                    for (int to = 0; to < SQUARE_NUM; ++to)
+                for (int from = 0; from < static_cast<int>(SQUARE_NUM); ++from)
+                    for (int to = 0; to < static_cast<int>(SQUARE_NUM); ++to)
                         history[c][from][to] = 0;
             ply = 0;
         }
