@@ -6,18 +6,31 @@
 #include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <cmath>
 
 namespace engine
 {
 
-constexpr Score lost_in(int64_t ply)
+Move PV_LIST[2 * MAX_DEPTH][2 * MAX_DEPTH];
+int PV_LIST_LENGTH[2 * MAX_DEPTH];
+
+void set_new_pv(int depth, int move)
 {
-    return -INFINITY_SCORE + ply;
+    assert(depth < 2 * MAX_DEPTH - 1);
+    PV_LIST_LENGTH[depth] = PV_LIST_LENGTH[depth + 1] + 1;
+    for (int i = 0; i < PV_LIST_LENGTH[depth + 1]; ++i)
+        PV_LIST[depth][i + 1] = PV_LIST[depth + 1][i];
+    PV_LIST[depth][0] = move;
 }
 
-constexpr Score win_in(int64_t ply)
+std::string score2str(Score score)
 {
-    return -lost_in(ply);
+    if (score <= lost_in(MAX_DEPTH))
+        return "mate -" + std::to_string(score + INFINITY_SCORE);
+    else if (score >= win_in(MAX_DEPTH))
+        return "mate " + std::to_string(INFINITY_SCORE - score);
+    else
+        return "cp " + std::to_string(score * 100LL / 300LL);
 }
 
 const bool is_mate(Score score)
@@ -105,104 +118,18 @@ void Search::go()
     stop_search = false;
     _start_time = std::chrono::steady_clock::now();
 
-    TimePoint end_time;
-    int64_t elapsed = 0LL;
-
     // check if there is only one move to make
     if (_root_moves.size() == 1)
     {
-        Move bestmove = _root_moves[0];
-        logger << "bestmove " << _position.move_to_string(bestmove) << std::endl;
-        return;
+        _best_move = _root_moves[0];
     }
-
-    MoveList pv_list;
-    Score min_bound = -INFINITY_SCORE;
-    Score max_bound = INFINITY_SCORE;
-
-    _current_depth = 0;
-    while (!stop_search)
+    else
     {
-        _current_depth++;
-        _nodes_searched = 0;
-
-        _ply_counter = 0;
-
-        Score result;
-        Score update = 25;
-        bool repeat = true;
-
-        do
-        {
-            repeat = true;
-
-            result = root_search(_position, _current_depth, min_bound, max_bound);
-
-            if (result <= min_bound)
-            {
-                min_bound -= update;
-                update *= 2;
-            }
-            else if (result >= max_bound)
-            {
-                max_bound += update;
-                update *= 2;
-            }
-            else
-                repeat = false;
-
-            if (check_limits())
-                break;
-        }
-        while ( repeat );
-
-        min_bound = result - 25;
-        max_bound = result + 25;
-
-        end_time = std::chrono::steady_clock::now();
-        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - _start_time).count();
-
-        if (!stop_search)
-        {
-            pv_list = get_pv(_current_depth);
-
-            std::string score_str;
-            if (result < lost_in(MAX_DEPTH))
-                score_str = "mate -" + std::to_string(result + INFINITY_SCORE);
-            else if (result > win_in(MAX_DEPTH))
-                score_str = "mate " + std::to_string(INFINITY_SCORE - result);
-            else
-                score_str = "cp " + std::to_string(result * 100LL / _scorer.weights.piece_values[END_GAME][PAWN]);
-
-            logger << "info "
-                      << "depth " << _current_depth << " "
-                      << "score " << score_str << " "
-                      << "nodes " << _nodes_searched << " "
-                      << "nps " << (_nodes_searched * 1000 / (elapsed + 1)) << " "
-                      << "time " << elapsed << " "
-                      << "pv ";
-            Position temp_position = _position;
-            for (Move m : pv_list)
-            {
-                logger << temp_position.move_to_string(m) << " ";
-                temp_position.do_move(m);
-            }
-            logger << std::endl;
-        }
-
-        if (result < lost_in(MAX_DEPTH) || result > win_in(MAX_DEPTH))
-            break;
-
-        if (_current_depth >= _search_depth)
-            break;
-
-        if (elapsed >= (_search_time / 2))
-            break;
+        iter_search();
     }
 
-
-    assert(pv_list.size() > 0);
-    logger << "bestmove " << _position.move_to_string(pv_list[0]) << std::endl;
+    assert(_best_move != NO_MOVE);
+    logger << "bestmove " << _position.move_to_string(_best_move) << std::endl;
     _ttable.clear();
 }
 
@@ -223,23 +150,113 @@ MoveList Search::get_pv(int length)
         curr_position.do_move(entryPtr->move);
         curr_length++;
         entryPtr = _ttable.get(curr_position.hash());
-        Move* end = generate_moves(curr_position, curr_position.side_to_move(), begin);
+        end = generate_moves(curr_position, curr_position.side_to_move(), begin);
     }
 
     return pv;
+}
+
+void Search::print_info(Score result, int depth, int64_t nodes_searched, int64_t elapsed)
+{
+    logger << "info "
+           << "depth " << depth << " "
+           << "score " << score2str(result) << " "
+           << "nodes " << nodes_searched << " "
+           << "nps " << (nodes_searched * 1000 / (elapsed + 1)) << " "
+           << "time " << elapsed << " "
+           << "pv ";
+    Position temp_position = _position;
+    for (int i = 0; i < PV_LIST_LENGTH[0]; ++i)
+    {
+        Move m = PV_LIST[0][i];
+        logger << temp_position.move_to_string(m) << " ";
+        temp_position.do_move(m);
+    }
+    logger << std::endl;
+}
+
+void Search::iter_search()
+{
+    _best_move = NO_MOVE;
+
+    TimePoint end_time;
+    int64_t elapsed = 0LL;
+
+    MoveList pv_list;
+    Score previous_score;
+    Score min_bound = -INFINITY_SCORE;
+    Score max_bound = INFINITY_SCORE;
+
+    _current_depth = 0;
+    while (!stop_search)
+    {
+        _current_depth++;
+        _nodes_searched = 0;
+        _ply_counter = 0;
+
+        Score result;
+        Score delta = 100;
+
+        if (_current_depth >= 4)
+        {
+            min_bound = std::max(previous_score - delta, -INFINITY_SCORE);
+            max_bound = std::min(previous_score + delta, INFINITY_SCORE);
+        }
+
+        while (true)
+        {
+            assert(_ply_counter == 0);
+            assert(min_bound < max_bound);
+            result = root_search(_position, _current_depth, min_bound, max_bound);
+
+            if (result <= min_bound)
+                min_bound -= delta;
+            else if (result >= max_bound)
+                max_bound += delta;
+            else
+                break;
+
+            if (check_limits())
+                break;
+
+            delta *= 2;
+        }
+
+        previous_score = result;
+
+        end_time = std::chrono::steady_clock::now();
+        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - _start_time).count();
+
+        if (!stop_search)
+        {
+            assert(PV_LIST_LENGTH[0] > 0);
+            print_info(result, _current_depth, _nodes_searched, elapsed);
+            _best_move = PV_LIST[0][0];
+        }
+
+        if (result < lost_in(MAX_DEPTH) || result > win_in(MAX_DEPTH))
+            break;
+
+        if (_current_depth >= _search_depth)
+            break;
+
+        if (elapsed >= (_search_time / 2))
+            break;
+    }
+
 }
 
 Score Search::root_search(Position& position, int depth, Score alpha, Score beta)
 {
     bool is_in_check = position.is_in_check(position.side_to_move());
 
+    PV_LIST_LENGTH[_ply_counter] = 0;
+
     // if there are no legal moves
     // return draw if we are not in check (stalemate)
     // otherwise lost (checkmate)
     if (_root_moves.size() == 0)
         return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
-
-    _best_move = NO_MOVE;
 
     // check extension
     if (is_in_check)
@@ -254,6 +271,7 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
     Move* end = _root_moves.data() + _root_moves.size();
 
     MovePicker movepicker(position, begin, end, _info, true);
+    Move curr_best_move = NO_MOVE;
 
     bool search_full_window = true;
     while (movepicker.has_next())
@@ -290,7 +308,8 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
         {
             search_full_window = false;
             alpha = result;
-            _best_move = move;
+            curr_best_move = move;
+            set_new_pv(_ply_counter, move);
 
             // mate found
             if (result > win_in(MAX_DEPTH))
@@ -302,13 +321,17 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
     }
 
     // if no move have been found just select the first one
-    if (_best_move == NO_MOVE)
-        _best_move = _root_moves[0];
+    if (curr_best_move == NO_MOVE)
+    {
+        curr_best_move = _root_moves[0];
+        PV_LIST_LENGTH[_ply_counter] = 1;
+        PV_LIST[_ply_counter][0] = curr_best_move;
+    }
+
 
     if (!stop_search)
     {
-        assert(_best_move != NO_MOVE);
-        tt::TTEntry entry(alpha, depth, tt::Flag::kEXACT, _best_move);
+        tt::TTEntry entry(alpha, depth, tt::Flag::kEXACT, curr_best_move);
         _ttable.update(position.hash(), entry);
     }
     return alpha;
@@ -318,6 +341,7 @@ template <bool allow_null_move>
 Score Search::search(Position& position, int depth, Score alpha, Score beta)
 {
     assert(alpha < beta);
+    PV_LIST_LENGTH[_ply_counter] = 0;
 
     if (stop_search || check_limits())
     {
@@ -330,8 +354,9 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
     if (position.rule50())
         return DRAW_SCORE;
 
-    std::vector<Move> moves(MAX_MOVES, NO_MOVE);
-    Move* begin = moves.data();
+    /* std::vector<Move> moves(MAX_MOVES, NO_MOVE); */
+    /* Move* begin = moves.data(); */
+    Move* begin = MOVE_LIST[_ply_counter];
     Move* end = generate_moves(position, position.side_to_move(), begin);
 
     Score alphaOriginal = alpha;
@@ -341,6 +366,8 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
         switch (entryPtr->flag)
         {
             case tt::Flag::kEXACT:
+                PV_LIST_LENGTH[_ply_counter] = 1;
+                PV_LIST[_ply_counter][0] = entryPtr->move;
                 return entryPtr->score;
             case tt::Flag::kLOWER_BOUND:
                 alpha = std::max(alpha, entryPtr->score);
@@ -365,10 +392,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
         depth++;
 
     if (depth == 0)
-    {
-        Score q = quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
-        return q;
-    }
+        return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
 
     if (allow_null_move)
     {
@@ -379,14 +403,18 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
               + position.number_of_pieces(make_piece(side, QUEEN));
         if (!is_in_check && num_of_pieces > 0 && depth > 4)
         {
+            _ply_counter++;
             _info.ply++;
             MoveInfo moveinfo = position.do_null_move();
             Score result = -search<false>(position, depth - 4, -beta, -alpha);
             position.undo_null_move(moveinfo);
             _info.ply--;
+            _ply_counter--;
 
             if (result >= beta)
+            {
                 return beta;
+            }
         }
     }
 
@@ -423,12 +451,15 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
             if (position.piece_at(to(move)) == NO_PIECE)
             {
                 _info.update_killers(_info.ply, move);
-                _info.update_history(position.side_to_move(), from(move), to(move), depth);
+                _info.update_history(position.side_to_move(), from(move), to(move), _info.ply);
             }
 
             assert(move != NO_MOVE);
             tt::TTEntry entry(result, depth, tt::Flag::kLOWER_BOUND, move);
             _ttable.update(position.hash(), entry);
+
+            set_new_pv(_ply_counter, move);
+
             return beta;
         }
 
@@ -437,12 +468,17 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
             alpha = result;
             search_full_window = false;
             best_move = move;
+            set_new_pv(_ply_counter, move);
         }
 
     }
 
     if (best_move == NO_MOVE)
+    {
         best_move = begin[0];
+        PV_LIST_LENGTH[_ply_counter] = 1;
+        PV_LIST[_ply_counter][0] = best_move;
+    }
 
     tt::Flag flag = alpha <= alphaOriginal
                   ? tt::Flag::kUPPER_BOUND
@@ -468,8 +504,9 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
 
     bool is_in_check = position.is_in_check(position.side_to_move());
 
-    std::vector<Move> moves(MAX_MOVES, NO_MOVE);
-    Move* begin = moves.data();
+    /* std::vector<Move> moves(MAX_MOVES, NO_MOVE); */
+    /* Move* begin = moves.data(); */
+    Move* begin = QUIESCENCE_MOVE_LIST[depth];
     Move* end = generate_moves(position, position.side_to_move(), begin);
 
     if (begin == end)
