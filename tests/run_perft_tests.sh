@@ -1,35 +1,24 @@
 #!/bin/bash
 
+trap "{ exit 255; }" INT
+
 print_usage_and_exit()
 {
-    echo "Usage: $0 release|debug weights_path"
+    echo "Usage: $0 release|debug"
     exit 1
 }
 
-if [ "$#" -ne 2 ]
+if [ "$#" -ne 1 ]
 then
     print_usage_and_exit
 fi
 
 BUILD_TYPE=$1
-WEIGHTS_PATH=$2
 
 if [ "$1" == "release" ]
 then
     PROGRAM="./build/chessplusplus"
-elif [ "$2" == "debug" ]
-then
-    PROGRAM="./build/chessplusplus_debug"
-else
-    print_usage_and_exit
-fi
-
-BUILD_TYPE=$1
-
-if [ "$BUILD_TYPE" == "release" ]
-then
-    PROGRAM="./build/chessplusplus"
-elif [ "$BUILD_TYPE" == "debug" ]
+elif [ "$1" == "debug" ]
 then
     PROGRAM="./build/chessplusplus_debug"
 else
@@ -43,7 +32,7 @@ run_perft_test()
     nodes=$3
 
     NUMBER_OF_PERFT_TESTS=$((NUMBER_OF_PERFT_TESTS + 1))
-    expect tests/scripts/perft.exp ${PROGRAM} ${WEIGHTS_PATH} "${fen}" ${depth} ${nodes} >/dev/null
+    expect tests/scripts/perft.exp ${PROGRAM} "${fen}" ${depth} ${nodes} >/dev/null
     if [ $? -eq 0 ]
     then
         PERFT_TESTS_PASSED=$((PERFT_TESTS_PASSED + 1))
