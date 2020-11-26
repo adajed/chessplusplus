@@ -2,7 +2,6 @@
 #define CHESS_ENGINE_SCORE_H_
 
 #include "movegen.h"
-#include "weights.h"
 
 namespace engine
 {
@@ -10,11 +9,9 @@ namespace engine
 class PositionScorer
 {
     public:
-        PositionScorer(Weights& weights);
+        PositionScorer();
 
         int64_t score(const Position& position);
-
-        Weights& weights;
 
     private:
 

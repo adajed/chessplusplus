@@ -4,34 +4,21 @@ trap "{ exit 255; }" INT
 
 print_usage_and_exit()
 {
-    echo "Usage: $0 release|debug weights_path"
+    echo "Usage: $0 release|debug"
     exit 1
 }
 
-if [ "$#" -ne 2 ]
+if [ "$#" -ne 1 ]
 then
     print_usage_and_exit
 fi
 
 BUILD_TYPE=$1
-WEIGHTS_PATH=$2
 
 if [ "$1" == "release" ]
 then
     PROGRAM="./build/chessplusplus"
-elif [ "$2" == "debug" ]
-then
-    PROGRAM="./build/chessplusplus_debug"
-else
-    print_usage_and_exit
-fi
-
-BUILD_TYPE=$1
-
-if [ "$BUILD_TYPE" == "release" ]
-then
-    PROGRAM="./build/chessplusplus"
-elif [ "$BUILD_TYPE" == "debug" ]
+elif [ "$1" == "debug" ]
 then
     PROGRAM="./build/chessplusplus_debug"
 else
@@ -44,7 +31,7 @@ run_search_test()
     move=$2
 
     NUMBER_OF_SEARCH_TESTS=$((NUMBER_OF_SEARCH_TESTS + 1))
-    expect tests/scripts/best_move_search.exp ${PROGRAM} ${WEIGHTS_PATH} "${fen}" ${move} >/dev/null
+    expect tests/scripts/best_move_search.exp ${PROGRAM} "${fen}" ${move} >/dev/null
     if [ $? -eq 0 ]
     then
         SEARCH_TESTS_PASSED=$((SEARCH_TESTS_PASSED + 1))

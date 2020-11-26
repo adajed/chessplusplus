@@ -340,7 +340,7 @@ Move PolyglotBook::sample_move(HashKey key, const Position& position) const
     int sample = rand() % sum_of_weights;
     int w = 0;
     int i = 0;
-    for (; i < moves.size() && w + moves[i].second < sample; ++i)
+    for (; i < static_cast<int>(moves.size()) && w + moves[i].second < sample; ++i)
         w += moves[i].second;
 
     return decode_move(moves[i].first, position);

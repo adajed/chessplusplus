@@ -1,6 +1,6 @@
 set timeout 60
-lassign $argv program weights_path pos depth nodes
-spawn $program $weights_path
+lassign $argv program pos depth nodes
+spawn $program
 expect -re "Chess engine by Adam Jedrych .*" {} timeout {exit 1}
 send "uci\n"
 expect -re "id name \W*" {} timeout {exit 1}

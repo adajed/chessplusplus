@@ -87,8 +87,8 @@ class UciOption
         OptionType _type;
 
         bool _check;
-        int _spin_min, _spin_max;
         int _spin;
+        int _spin_min, _spin_max;
         std::vector<std::string> _combo_options;
         std::string _string; // used both in combo and string
 

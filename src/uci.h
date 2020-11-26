@@ -18,7 +18,7 @@ class Uci
     public:
         const std::string STARTPOS_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-        Uci(const PositionScorer& scorer);
+        Uci();
 
         void loop();
 
@@ -50,7 +50,6 @@ class Uci
 
         bool moves_command(std::istringstream& istream);
 
-        PositionScorer scorer;
         std::shared_ptr<Search> search;
         Position position;
         bool is_search;
