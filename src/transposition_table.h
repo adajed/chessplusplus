@@ -37,15 +37,15 @@ class TTable
     public:
         TTable();
 
-        void update(HashKey key, TTEntry entry);
+        void update(uint64_t key, TTEntry entry);
 
-        const TTEntry* get(HashKey key) const;
+        const TTEntry* get(uint64_t key) const;
 
         void clear();
 
 
     private:
-        std::unordered_map<HashKey, TTEntry> _hashmap;
+        std::unordered_map<uint64_t, TTEntry> _hashmap;
 };
 
 }  // namespace tt

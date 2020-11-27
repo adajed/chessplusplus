@@ -8,7 +8,7 @@ using namespace engine;
 int main(int argc, char** argv)
 {
     init_move_bitboards();
-    zobrist::init();
+    init_zobrist();
 
     Uci uci;
     uci.loop();

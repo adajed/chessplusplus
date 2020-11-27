@@ -1,5 +1,6 @@
 #include "position.h"
 #include "movegen.h"
+#include "types.h"
 #include "zobrist_hash.h"
 
 #include <sstream>
@@ -19,6 +20,7 @@ Position::Position() : Position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w K
 }
 
 Position::Position(std::string fen)
+    : _zobrist_hash()
 {
     _current_side = WHITE;
     std::fill_n(_board, SQUARE_NUM, NO_PIECE);
@@ -80,14 +82,18 @@ Position::Position(std::string fen)
 
     _ply_counter = 2 * _ply_counter - 1 + !!(_current_side == BLACK);
 
-    _zobrist_hash = zobrist::hash(*this);
+    _zobrist_hash.init(*this);
 
-    _history[0] = _zobrist_hash;
+    _history[0] = _zobrist_hash.get_key();
     _history_counter = 1;
 }
 
 bool Position::operator== (const Position& other) const
 {
+    // first check hashes
+    if (_zobrist_hash.get_key() != other._zobrist_hash.get_key())
+        return false;
+
     if (_current_side != other._current_side)
         return false;
     if (_castling_rights != other._castling_rights)
@@ -158,8 +164,8 @@ std::string Position::fen() const
 
 bool Position::threefold_repetition() const
 {
-    for (int i = 0; i < _history_counter - 1; ++i)
-        if (_history[i] == _zobrist_hash)
+    for (int i = _history_counter - 2; i >= 0; --i)
+        if (_history[i] == _zobrist_hash.get_key())
             return true;
     return false;
 }
@@ -199,7 +205,7 @@ void Position::add_piece(Piece piece, Square square)
     _piece_position[piece][_piece_count[piece]] = square;
     _piece_count[piece] += 1;
 
-    _zobrist_hash ^= zobrist::PIECE_HASH[piece][square];
+    _zobrist_hash.toggle_piece(piece, square);
 }
 
 void Position::remove_piece(Square square)
@@ -222,7 +228,7 @@ void Position::remove_piece(Square square)
     }
     _piece_count[piece] -= 1;
 
-    _zobrist_hash ^= zobrist::PIECE_HASH[piece][square];
+    _zobrist_hash.toggle_piece(piece, square);
 }
 
 void Position::move_piece(Square from, Square to)
@@ -247,13 +253,12 @@ void Position::move_piece(Square from, Square to)
         }
     }
 
-    _zobrist_hash ^= zobrist::PIECE_HASH[piece][from];
-    _zobrist_hash ^= zobrist::PIECE_HASH[piece][to];
+    _zobrist_hash.move_piece(piece, from, to);
 }
 
 void Position::change_current_side()
 {
-    _zobrist_hash ^= zobrist::SIDE_HASH;
+    _zobrist_hash.flip_side();
     _current_side = !_current_side;
 }
 
@@ -269,8 +274,7 @@ MoveInfo Position::do_move(Move move)
     bool enpassant = false;
     uint8_t hm_counter = _half_move_counter;
 
-    if (_enpassant_square != NO_SQUARE)
-        _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
+    _zobrist_hash.clear_enpassant();
 
     if (castling(move) != NO_CASTLING)
     {
@@ -288,9 +292,8 @@ MoveInfo Position::do_move(Move move)
             move_piece(make_square(rank, FILE_A), make_square(rank, FILE_D));
         }
 
-        _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
         _castling_rights &= !CASTLING_RIGHTS[side];
-        _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
+        _zobrist_hash.set_castling(_castling_rights);
         set_enpassant_square(NO_SQUARE);
     }
     else
@@ -328,7 +331,6 @@ MoveInfo Position::do_move(Move move)
             else
                 move_piece(from(move), to(move));
 
-            _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
             if (get_piece_kind(moved_piece) == KING)
                 _castling_rights &= !CASTLING_RIGHTS[side];
             if (get_piece_kind(moved_piece) == ROOK && from(move) == KING_SIDE_ROOK_SQUARE[side])
@@ -339,7 +341,7 @@ MoveInfo Position::do_move(Move move)
                 _castling_rights &= !(CASTLING_RIGHTS[!side] & KING_CASTLING);
             if (make_piece_kind(captured_piece) == ROOK && to(move) == QUEEN_SIDE_ROOK_SQUARE[!side])
                 _castling_rights &= !(CASTLING_RIGHTS[!side] & QUEEN_CASTLING);
-            _zobrist_hash ^= zobrist::CASTLING_HASH[_castling_rights];
+            _zobrist_hash.set_castling(_castling_rights);
         }
 
 
@@ -348,13 +350,13 @@ MoveInfo Position::do_move(Move move)
         if (get_piece_kind(moved_piece) == PAWN && rank(from(move)) == rank2 && rank(to(move)) == enpassant_rank)
         {
             set_enpassant_square(Square(to(move) + (side == WHITE ? -8 : 8)));
-            _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
+            _zobrist_hash.set_enpassant(file(_enpassant_square));
         }
         else
             set_enpassant_square(NO_SQUARE);
     }
 
-    _history[_history_counter++] = _zobrist_hash;
+    _history[_history_counter++] = _zobrist_hash.get_key();
 
     return create_moveinfo(captured, prev_castling, prev_enpassant_sq, enpassant, hm_counter);
 }
@@ -367,8 +369,13 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
     _ply_counter--;
 
     _castling_rights = last_castling(moveinfo);
+    _zobrist_hash.set_castling(_castling_rights);
 
     set_enpassant_square(last_enpassant_square(moveinfo));
+    if (_enpassant_square == NO_SQUARE)
+        _zobrist_hash.clear_enpassant();
+    else
+        _zobrist_hash.set_enpassant(file(_enpassant_square));
 
     _half_move_counter = half_move_counter(moveinfo);
 
@@ -409,7 +416,6 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
     }
 
     _history_counter--;
-    _zobrist_hash = _history[_history_counter - 1];
 }
 
 void Position::set_enpassant_square(Square sq)
@@ -425,10 +431,8 @@ MoveInfo Position::do_null_move()
     _half_move_counter++;
 
     Square enpassant_sq = _enpassant_square;
-
-    if (_enpassant_square != NO_SQUARE)
-        _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
     set_enpassant_square(NO_SQUARE);
+    _zobrist_hash.clear_enpassant();
 
     return create_moveinfo(NO_PIECE_KIND, NO_CASTLING, enpassant_sq, false, 0);
 }
@@ -441,7 +445,7 @@ void Position::undo_null_move(MoveInfo moveinfo)
 
     set_enpassant_square(last_enpassant_square(moveinfo));
     if (_enpassant_square != NO_SQUARE)
-        _zobrist_hash ^= zobrist::ENPASSANT_HASH[file(_enpassant_square)];
+        _zobrist_hash.set_enpassant(file(_enpassant_square));
 }
 
 
@@ -458,19 +462,6 @@ bool Position::is_checkmate() const
     Move* end = generate_moves(*this, _current_side, begin);
 
     return (begin == end) && is_in_check(_current_side);
-}
-
-GamePhase Position::game_phase() const
-{
-    uint32_t value[] = {0, 0};
-
-    uint32_t piece_values[] = {0, 0, 3, 3, 5, 9, 0};
-
-    for (Color side : {WHITE, BLACK})
-        for (PieceKind p = KNIGHT; p < KING; ++p)
-            value[side] += piece_values[p] * _piece_count[p];
-
-    return (value[WHITE] < 18 && value[BLACK] < 18) ? END_GAME : MIDDLE_GAME;
 }
 
 std::string Position::move_to_string(Move move) const

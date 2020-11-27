@@ -1,3 +1,4 @@
+#include <bits/stdint-uintn.h>
 #include <gtest/gtest.h>
 
 #include "polyglot.h"
@@ -9,7 +10,7 @@ namespace
 
 TEST(PolyglotTest, hashTest)
 {
-    using TestCase = std::pair<std::string, HashKey>;
+    using TestCase = std::pair<std::string, uint64_t>;
     const std::vector<TestCase> test_cases = {
         {"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 0x463b96181691fc9cULL},
         {"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1", 0x823c9b50fd114196ULL},
