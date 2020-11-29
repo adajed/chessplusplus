@@ -119,15 +119,19 @@ coverage: test_debug
 	lcov -c -d . -o coverage.info --no-external --exclude "*/tests/*"
 	genhtml coverage.info --output-directory coverage --demangle-cpp
 
+compiledb:
+	compiledb -n make
+
 help:
 	@echo "Available commands:"
-	@echo "\trelease - compile engine and tests"
-	@echo "\tdebug   - compile engine and tests in debug mode"
-	@echo "\tall     - release + debug"
-	@echo "\tclean   - remove all files created by make"
-	@echo "\tctags   - create tags for all files"
+	@echo "\trelease  - compile engine and tests"
+	@echo "\tdebug    - compile engine and tests in debug mode"
+	@echo "\tall      - release + debug"
+	@echo "\tclean    - remove all files created by make"
+	@echo "\tctags    - create tags for all files"
+	@echo "\compiledb - create compile_commands.json
 
 
 .PHONY: release engine_release tests_release
 .PHONY: debug engine_debug tests_debug
-.PHONY: clean ctags help
+.PHONY: clean compiledb ctags help

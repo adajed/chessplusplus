@@ -18,17 +18,17 @@ class PolyglotBook
 
         PolyglotBook(std::string path);
 
-        static HashKey hash(const Position& position);
+        static uint64_t hash(const Position& position);
 
-        bool contains(HashKey key) const;
+        bool contains(uint64_t key) const;
 
-        Move sample_move(HashKey key, const Position& position) const;
+        Move sample_move(uint64_t key, const Position& position) const;
 
     private:
 
         Move decode_move(Move move, const Position& position) const;
 
-        std::map<HashKey, std::vector<WeightedMove>> _hashmap;
+        std::map<uint64_t, std::vector<WeightedMove>> _hashmap;
 };
 
 
