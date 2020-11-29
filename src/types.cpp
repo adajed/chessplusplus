@@ -93,9 +93,9 @@ std::ostream& print_bitboard(std::ostream& stream, Bitboard bb)
         for (int file = 0; file < 8; ++file)
         {
             if (bb & square_bb(make_square(Rank(rank), File(file))))
-                stream << ".";
+                stream << "@";
             else
-                stream << " ";
+                stream << ".";
         }
         stream << "#" << std::endl;
     }

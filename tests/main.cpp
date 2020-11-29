@@ -5,10 +5,12 @@
 
 int main(int argc, char** argv)
 {
+    using namespace engine;
+
     testing::InitGoogleTest(&argc, argv);
 
-    engine::init_move_bitboards();
-    engine::init_zobrist();
+    init_move_bitboards();
+    init_zobrist();
 
     return RUN_ALL_TESTS();
 }

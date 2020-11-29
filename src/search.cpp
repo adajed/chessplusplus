@@ -210,9 +210,9 @@ void Search::iter_search()
             result = root_search(_position, _current_depth, min_bound, max_bound);
 
             if (result <= min_bound)
-                min_bound -= delta;
+                min_bound = std::max(min_bound - delta, -INFINITY_SCORE);
             else if (result >= max_bound)
-                max_bound += delta;
+                max_bound = std::min(max_bound + delta, INFINITY_SCORE);
             else
                 break;
 

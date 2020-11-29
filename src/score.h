@@ -2,6 +2,8 @@
 #define CHESS_ENGINE_SCORE_H_
 
 #include "movegen.h"
+#include "pawn_hash_table.h"
+#include <bits/stdint-intn.h>
 
 namespace engine
 {
@@ -9,22 +11,32 @@ namespace engine
 class PositionScorer
 {
     public:
+        using Score = int64_t;
+
         PositionScorer();
 
-        int64_t score(const Position& position);
+        Score score(const Position& position);
 
     private:
 
         template <Color side>
-        int64_t score_side(const Position& position);
+        Score score_side(const Position& position, int64_t weight);
 
         template <Color side, GamePhase phase>
-        int64_t score(const Position& position);
+        Score score(const Position& position);
+
+        template <Color side>
+        Score score_pawns(const Position& position, int64_t weight);
+
+        template <Color side, GamePhase phase>
+        Score calculate_pawns(const Position& position);
 
         int64_t game_phase_weight(const Position& position);
 
         Move move_list[MAX_MOVES];
         int move_count[COLOR_NUM][PIECE_KIND_NUM];
+
+        PawnHashTable _pawn_hash_table;
 };
 
 }

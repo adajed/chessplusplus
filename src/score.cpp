@@ -1,6 +1,7 @@
 #include "position.h"
 #include "score.h"
 #include "types.h"
+#include <bits/stdint-intn.h>
 
 namespace engine
 {
@@ -197,6 +198,7 @@ Square flip(Square square)
 }
 
 PositionScorer::PositionScorer()
+    : _pawn_hash_table()
 {
 }
 
@@ -217,18 +219,24 @@ int64_t PositionScorer::score(const Position& position)
         }
     }
 
-    int64_t value = score_side<WHITE>(position) - score_side<BLACK>(position);
-    return position.side_to_move() == WHITE ? value : -value;
+    int64_t phase_weight = game_phase_weight(position);
+
+    if (position.side_to_move() == WHITE)
+        return score_side<WHITE>(position, phase_weight)
+            + score_pawns<WHITE>(position, phase_weight);
+    else
+        return score_side<BLACK>(position, phase_weight)
+            + score_pawns<BLACK>(position, phase_weight);
 }
 
 template <Color side>
-int64_t PositionScorer::score_side(const Position& position)
+int64_t PositionScorer::score_side(const Position& position, int64_t weight)
 {
-    int64_t phase_weight = game_phase_weight(position);
-    int64_t mg = score<side, MIDDLE_GAME>(position);
-    int64_t eg = score<side, END_GAME>(position);
+    int64_t mg = score<WHITE, MIDDLE_GAME>(position) - score<BLACK, MIDDLE_GAME>(position);
+    int64_t eg = score<WHITE, END_GAME>(position) - score<BLACK, END_GAME>(position);
 
-    return ((mg * phase_weight) + (eg * (MAX_PIECE_WEIGTHS - phase_weight))) / MAX_PIECE_WEIGTHS;
+    int64_t value = ((mg * weight) + (eg * (MAX_PIECE_WEIGTHS - weight))) / MAX_PIECE_WEIGTHS;
+    return side == WHITE ? value : (-value);
 }
 
 template <Color side, GamePhase phase>
@@ -236,7 +244,7 @@ int64_t PositionScorer::score(const Position& position)
 {
     int64_t value = 0LL;
 
-    for (PieceKind piecekind : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN})
+    for (PieceKind piecekind : {KNIGHT, BISHOP, ROOK, QUEEN})
     {
         Piece piece = make_piece(side, piecekind);
         int num_pieces = position.number_of_pieces(piece);
@@ -285,7 +293,45 @@ int64_t PositionScorer::score(const Position& position)
             (position.pieces(side, BISHOP) & black_squares_bb))
         value += BISHOP_PAIR_BONUS[phase];
 
-    constexpr Piece PAWN_PIECE = make_piece(side, PAWN);
+    return value;
+}
+
+template <Color side>
+int64_t PositionScorer::score_pawns(const Position& position, int64_t weight)
+{
+    std::pair<int64_t, int64_t> score;
+
+    // check in hash table
+    if (!_pawn_hash_table.get(position, score))
+    {
+        score.first = calculate_pawns<WHITE, MIDDLE_GAME>(position)
+                    - calculate_pawns<BLACK, MIDDLE_GAME>(position);
+        score.second = calculate_pawns<WHITE, END_GAME>(position)
+                    - calculate_pawns<BLACK, END_GAME>(position);
+        _pawn_hash_table.update(position, score);
+    }
+
+    int64_t value = (score.first * weight + score.second * (MAX_PIECE_WEIGTHS - weight)) / MAX_PIECE_WEIGTHS;
+    return side == WHITE ? value : (-value);
+}
+
+template <Color side, GamePhase phase>
+int64_t PositionScorer::calculate_pawns(const Position& position)
+{
+    constexpr Piece pawn = make_piece(side, PAWN);
+
+    int64_t value = 0LL;
+
+    int num_pieces = position.number_of_pieces(pawn);
+    value += PIECE_VALUE[phase][PAWN] * num_pieces;
+    value += MOBILITY_BONUS[phase][PAWN] * move_count[side][PAWN];
+
+    for (int i = 0; i < num_pieces; ++i)
+    {
+        Square square = position.piece_position(pawn, i);
+        square = side == WHITE ? square : flip(square);
+        value += PIECE_POSITIONAL_VALUE[phase][PAWN][square];
+    }
 
     Bitboard pawns = position.pieces(side, PAWN);
 
@@ -293,9 +339,9 @@ int64_t PositionScorer::score(const Position& position)
         if (popcount_more_than_one(pawns & FILES_BB[file]))
              value += DOUBLE_PAWN_PENALTY[phase];
 
-    for (int i = 0; i < position.number_of_pieces(PAWN_PIECE); ++i)
+    for (int i = 0; i < position.number_of_pieces(pawn); ++i)
     {
-        Square square = position.piece_position(PAWN_PIECE, i);
+        Square square = position.piece_position(pawn, i);
         if (!(NEIGHBOUR_FILES_BB[file(square)] & pawns))
             value += ISOLATED_PAWN_PENALTY[phase];
 
