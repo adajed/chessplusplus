@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include "types.h"
+#include "bitboard.h"
 #include "bithacks.h"
 
 using namespace engine;
@@ -14,7 +16,7 @@ TEST(Bithacks, lsb)
     {
         for (int j = i; j < 64; ++j)
         {
-            Bitboard bb = 1ULL << i | 1ULL << j;
+            Bitboard bb = square_bb(Square(i)) | square_bb(Square(j));
             EXPECT_EQ(lsb(bb), i);
         }
     }
@@ -28,7 +30,7 @@ TEST(Bithacks, msb)
     {
         for (int j = i; j < 64; ++j)
         {
-            Bitboard bb = 1ULL << i | 1ULL << j;
+            Bitboard bb = square_bb(Square(i)) | square_bb(Square(j));
             EXPECT_EQ(msb(bb), j);
         }
     }
@@ -36,11 +38,19 @@ TEST(Bithacks, msb)
 
 TEST(Bithacks, popcount)
 {
-    EXPECT_EQ(popcount(~0ULL), 64);
-    EXPECT_EQ(popcount(0ULL), 0);
+    EXPECT_EQ(popcount(all_squares_bb), 64);
+    EXPECT_EQ(popcount(~all_squares_bb), 0);
+    EXPECT_EQ(popcount(white_squares_bb), 32);
+    EXPECT_EQ(popcount(black_squares_bb), 32);
+
+    for (int i = 0; i < 8; i++)
+        EXPECT_EQ(popcount(RANKS_BB[i]), 8);
+
+    for (int i = 0; i < 8; i++)
+        EXPECT_EQ(popcount(FILES_BB[i]), 8);
 
     for (int i = 0; i < 64; ++i)
-        EXPECT_EQ(popcount(1ULL << i), 1);
+        EXPECT_EQ(popcount(square_bb(Square(i))), 1);
 }
 
 TEST(Bithacks, pop_lsb)
