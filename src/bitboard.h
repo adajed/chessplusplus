@@ -51,8 +51,8 @@ const Bitboard NEIGHBOUR_FILES_BB[FILE_NUM] = {
 
 inline Bitboard forward_ranks_bb(Color side, Square square)
 {
-    return side == WHITE ? ~rank1_bb << (rank(square) - RANK_1)
-                         : ~rank8_bb >> (RANK_8 - rank(square));
+    return side == WHITE ? ~rank1_bb << 8 * (rank(square) - RANK_1)
+                         : ~rank8_bb >> 8 * (RANK_8 - rank(square));
 }
 
 inline Bitboard passed_pawn_bb(Color side, Square square)
@@ -71,7 +71,10 @@ enum Direction : int32_t
     NORTHWEST = NORTH + WEST,
     NORTHEAST = NORTH + EAST,
     SOUTHWEST = SOUTH + WEST,
-    SOUTHEAST = SOUTH + EAST
+    SOUTHEAST = SOUTH + EAST,
+
+    DOUBLENORTH = NORTH + NORTH,
+    DOUBLESOUTH = SOUTH + SOUTH
 };
 
 template <Direction dir> Bitboard shift(Bitboard bb)
@@ -84,8 +87,8 @@ template <Direction dir> Bitboard shift(Bitboard bb)
            dir == NORTHWEST     ? (bb & ~fileA_bb) << 7 :
            dir == SOUTHEAST     ? (bb & ~fileH_bb) >> 7 :
            dir == SOUTHWEST     ? (bb & ~fileA_bb) >> 9 :
-           dir == NORTH + NORTH ? bb << 16 :
-           dir == SOUTH + SOUTH ? bb >> 16 :
+           dir == DOUBLENORTH   ? bb << 16 :
+           dir == DOUBLESOUTH   ? bb >> 16 :
            0ULL;
 }
 
@@ -93,14 +96,16 @@ inline Bitboard shift(Bitboard bb, Direction dir)
 {
     switch (dir)
     {
-    case NORTH: return shift<NORTH>(bb);
-    case EAST: return shift<EAST>(bb);
-    case SOUTH: return shift<SOUTH>(bb);
-    case WEST: return shift<WEST>(bb);
-    case NORTHEAST: return shift<NORTHEAST>(bb);
-    case NORTHWEST: return shift<NORTHWEST>(bb);
-    case SOUTHEAST: return shift<SOUTHEAST>(bb);
-    case SOUTHWEST: return shift<SOUTHWEST>(bb);
+    case NORTH:         return shift<NORTH>(bb);
+    case EAST:          return shift<EAST>(bb);
+    case SOUTH:         return shift<SOUTH>(bb);
+    case WEST:          return shift<WEST>(bb);
+    case NORTHEAST:     return shift<NORTHEAST>(bb);
+    case NORTHWEST:     return shift<NORTHWEST>(bb);
+    case SOUTHEAST:     return shift<SOUTHEAST>(bb);
+    case SOUTHWEST:     return shift<SOUTHWEST>(bb);
+    case DOUBLENORTH:   return shift<DOUBLENORTH>(bb);
+    case DOUBLESOUTH:   return shift<DOUBLESOUTH>(bb);
     }
     assert(false);
     return 0ULL;
