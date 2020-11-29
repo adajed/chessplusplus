@@ -1,24 +1,48 @@
 #ifndef CHESS_ENGINE_HASH_H_
 #define CHESS_ENGINE_HASH_H_
 
-#include "position.h"
 #include "types.h"
 
 namespace engine
 {
-namespace zobrist
+
+class Position;
+
+void init_zobrist();
+
+class HashKey
 {
+public:
+    HashKey();
 
-extern uint64_t PIECE_HASH[PIECE_NUM][SQUARE_NUM];
-extern uint64_t CASTLING_HASH[1 << 4];
-extern uint64_t SIDE_HASH;
-extern uint64_t ENPASSANT_HASH[FILE_NUM];
+    void init(const Position& position);
 
-HashKey hash(const Position& position);
+    uint64_t get_key() const;
 
-void init();
+    uint64_t get_pawnkey() const;
 
-}  // namespace zobrist
+    void move_piece(Piece piece, Square from, Square to);
+
+    void toggle_piece(Piece piece, Square sq);
+
+    void flip_side();
+
+    void clear_enpassant();
+
+    void set_enpassant(File file);
+
+    void clear_castling();
+
+    void set_castling(Castling castling);
+
+private:
+    uint64_t _piece_key;
+    uint64_t _pawn_key;
+    uint64_t _enpassant_key;
+    uint64_t _castling_key;
+    uint64_t _color_key;
+};
+
 }  // namespace engine
 
 #endif  // CHESS_ENGINE_HASH_H_

@@ -1,11 +1,12 @@
 #include "polyglot.h"
 
+#include <bits/stdint-uintn.h>
 #include <fstream>
 
 namespace engine
 {
 
-const HashKey POLYGLOT_PIECE[PIECE_NUM][SQUARE_NUM] = {
+const uint64_t POLYGLOT_PIECE[PIECE_NUM][SQUARE_NUM] = {
     {
     },
     { // white pawn
@@ -226,17 +227,17 @@ const HashKey POLYGLOT_PIECE[PIECE_NUM][SQUARE_NUM] = {
     },
 };
 
-const HashKey POLYGLOT_CASTLING_WHITE_SHORT = 0x31D71DCE64B2C310ULL;
-const HashKey POLYGLOT_CASTLING_WHITE_LONG  = 0xF165B587DF898190ULL;
-const HashKey POLYGLOT_CASTLING_BLACK_SHORT = 0xA57E6339DD2CF3A0ULL;
-const HashKey POLYGLOT_CASTLING_BLACK_LONG  = 0x1EF6E6DBB1961EC9ULL;
+const uint64_t POLYGLOT_CASTLING_WHITE_SHORT = 0x31D71DCE64B2C310ULL;
+const uint64_t POLYGLOT_CASTLING_WHITE_LONG  = 0xF165B587DF898190ULL;
+const uint64_t POLYGLOT_CASTLING_BLACK_SHORT = 0xA57E6339DD2CF3A0ULL;
+const uint64_t POLYGLOT_CASTLING_BLACK_LONG  = 0x1EF6E6DBB1961EC9ULL;
 
-const HashKey POLYGLOT_ENPASSANT[FILE_NUM] = {
+const uint64_t POLYGLOT_ENPASSANT[FILE_NUM] = {
    0x70CC73D90BC26E24ULL, 0xE21A6B35DF0C3AD7ULL, 0x003A93D8B2806962ULL, 0x1C99DED33CB890A1ULL,
    0xCF3145DE0ADD4289ULL, 0xD0E4427A5514FB72ULL, 0x77C621CC9FB3A483ULL, 0x67A34DAC4356550BULL,
 };
 
-const HashKey POLYGLOT_TURN = 0xF8D626AAAF278509ULL;
+const uint64_t POLYGLOT_TURN = 0xF8D626AAAF278509ULL;
 
 PolyglotBook::PolyglotBook(std::string path)
     : _hashmap()
@@ -250,7 +251,7 @@ PolyglotBook::PolyglotBook(std::string path)
     {
         stream.read(entry, 16);
 
-        HashKey key = (((uint64_t)entry[0] & 0xFF) << 56) |
+        uint64_t key = (((uint64_t)entry[0] & 0xFF) << 56) |
                       (((uint64_t)entry[1] & 0xFF) << 48) |
                       (((uint64_t)entry[2] & 0xFF) << 40) |
                       (((uint64_t)entry[3] & 0xFF) << 32) |
@@ -281,9 +282,9 @@ PolyglotBook::PolyglotBook(std::string path)
     }
 }
 
-HashKey PolyglotBook::hash(const Position& position)
+uint64_t PolyglotBook::hash(const Position& position)
 {
-    HashKey key = 0ULL;
+    uint64_t key = 0ULL;
 
     for (Piece piece = W_PAWN; piece <= B_KING; ++piece)
     {
@@ -321,12 +322,12 @@ HashKey PolyglotBook::hash(const Position& position)
     return key;
 }
 
-bool PolyglotBook::contains(HashKey key) const
+bool PolyglotBook::contains(uint64_t key) const
 {
     return _hashmap.find(key) != _hashmap.end();
 }
 
-Move PolyglotBook::sample_move(HashKey key, const Position& position) const
+Move PolyglotBook::sample_move(uint64_t key, const Position& position) const
 {
     assert(contains(key));
 

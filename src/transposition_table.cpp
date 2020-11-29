@@ -14,7 +14,7 @@ TTable::TTable() : _hashmap()
 {
 }
 
-void TTable::update(HashKey key, TTEntry entry)
+void TTable::update(uint64_t key, TTEntry entry)
 {
    auto result = _hashmap.insert(std::make_pair(key, entry));
 
@@ -24,7 +24,7 @@ void TTable::update(HashKey key, TTEntry entry)
    }
 }
 
-const TTEntry* TTable::get(HashKey key) const
+const TTEntry* TTable::get(uint64_t key) const
 {
     auto result = _hashmap.find(key);
     if (result != _hashmap.end())

@@ -1,6 +1,7 @@
 #ifndef CHESS_ENGINE_POSITION_H_
 #define CHESS_ENGINE_POSITION_H_
 
+#include <bits/stdint-uintn.h>
 #include <cassert>
 #include <cinttypes>
 #include <iostream>
@@ -11,6 +12,7 @@
 #include "bitboard.h"
 #include "move_bitboards.h"
 #include "types.h"
+#include "zobrist_hash.h"
 
 namespace engine
 {
@@ -23,6 +25,7 @@ class Position
 
         bool operator== (const Position& other) const;
 
+        // generate fen string for position
         std::string fen() const;
 
         MoveInfo do_move(Move move);
@@ -49,8 +52,9 @@ class Position
 
         Castling castling_rights() const { return _castling_rights; }
         Square enpassant_square() const { return _enpassant_square; }
-        GamePhase game_phase() const;
-        HashKey hash() const { return _zobrist_hash; }
+
+        uint64_t hash() const { return _zobrist_hash.get_key(); }
+        uint64_t pawn_hash() const { return _zobrist_hash.get_pawnkey(); }
 
         Bitboard pieces() const;
         Bitboard pieces(Color c) const;
@@ -86,7 +90,7 @@ class Position
         HashKey _zobrist_hash;
 
         int32_t _history_counter;
-        HashKey _history[MAX_PLIES];
+        uint8_t _history[MAX_PLIES];
 };
 
 std::ostream& operator<< (std::ostream& stream, const Position& position);

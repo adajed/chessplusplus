@@ -2,6 +2,7 @@
 #include "logger.h"
 #include "transposition_table.h"
 
+#include <bits/stdint-uintn.h>
 #include <thread>
 
 namespace engine
@@ -260,7 +261,7 @@ bool Uci::go_command(std::istringstream& istream)
 
     std::thread search_thread(
             [this](){
-                HashKey key = PolyglotBook::hash(this->position);
+                uint64_t key = PolyglotBook::hash(this->position);
                 if (this->polyglot.contains(key))
                 {
                     Move move = this->polyglot.sample_move(key, this->position);

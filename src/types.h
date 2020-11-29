@@ -10,8 +10,6 @@ namespace engine
 
 const int32_t MAX_PLIES = 400;
 
-using HashKey = uint64_t;
-
 using Bitboard = uint64_t;
 
 enum Color : uint32_t
