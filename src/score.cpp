@@ -1,12 +1,14 @@
+#include "bitboard.h"
+#include "bithacks.h"
 #include "position.h"
+#include "position_bitboards.h"
 #include "score.h"
 #include "types.h"
-#include <bits/stdint-intn.h>
 
 namespace engine
 {
 
-const int64_t PIECE_WEIGHTS[PIECE_KIND_NUM] = {0, 0, 2, 2, 4, 8, 0};
+const int64_t PIECE_WEIGHTS[PIECE_KIND_NUM] = {0, 0, 1, 1, 2, 4, 0};
 
 const int64_t MAX_PIECE_WEIGTHS = 2 * (  2 * PIECE_WEIGHTS[KNIGHT]
                                        + 2 * PIECE_WEIGHTS[BISHOP]
@@ -180,16 +182,34 @@ const int64_t ROOK_OPEN_FILE_BONUS[GAME_PHASE_NUM] = {20, 40};
 const int64_t BISHOP_PAIR_BONUS[GAME_PHASE_NUM] = {46, 61};
 
 // bonus for passed pawn
-const int64_t PASSED_PAWN_BONUS[GAME_PHASE_NUM] = {5, 52};
+const int64_t PASSED_PAWN_BONUS[GAME_PHASE_NUM] = {15, 152};
 
 // bonus for connecting rooks
 const int64_t CONNECTED_ROOKS_BONUS[GAME_PHASE_NUM] = {40, 20};
 
+const int64_t OUTPOST_BONUS[GAME_PHASE_NUM] = {20, 10};
+
+const int64_t OUTPOST_KNIGHT_BONUS[GAME_PHASE_NUM] = {100, 100};
+
+const int64_t OUTPOST_BISHOP_BONUS[GAME_PHASE_NUM] = {100, 100};
+
 // penalty for double pawns
 const int64_t DOUBLE_PAWN_PENALTY[GAME_PHASE_NUM] = {-14, -57};
 
-// penalty for isolated pawn
-const int64_t ISOLATED_PAWN_PENALTY[GAME_PHASE_NUM] = {-40, -80};
+// penalty for tripled pawns
+const int64_t TRIPLE_PAWN_PENALTY[GAME_PHASE_NUM] = {-34, -100};
+
+const int64_t PAWN_CHAIN_BONUS[GAME_PHASE_NUM][FILE_NUM] = {
+    // 0,  1,  2,  3,  4,  5,  6,  7
+    {  0,  0,  2,  4,  5,  5,  6,  7},
+    {  0,  0,  4, 10, 14, 20, 20, 20}
+};
+
+const int64_t CONNECTED_PAWNS_BONUS[GAME_PHASE_NUM][FILE_NUM + 1] = {
+    // 0,   1,  2,  3,  4,  5,  6,  7,  8
+    {  0, -40,  5,  8, 10, 12, 12, 12, 12},
+    {  0, -80, 10, 18, 25, 30, 30, 30, 30},
+};
 
 
 Square flip(Square square)
@@ -200,6 +220,11 @@ Square flip(Square square)
 PositionScorer::PositionScorer()
     : _pawn_hash_table()
 {
+}
+
+void PositionScorer::clear()
+{
+    _pawn_hash_table.clear();
 }
 
 int64_t PositionScorer::score(const Position& position)
@@ -293,6 +318,14 @@ int64_t PositionScorer::score(const Position& position)
             (position.pieces(side, BISHOP) & black_squares_bb))
         value += BISHOP_PAIR_BONUS[phase];
 
+    Bitboard outpost_bb = get_outposts<side>(position);
+
+    Bitboard knigh_outpost_bb = outpost_bb & position.pieces(side, KNIGHT);
+    value += popcount(knigh_outpost_bb) * OUTPOST_KNIGHT_BONUS[phase];
+
+    Bitboard bishop_outpost_bb = outpost_bb & position.pieces(side, BISHOP);
+    value += popcount(bishop_outpost_bb) * OUTPOST_BISHOP_BONUS[phase];
+
     return value;
 }
 
@@ -333,21 +366,37 @@ int64_t PositionScorer::calculate_pawns(const Position& position)
         value += PIECE_POSITIONAL_VALUE[phase][PAWN][square];
     }
 
-    Bitboard pawns = position.pieces(side, PAWN);
+    /* Bitboard pawns = position.pieces(side, PAWN); */
 
-    for (File file = FILE_A; file <= FILE_H; ++file)
-        if (popcount_more_than_one(pawns & FILES_BB[file]))
-             value += DOUBLE_PAWN_PENALTY[phase];
-
+    std::vector<int> pawn_on_file = {0, 0, 0, 0, 0, 0, 0, 0};
     for (int i = 0; i < position.number_of_pieces(pawn); ++i)
     {
         Square square = position.piece_position(pawn, i);
-        if (!(NEIGHBOUR_FILES_BB[file(square)] & pawns))
-            value += ISOLATED_PAWN_PENALTY[phase];
+        pawn_on_file[file(square)] += 1;
 
-        if (!(passed_pawn_bb(side, square) & position.pieces(!side, PAWN)))
+        if (!(passed_pawn_bb<side>(square) & position.pieces(!side, PAWN)))
             value += PASSED_PAWN_BONUS[phase];
     }
+
+    /* int s = 0, e = 0; */
+    /* for (; e < 8; ++e) */
+    /* { */
+    /*     if (pawn_on_file[e] == 0) */
+    /*     { */
+    /*         value += CONNECTED_PAWNS_BONUS[phase][e - s]; */
+    /*         s = e; */
+    /*     } */
+    /* } */
+    /* value += CONNECTED_PAWNS_BONUS[phase][e - s]; */
+
+    for (int i = 0; i < 8; ++i)
+    {
+        if (pawn_on_file[i] == 2)
+            value += DOUBLE_PAWN_PENALTY[phase];
+        if (pawn_on_file[i] > 2)
+            value += TRIPLE_PAWN_PENALTY[phase];
+    }
+
 
     return value;
 }

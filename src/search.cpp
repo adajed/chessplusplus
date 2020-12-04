@@ -115,6 +115,7 @@ void Search::stop()
 void Search::go()
 {
     _ttable.clear();
+    _scorer.clear();
     stop_search = false;
     _start_time = std::chrono::steady_clock::now();
 

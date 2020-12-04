@@ -49,17 +49,24 @@ const Bitboard NEIGHBOUR_FILES_BB[FILE_NUM] = {
     fileG_bb
 };
 
-inline Bitboard forward_ranks_bb(Color side, Square square)
+template<Color side>
+inline Bitboard forward_ranks_bb(Square square)
 {
     return side == WHITE ? ~rank1_bb << 8 * (rank(square) - RANK_1)
                          : ~rank8_bb >> 8 * (RANK_8 - rank(square));
 }
 
-inline Bitboard passed_pawn_bb(Color side, Square square)
+template<Color side>
+inline Bitboard passed_pawn_bb(Square square)
 {
-    return forward_ranks_bb(side, square) & (NEIGHBOUR_FILES_BB[file(square)] | FILES_BB[file(square)]);
+    return forward_ranks_bb<side>(square) & (NEIGHBOUR_FILES_BB[file(square)] | FILES_BB[file(square)]);
 }
 
+template <Color side>
+inline Bitboard squares_left_behind_bb(Square square)
+{
+    return NEIGHBOUR_FILES_BB[file(square)] & (forward_ranks_bb<!side>(square) | RANKS_BB[rank(square)]);
+}
 
 enum Direction : int32_t
 {
