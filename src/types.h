@@ -81,6 +81,12 @@ enum GamePhase : uint32_t
 };
 constexpr uint32_t GAME_PHASE_NUM = 2;
 
+enum Value : int64_t
+{
+    VALUE_DRAW = 0LL,
+    VALUE_KNOWN_WIN = 12000LL
+};
+
 // encoded move
 // 0-5 - from
 // 6-11 - to
@@ -169,12 +175,14 @@ ENABLE_BASIC_OPERATIONS(Rank)
 ENABLE_BASIC_OPERATIONS(File)
 ENABLE_BASIC_OPERATIONS(Piece)
 ENABLE_BASIC_OPERATIONS(PieceKind)
+ENABLE_BASIC_OPERATIONS(Value)
 
 ENABLE_INCREMENT_OPERATIONS(Square)
 ENABLE_INCREMENT_OPERATIONS(Rank)
 ENABLE_INCREMENT_OPERATIONS(File)
 ENABLE_INCREMENT_OPERATIONS(PieceKind)
 ENABLE_INCREMENT_OPERATIONS(Piece)
+ENABLE_INCREMENT_OPERATIONS(Value)
 
 constexpr Castling operator& (Castling c1, Castling c2) { return Castling(uint32_t(c1) & uint32_t(c2)); }
 inline Castling& operator|= (Castling& c1, Castling c2) { return c1 = Castling(c1 | c2); }
