@@ -84,7 +84,12 @@ constexpr uint32_t GAME_PHASE_NUM = 2;
 enum Value : int64_t
 {
     VALUE_DRAW = 0LL,
-    VALUE_KNOWN_WIN = 12000LL
+    VALUE_KNOWN_WIN = 12000LL,
+
+    VALUE_MATE = 64000LL,
+    VALUE_INFINITE = 64001LL,
+    VALUE_NONE = 64002LL
+
 };
 
 // encoded move

@@ -14,7 +14,8 @@ enum EndgameType : uint32_t
     kKPK = 0,
     kKRK = 1,
     kKNBK = 2,
-    kKQK = 3
+    kKQK = 3,
+    kKXK = 4
 };
 
 namespace bitbase
@@ -75,9 +76,8 @@ Value score_endgame(const Position& position)
             return e->score(position);
     }
 
-    return VALUE_DRAW;
-    /* const EndgameBasePtr& e = strongSide == WHITE ? default_endgame.first : default_endgame.second; */
-    /* return e->score(position); */
+    const EndgameBasePtr& e = strongSide == WHITE ? default_endgame.first : default_endgame.second;
+    return e->score(position);
 }
 
 }  // namespace endgame
