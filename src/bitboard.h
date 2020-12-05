@@ -118,6 +118,25 @@ inline Bitboard shift(Bitboard bb, Direction dir)
     return 0ULL;
 }
 
+template <Color side>
+Bitboard pawn_attacks(Bitboard bb)
+{
+    return side == WHITE ? (shift<NORTHWEST>(bb) | shift<NORTHEAST>(bb))
+                         : (shift<SOUTHWEST>(bb) | shift<SOUTHEAST>(bb));
+}
+
+inline Bitboard king_attacks(Bitboard bb)
+{
+    return shift<NORTH    >(bb)
+         | shift<SOUTH    >(bb)
+         | shift<WEST     >(bb)
+         | shift<EAST     >(bb)
+         | shift<NORTHEAST>(bb)
+         | shift<NORTHWEST>(bb)
+         | shift<SOUTHEAST>(bb)
+         | shift<SOUTHWEST>(bb);
+}
+
 }
 
 #endif  // CHESS_ENGINE_BITBOARD_H_

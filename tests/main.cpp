@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "endgame.h"
 #include "move_bitboards.h"
 #include "zobrist_hash.h"
 
@@ -9,6 +10,7 @@ int main(int argc, char** argv)
 
     testing::InitGoogleTest(&argc, argv);
 
+    bitbase::init();
     init_move_bitboards();
     init_zobrist();
 

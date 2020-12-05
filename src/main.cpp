@@ -1,3 +1,4 @@
+#include "endgame.h"
 #include "movegen.h"
 #include "transposition_table.h"
 #include "uci.h"
@@ -9,6 +10,7 @@ int main(int argc, char** argv)
 {
     init_move_bitboards();
     init_zobrist();
+    bitbase::init();
 
     Uci uci;
     uci.loop();
