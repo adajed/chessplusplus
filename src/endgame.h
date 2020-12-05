@@ -26,7 +26,10 @@ bool check(Color side, Square wKing, Square wPawn, Square bKing);
 
 void normalize(Color strongSide, Color& side, Square& strongKing, Square& strongPawn, Square& weakKing);
 
-}
+}  // namespace bitbase
+
+namespace endgame
+{
 
 class EndgameBase
 {
@@ -72,9 +75,12 @@ Value score_endgame(const Position& position)
             return e->score(position);
     }
 
-    const EndgameBasePtr& e = strongSide == WHITE ? default_endgame.first : default_endgame.second;
-    return e->score(position);
+    return VALUE_DRAW;
+    /* const EndgameBasePtr& e = strongSide == WHITE ? default_endgame.first : default_endgame.second; */
+    /* return e->score(position); */
 }
+
+}  // namespace endgame
 
 }  // namespace engine
 

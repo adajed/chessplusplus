@@ -1,5 +1,6 @@
 #include "bitboard.h"
 #include "bithacks.h"
+#include "endgame.h"
 #include "position.h"
 #include "position_bitboards.h"
 #include "score.h"
@@ -229,6 +230,11 @@ void PositionScorer::clear()
 
 int64_t PositionScorer::score(const Position& position)
 {
+    if (!popcount_more_than_one(position.pieces(WHITE)))
+        return endgame::score_endgame<BLACK>(position);
+    if (!popcount_more_than_one(position.pieces(BLACK)))
+        return endgame::score_endgame<WHITE>(position);
+
     for (Color side : {WHITE, BLACK})
         for (PieceKind piecekind : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING})
             move_count[side][piecekind] = 0;

@@ -11,6 +11,7 @@ int main(int argc, char** argv)
     init_move_bitboards();
     init_zobrist();
     bitbase::init();
+    endgame::init();
 
     Uci uci;
     uci.loop();

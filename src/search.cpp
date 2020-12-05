@@ -1,3 +1,4 @@
+#include "endgame.h"
 #include "move_picker.h"
 #include "logger.h"
 #include "search.h"
@@ -220,7 +221,7 @@ void Search::iter_search()
             if (check_limits())
                 break;
 
-            delta *= 2;
+            delta += 100;
         }
 
         previous_score = result;
@@ -350,9 +351,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
         return 0;
     }
 
-    if (position.threefold_repetition())
-        return DRAW_SCORE;
-    if (position.rule50())
+    if (position.is_draw())
         return DRAW_SCORE;
 
     /* std::vector<Move> moves(MAX_MOVES, NO_MOVE); */
@@ -498,9 +497,7 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
         return 0;
     }
 
-    if (position.threefold_repetition())
-        return DRAW_SCORE;
-    if (position.rule50())
+    if (position.is_draw())
         return DRAW_SCORE;
 
     bool is_in_check = position.is_in_check(position.side_to_move());

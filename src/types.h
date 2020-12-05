@@ -184,6 +184,8 @@ ENABLE_INCREMENT_OPERATIONS(PieceKind)
 ENABLE_INCREMENT_OPERATIONS(Piece)
 ENABLE_INCREMENT_OPERATIONS(Value)
 
+constexpr Value operator- (Value v) { return Value(-int64_t(v)); }
+
 constexpr Castling operator& (Castling c1, Castling c2) { return Castling(uint32_t(c1) & uint32_t(c2)); }
 inline Castling& operator|= (Castling& c1, Castling c2) { return c1 = Castling(c1 | c2); }
 inline Castling& operator&= (Castling& c1, Castling c2) { return c1 = Castling(c1 & c2); }

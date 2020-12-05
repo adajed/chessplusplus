@@ -162,6 +162,15 @@ std::string Position::fen() const
     return stream.str();
 }
 
+bool Position::is_draw() const
+{
+    if (popcount(pieces()) == 2
+            || rule50()
+            || threefold_repetition())
+        return true;
+    return false;
+}
+
 bool Position::threefold_repetition() const
 {
     for (int i = _history_counter - 2; i >= 0; --i)

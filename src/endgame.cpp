@@ -4,22 +4,20 @@
 #include <memory>
 #include <vector>
 
-namespace engine {
+namespace engine
+{
+namespace endgame
+{
 
 template<>
 bool Endgame<kKPK>::applies(const Position& position) const
 {
-    if (position.number_of_pieces(make_piece(strongSide, PAWN)) != 1)
-        return false;
-    if (position.number_of_pieces(make_piece(weakSide, PAWN)) != 0)
-        return false;
-    if (!position.pieces(KNIGHT))
-        return false;
-    if (!position.pieces(BISHOP))
-        return false;
-    if (!position.pieces(ROOK))
-        return false;
-    if (!position.pieces(QUEEN))
+    if (position.number_of_pieces(make_piece(strongSide, PAWN)) != 1
+            || position.number_of_pieces(make_piece(weakSide, PAWN)) != 0
+            || position.pieces(KNIGHT)
+            || position.pieces(BISHOP)
+            || position.pieces(ROOK)
+            || position.pieces(QUEEN))
         return false;
 
     return true;
@@ -39,7 +37,8 @@ Value Endgame<kKPK>::score(const Position& position) const
     if (!bitbase::check(side, strongKing, strongPawn, weakKing))
         return VALUE_DRAW;
 
-    return VALUE_KNOWN_WIN + Value(rank(strongPawn));
+    Value v = VALUE_KNOWN_WIN + Value(rank(strongPawn));
+    return (position.side_to_move() == strongSide) ? v : (-v);
 }
 
 std::vector<EndgamePair> endgames;
@@ -58,4 +57,5 @@ void init()
     add<kKPK>();
 }
 
-} // namespace engine
+}  // namespace endgame
+}  // namespace engine

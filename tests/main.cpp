@@ -11,6 +11,7 @@ int main(int argc, char** argv)
     testing::InitGoogleTest(&argc, argv);
 
     bitbase::init();
+    endgame::init();
     init_move_bitboards();
     init_zobrist();
 
