@@ -37,7 +37,7 @@ run_search_test()
         SEARCH_TESTS_PASSED=$((SEARCH_TESTS_PASSED + 1))
         echo "Search test \"${fen}\" passed"
     else
-        echo "Search test \"${fen}\" failed"
+        echo "Search test \"${fen}\" failed, expected move was ${move}"
     fi
 }
 

@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cinttypes>
+#include <cstdlib>
 #include <iostream>
 
 namespace engine
@@ -80,6 +81,17 @@ enum GamePhase : uint32_t
 };
 constexpr uint32_t GAME_PHASE_NUM = 2;
 
+enum Value : int64_t
+{
+    VALUE_DRAW = 0LL,
+    VALUE_KNOWN_WIN = 12000LL,
+
+    VALUE_MATE = 64000LL,
+    VALUE_INFINITE = 64001LL,
+    VALUE_NONE = 64002LL
+
+};
+
 // encoded move
 // 0-5 - from
 // 6-11 - to
@@ -139,6 +151,16 @@ constexpr Square make_square(Rank rank, File file)
     return Square((rank << 3) + file);
 }
 
+constexpr Square flip_vertically(Square sq)
+{
+    return make_square(Rank(RANK_8 - rank(sq)), file(sq));
+}
+
+constexpr Square flip_horizontally(Square sq)
+{
+    return make_square(rank(sq), File(FILE_H - file(sq)));
+}
+
 #define ENABLE_BASIC_OPERATIONS(T)                                            \
 constexpr T operator+ (T v1, T v2) { return T(uint32_t(v1) + uint32_t(v2)); } \
 constexpr T operator- (T v1, T v2) { return T(uint32_t(v1) - uint32_t(v2)); } \
@@ -158,12 +180,16 @@ ENABLE_BASIC_OPERATIONS(Rank)
 ENABLE_BASIC_OPERATIONS(File)
 ENABLE_BASIC_OPERATIONS(Piece)
 ENABLE_BASIC_OPERATIONS(PieceKind)
+ENABLE_BASIC_OPERATIONS(Value)
 
 ENABLE_INCREMENT_OPERATIONS(Square)
 ENABLE_INCREMENT_OPERATIONS(Rank)
 ENABLE_INCREMENT_OPERATIONS(File)
 ENABLE_INCREMENT_OPERATIONS(PieceKind)
 ENABLE_INCREMENT_OPERATIONS(Piece)
+ENABLE_INCREMENT_OPERATIONS(Value)
+
+constexpr Value operator- (Value v) { return Value(-int64_t(v)); }
 
 constexpr Castling operator& (Castling c1, Castling c2) { return Castling(uint32_t(c1) & uint32_t(c2)); }
 inline Castling& operator|= (Castling& c1, Castling c2) { return c1 = Castling(c1 | c2); }
@@ -208,6 +234,11 @@ constexpr bool is_piece_slider(Piece piece)
 {
     PieceKind piece_kind = get_piece_kind(piece);
     return piece_kind == BISHOP || piece_kind == ROOK || piece_kind == QUEEN;
+}
+
+inline int distance(Square from, Square to)
+{
+    return std::max(abs(int(rank(from)) - int(rank(to))), abs(int(file(from)) - int(file(to))));
 }
 
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb);

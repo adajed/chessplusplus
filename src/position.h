@@ -43,6 +43,7 @@ class Position
         uint32_t half_moves() const { return _half_move_counter; }
         uint32_t ply_count() const { return _ply_counter; }
 
+        bool is_draw() const;
         bool threefold_repetition() const;
         bool rule50() const;
 

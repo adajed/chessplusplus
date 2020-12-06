@@ -1,11 +1,15 @@
+#include "bitboard.h"
+#include "bithacks.h"
+#include "endgame.h"
 #include "position.h"
+#include "position_bitboards.h"
 #include "score.h"
 #include "types.h"
 
 namespace engine
 {
 
-const int64_t PIECE_WEIGHTS[PIECE_KIND_NUM] = {0, 0, 2, 2, 4, 8, 0};
+const int64_t PIECE_WEIGHTS[PIECE_KIND_NUM] = {0, 0, 1, 1, 2, 4, 0};
 
 const int64_t MAX_PIECE_WEIGTHS = 2 * (  2 * PIECE_WEIGHTS[KNIGHT]
                                        + 2 * PIECE_WEIGHTS[BISHOP]
@@ -165,30 +169,52 @@ const int64_t PIECE_POSITIONAL_VALUE[GAME_PHASE_NUM][PIECE_KIND_NUM][SQUARE_NUM]
 
 const int64_t MOBILITY_BONUS[GAME_PHASE_NUM][PIECE_KIND_NUM] =
 {
-    {0, 3, 6, 9, 2, 2, 0},
-    {0, 2, 12, 4, 12, 6, 2}
+    [MIDDLE_GAME] = {0, 3, 6, 9, 2, 2, 0},
+    [END_GAME] = {0, 2, 12, 4, 12, 6, 2}
 };
 
 // bonus for rook on semiopen file
-const int64_t ROOK_SEMIOPEN_FILE_BONUS[GAME_PHASE_NUM] = {10, 11};
+const int64_t ROOK_SEMIOPEN_FILE_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 10, [END_GAME] = 11};
 
 // bonus for rook on open file
-const int64_t ROOK_OPEN_FILE_BONUS[GAME_PHASE_NUM] = {20, 40};
+const int64_t ROOK_OPEN_FILE_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 20, [END_GAME] = 40};
 
 // bonus for bishop pair
-const int64_t BISHOP_PAIR_BONUS[GAME_PHASE_NUM] = {46, 61};
+const int64_t BISHOP_PAIR_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 46, [END_GAME] = 61};
 
 // bonus for passed pawn
-const int64_t PASSED_PAWN_BONUS[GAME_PHASE_NUM] = {5, 52};
+const int64_t PASSED_PAWN_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 15, [END_GAME] = 152};
 
 // bonus for connecting rooks
-const int64_t CONNECTED_ROOKS_BONUS[GAME_PHASE_NUM] = {40, 20};
+const int64_t CONNECTED_ROOKS_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 40, [END_GAME] = 20};
+
+const int64_t OUTPOST_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 20, [END_GAME] = 10};
+
+const int64_t OUTPOST_KNIGHT_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 100, [END_GAME] = 100};
+
+const int64_t OUTPOST_BISHOP_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 100, [END_GAME] = 100};
 
 // penalty for double pawns
-const int64_t DOUBLE_PAWN_PENALTY[GAME_PHASE_NUM] = {-14, -57};
+const int64_t DOUBLE_PAWN_PENALTY[GAME_PHASE_NUM] = {[MIDDLE_GAME] = -14, [END_GAME] = -57};
 
-// penalty for isolated pawn
-const int64_t ISOLATED_PAWN_PENALTY[GAME_PHASE_NUM] = {-40, -80};
+// penalty for tripled pawns
+const int64_t TRIPLE_PAWN_PENALTY[GAME_PHASE_NUM] = {[MIDDLE_GAME] = -34, [END_GAME] = -100};
+
+const int64_t PAWN_CHAIN_BONUS[GAME_PHASE_NUM][FILE_NUM] = {
+                    // 0,  1,  2,  3,  4,  5,  6,  7
+    [MIDDLE_GAME] = {  0,  0,  2,  4,  5,  5,  6,  7},
+    [END_GAME]    = {  0,  0,  4, 10, 14, 20, 20, 20}
+};
+
+const int64_t CONNECTED_PAWNS_BONUS[GAME_PHASE_NUM][FILE_NUM + 1] = {
+                    // 0,   1,  2,  3,  4,  5,  6,  7,  8
+    [MIDDLE_GAME] = {  0, -40,  5,  8, 10, 12, 12, 12, 12},
+    [END_GAME]    = {  0, -80, 10, 18, 25, 30, 30, 30, 30},
+};
+
+const int64_t BACKWARD_PAWN_PENALTY[GAME_PHASE_NUM] = {[MIDDLE_GAME] = -30, [END_GAME] = -100};
+
+const int64_t KING_SAFETY_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 20, [END_GAME] = 0};
 
 
 Square flip(Square square)
@@ -197,11 +223,22 @@ Square flip(Square square)
 }
 
 PositionScorer::PositionScorer()
+    : _pawn_hash_table()
 {
+}
+
+void PositionScorer::clear()
+{
+    _pawn_hash_table.clear();
 }
 
 int64_t PositionScorer::score(const Position& position)
 {
+    if (!popcount_more_than_one(position.pieces(WHITE)))
+        return endgame::score_endgame<BLACK>(position);
+    if (!popcount_more_than_one(position.pieces(BLACK)))
+        return endgame::score_endgame<WHITE>(position);
+
     for (Color side : {WHITE, BLACK})
         for (PieceKind piecekind : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING})
             move_count[side][piecekind] = 0;
@@ -217,18 +254,24 @@ int64_t PositionScorer::score(const Position& position)
         }
     }
 
-    int64_t value = score_side<WHITE>(position) - score_side<BLACK>(position);
-    return position.side_to_move() == WHITE ? value : -value;
+    int64_t phase_weight = game_phase_weight(position);
+
+    if (position.side_to_move() == WHITE)
+        return score_side<WHITE>(position, phase_weight)
+            + score_pawns<WHITE>(position, phase_weight);
+    else
+        return score_side<BLACK>(position, phase_weight)
+            + score_pawns<BLACK>(position, phase_weight);
 }
 
 template <Color side>
-int64_t PositionScorer::score_side(const Position& position)
+int64_t PositionScorer::score_side(const Position& position, int64_t weight)
 {
-    int64_t phase_weight = game_phase_weight(position);
-    int64_t mg = score<side, MIDDLE_GAME>(position);
-    int64_t eg = score<side, END_GAME>(position);
+    int64_t mg = score<WHITE, MIDDLE_GAME>(position) - score<BLACK, MIDDLE_GAME>(position);
+    int64_t eg = score<WHITE, END_GAME>(position) - score<BLACK, END_GAME>(position);
 
-    return ((mg * phase_weight) + (eg * (MAX_PIECE_WEIGTHS - phase_weight))) / MAX_PIECE_WEIGTHS;
+    int64_t value = ((mg * weight) + (eg * (MAX_PIECE_WEIGTHS - weight))) / MAX_PIECE_WEIGTHS;
+    return side == WHITE ? value : (-value);
 }
 
 template <Color side, GamePhase phase>
@@ -236,7 +279,7 @@ int64_t PositionScorer::score(const Position& position)
 {
     int64_t value = 0LL;
 
-    for (PieceKind piecekind : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN})
+    for (PieceKind piecekind : {KNIGHT, BISHOP, ROOK, QUEEN})
     {
         Piece piece = make_piece(side, piecekind);
         int num_pieces = position.number_of_pieces(piece);
@@ -285,23 +328,97 @@ int64_t PositionScorer::score(const Position& position)
             (position.pieces(side, BISHOP) & black_squares_bb))
         value += BISHOP_PAIR_BONUS[phase];
 
-    constexpr Piece PAWN_PIECE = make_piece(side, PAWN);
+    Bitboard outpost_bb = get_outposts<side>(position);
 
-    Bitboard pawns = position.pieces(side, PAWN);
+    Bitboard knigh_outpost_bb = outpost_bb & position.pieces(side, KNIGHT);
+    value += popcount(knigh_outpost_bb) * OUTPOST_KNIGHT_BONUS[phase];
 
-    for (File file = FILE_A; file <= FILE_H; ++file)
-        if (popcount_more_than_one(pawns & FILES_BB[file]))
-             value += DOUBLE_PAWN_PENALTY[phase];
+    Bitboard bishop_outpost_bb = outpost_bb & position.pieces(side, BISHOP);
+    value += popcount(bishop_outpost_bb) * OUTPOST_BISHOP_BONUS[phase];
 
-    for (int i = 0; i < position.number_of_pieces(PAWN_PIECE); ++i)
+    constexpr Rank first_rank  = side == WHITE ? RANK_1 : RANK_8;
+    constexpr Rank second_rank = side == WHITE ? RANK_2 : RANK_7;
+    Square kingSq = position.piece_position(make_piece(side, KING), 0);
+    if (rank(kingSq) == first_rank)
     {
-        Square square = position.piece_position(PAWN_PIECE, i);
-        if (!(NEIGHBOUR_FILES_BB[file(square)] & pawns))
-            value += ISOLATED_PAWN_PENALTY[phase];
+        Bitboard safetyPawns = (NEIGHBOUR_FILES_BB[file(kingSq)] | FILES_BB[file(kingSq)]) & RANKS_BB[second_rank] & position.pieces(side, PAWN);
+        value += popcount(safetyPawns) * KING_SAFETY_BONUS[phase];
+    }
 
-        if (!(passed_pawn_bb(side, square) & position.pieces(!side, PAWN)))
+    return value;
+}
+
+template <Color side>
+int64_t PositionScorer::score_pawns(const Position& position, int64_t weight)
+{
+    std::pair<int64_t, int64_t> score;
+
+    // check in hash table
+    if (!_pawn_hash_table.get(position, score))
+    {
+        score.first = calculate_pawns<WHITE, MIDDLE_GAME>(position)
+                    - calculate_pawns<BLACK, MIDDLE_GAME>(position);
+        score.second = calculate_pawns<WHITE, END_GAME>(position)
+                    - calculate_pawns<BLACK, END_GAME>(position);
+        _pawn_hash_table.update(position, score);
+    }
+
+    int64_t value = (score.first * weight + score.second * (MAX_PIECE_WEIGTHS - weight)) / MAX_PIECE_WEIGTHS;
+    return side == WHITE ? value : (-value);
+}
+
+template <Color side, GamePhase phase>
+int64_t PositionScorer::calculate_pawns(const Position& position)
+{
+    constexpr Piece pawn = make_piece(side, PAWN);
+
+    int64_t value = 0LL;
+
+    int num_pieces = position.number_of_pieces(pawn);
+    value += PIECE_VALUE[phase][PAWN] * num_pieces;
+    value += MOBILITY_BONUS[phase][PAWN] * move_count[side][PAWN];
+
+    for (int i = 0; i < num_pieces; ++i)
+    {
+        Square square = position.piece_position(pawn, i);
+        square = side == WHITE ? square : flip(square);
+        value += PIECE_POSITIONAL_VALUE[phase][PAWN][square];
+    }
+
+    /* Bitboard pawns = position.pieces(side, PAWN); */
+
+    std::vector<int> pawn_on_file = {0, 0, 0, 0, 0, 0, 0, 0};
+    for (int i = 0; i < position.number_of_pieces(pawn); ++i)
+    {
+        Square square = position.piece_position(pawn, i);
+        pawn_on_file[file(square)] += 1;
+
+        if (!(passed_pawn_bb<side>(square) & position.pieces(!side, PAWN)))
             value += PASSED_PAWN_BONUS[phase];
     }
+
+    /* int s = 0, e = 0; */
+    /* for (; e < 8; ++e) */
+    /* { */
+    /*     if (pawn_on_file[e] == 0) */
+    /*     { */
+    /*         value += CONNECTED_PAWNS_BONUS[phase][e - s]; */
+    /*         s = e; */
+    /*     } */
+    /* } */
+    /* value += CONNECTED_PAWNS_BONUS[phase][e - s]; */
+
+    for (int i = 0; i < 8; ++i)
+    {
+        if (pawn_on_file[i] == 2)
+            value += DOUBLE_PAWN_PENALTY[phase];
+        if (pawn_on_file[i] > 2)
+            value += TRIPLE_PAWN_PENALTY[phase];
+    }
+
+    Bitboard backpawns = backward_pawns<side>(position.pieces(side, PAWN),
+                                              position.pieces(!side, PAWN));
+    value += popcount(backpawns) * BACKWARD_PAWN_PENALTY[phase];
 
     return value;
 }

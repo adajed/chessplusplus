@@ -3,6 +3,9 @@
 #include "types.h"
 #include "bitboard.h"
 #include "bithacks.h"
+#include "position_bitboards.h"
+#include "positions.h"
+#include "zobrist_hash.h"
 
 #include <functional>
 #include <gtest/internal/gtest-param-util.h>
@@ -27,6 +30,22 @@ bool check_bb(Bitboard bb, std::function<bool(int, int)> pred)
     return true;
 }
 
+Bitboard bb_from_function(std::function<bool(int, int)> pred)
+{
+    Bitboard bb = 0ULL;
+    for (int rank = 0; rank < 8; ++rank)
+    {
+        for (int file = 0; file < 8; ++file)
+        {
+            Square sq = make_square(Rank(rank), File(file));
+            if (pred(rank, file))
+                bb |= square_bb(sq);
+        }
+    }
+
+    return bb;
+}
+
 TEST(Bitboard, forward_ranks_bb)
 {
     for (int rank = 0; rank < 8; rank++)
@@ -34,8 +53,8 @@ TEST(Bitboard, forward_ranks_bb)
         for (int file = 0; file < 8; file++)
         {
             Square sq = make_square(Rank(rank), File(file));
-            EXPECT_TRUE(check_bb(forward_ranks_bb(WHITE, sq), [rank](int x, int y){return x > rank;}));
-            EXPECT_TRUE(check_bb(forward_ranks_bb(BLACK, sq), [rank](int x, int y){return x < rank;}));
+            EXPECT_TRUE(check_bb(forward_ranks_bb<WHITE>(sq), [rank](int x, int y){return x > rank;}));
+            EXPECT_TRUE(check_bb(forward_ranks_bb<BLACK>(sq), [rank](int x, int y){return x < rank;}));
         }
     }
 }
@@ -51,14 +70,127 @@ TEST(Bitboard, passed_pawn_bb)
             auto f_white = [rank, file](int x, int y) {
                 return x > rank && abs(y - file) <= 1;
             };
-            EXPECT_TRUE(check_bb(passed_pawn_bb(WHITE, sq), f_white));
+            EXPECT_TRUE(check_bb(passed_pawn_bb<WHITE>(sq), f_white));
 
             auto f_black = [rank, file](int x, int y) {
                 return x < rank && abs(y - file) <= 1;
             };
-            EXPECT_TRUE(check_bb(passed_pawn_bb(BLACK, sq), f_black));
+            EXPECT_TRUE(check_bb(passed_pawn_bb<BLACK>(sq), f_black));
         }
     }
+}
+
+TEST(Bitboard, squares_left_behind_bb)
+{
+    for (int rank = 0; rank < 8; rank++)
+    {
+        for (int file = 0; file < 8; file++)
+        {
+            Square sq = make_square(Rank(rank), File(file));
+
+            auto f_white = [rank, file](int x, int y) {
+                return x <= rank && abs(y - file) == 1;
+            };
+            EXPECT_TRUE(check_bb(squares_left_behind_bb<WHITE>(sq), f_white));
+
+            auto f_black = [rank, file](int x, int y) {
+                return x >= rank && abs(y - file) == 1;
+            };
+            EXPECT_TRUE(check_bb(squares_left_behind_bb<BLACK>(sq), f_black));
+        }
+    }
+}
+
+TEST(Bitboard, get_outposts)
+{
+    for (const auto& fen : test_positions)
+    {
+        Position position(fen);
+
+        auto f_white = [&position](int x, int y) {
+            Square sq = make_square(Rank(x), File(y));
+            Bitboard sq_bb = square_bb(sq);
+
+            if (position.piece_at(sq) == W_PAWN || position.piece_at(sq) == B_PAWN)
+                return false;
+
+            if (position.pieces(WHITE, PAWN) & (shift<SOUTHEAST>(sq_bb) | shift<SOUTHWEST>(sq_bb)))
+            {
+                Bitboard bb = NEIGHBOUR_FILES_BB[File(y)] & forward_ranks_bb<WHITE>(sq);
+                return (position.pieces(BLACK, PAWN) & bb) ? false : true;
+            }
+
+            return false;
+        };
+
+
+        EXPECT_TRUE(check_bb(get_outposts<WHITE>(position), f_white));
+
+        auto f_black = [&position](int x, int y) {
+            Square sq = make_square(Rank(x), File(y));
+            Bitboard sq_bb = square_bb(sq);
+
+            if (position.piece_at(sq) == W_PAWN || position.piece_at(sq) == B_PAWN)
+                return false;
+
+            if (position.pieces(BLACK, PAWN) & (shift<NORTHEAST>(sq_bb) | shift<NORTHWEST>(sq_bb)))
+            {
+                Bitboard bb = NEIGHBOUR_FILES_BB[File(y)] & forward_ranks_bb<BLACK>(sq);
+                return (position.pieces(WHITE, PAWN) & bb) ? false : true;
+            }
+
+            return false;
+        };
+
+        EXPECT_TRUE(check_bb(get_outposts<BLACK>(position), f_black));
+    }
+}
+
+TEST(Bitboard, backward_pawns)
+{
+    for (auto fen : test_positions) {
+        Position position(fen);
+
+        Bitboard wPawns = position.pieces(WHITE, PAWN);
+        Bitboard bPawns = position.pieces(BLACK, PAWN);
+
+        auto f_white = [&position](int x, int y) {
+            if (x == 7)
+                return false;
+
+            Square sq = make_square(Rank(x), File(y));
+            Bitboard nextSq = square_bb(make_square(Rank(x + 1), File(y)));
+
+            if (position.piece_at(sq) != W_PAWN)
+                return false;
+            if (pawn_attacks<WHITE>(position.pieces(WHITE, PAWN)) & nextSq)
+                return false;
+            if (!(pawn_attacks<BLACK>(position.pieces(BLACK, PAWN)) & nextSq))
+                return false;
+            return true;
+        };
+
+        EXPECT_TRUE(check_bb(backward_pawns<WHITE>(wPawns, bPawns), f_white));
+
+        auto f_black = [&position](int x, int y) {
+            if (x == 0)
+                return false;
+
+            Square sq = make_square(Rank(x), File(y));
+            Bitboard nextSq = square_bb(make_square(Rank(x - 1), File(y)));
+
+            if (position.piece_at(sq) != B_PAWN)
+                return false;
+            if (pawn_attacks<BLACK>(position.pieces(BLACK, PAWN)) & nextSq)
+                return false;
+            if (!(pawn_attacks<WHITE>(position.pieces(WHITE, PAWN)) & nextSq))
+                return false;
+            return true;
+        };
+
+        EXPECT_TRUE(check_bb(backward_pawns<BLACK>(bPawns, wPawns), f_black));
+    }
+
 }
 
 const std::map<Direction, std::tuple<int, int, std::string>> DIRECTION_MAP = {

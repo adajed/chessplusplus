@@ -1,3 +1,4 @@
+#include "endgame.h"
 #include "move_picker.h"
 #include "logger.h"
 #include "search.h"
@@ -115,6 +116,7 @@ void Search::stop()
 void Search::go()
 {
     _ttable.clear();
+    _scorer.clear();
     stop_search = false;
     _start_time = std::chrono::steady_clock::now();
 
@@ -210,16 +212,16 @@ void Search::iter_search()
             result = root_search(_position, _current_depth, min_bound, max_bound);
 
             if (result <= min_bound)
-                min_bound -= delta;
+                min_bound = std::max(min_bound - delta, -INFINITY_SCORE);
             else if (result >= max_bound)
-                max_bound += delta;
+                max_bound = std::min(max_bound + delta, INFINITY_SCORE);
             else
                 break;
 
             if (check_limits())
                 break;
 
-            delta *= 2;
+            delta = static_cast<Score>(static_cast<float>(delta) * 1.25f);
         }
 
         previous_score = result;
@@ -349,9 +351,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
         return 0;
     }
 
-    if (position.threefold_repetition())
-        return DRAW_SCORE;
-    if (position.rule50())
+    if (position.is_draw())
         return DRAW_SCORE;
 
     /* std::vector<Move> moves(MAX_MOVES, NO_MOVE); */
@@ -497,9 +497,7 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
         return 0;
     }
 
-    if (position.threefold_repetition())
-        return DRAW_SCORE;
-    if (position.rule50())
+    if (position.is_draw())
         return DRAW_SCORE;
 
     bool is_in_check = position.is_in_check(position.side_to_move());
