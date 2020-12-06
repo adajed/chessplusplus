@@ -221,7 +221,7 @@ void Search::iter_search()
             if (check_limits())
                 break;
 
-            delta += 100;
+            delta = static_cast<Score>(static_cast<float>(delta) * 1.25f);
         }
 
         previous_score = result;

@@ -4,7 +4,6 @@
 #include "movegen.h"
 #include "pawn_hash_table.h"
 #include "types.h"
-#include <bits/stdint-intn.h>
 
 namespace engine
 {
