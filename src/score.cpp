@@ -169,48 +169,52 @@ const int64_t PIECE_POSITIONAL_VALUE[GAME_PHASE_NUM][PIECE_KIND_NUM][SQUARE_NUM]
 
 const int64_t MOBILITY_BONUS[GAME_PHASE_NUM][PIECE_KIND_NUM] =
 {
-    {0, 3, 6, 9, 2, 2, 0},
-    {0, 2, 12, 4, 12, 6, 2}
+    [MIDDLE_GAME] = {0, 3, 6, 9, 2, 2, 0},
+    [END_GAME] = {0, 2, 12, 4, 12, 6, 2}
 };
 
 // bonus for rook on semiopen file
-const int64_t ROOK_SEMIOPEN_FILE_BONUS[GAME_PHASE_NUM] = {10, 11};
+const int64_t ROOK_SEMIOPEN_FILE_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 10, [END_GAME] = 11};
 
 // bonus for rook on open file
-const int64_t ROOK_OPEN_FILE_BONUS[GAME_PHASE_NUM] = {20, 40};
+const int64_t ROOK_OPEN_FILE_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 20, [END_GAME] = 40};
 
 // bonus for bishop pair
-const int64_t BISHOP_PAIR_BONUS[GAME_PHASE_NUM] = {46, 61};
+const int64_t BISHOP_PAIR_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 46, [END_GAME] = 61};
 
 // bonus for passed pawn
-const int64_t PASSED_PAWN_BONUS[GAME_PHASE_NUM] = {15, 152};
+const int64_t PASSED_PAWN_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 15, [END_GAME] = 152};
 
 // bonus for connecting rooks
-const int64_t CONNECTED_ROOKS_BONUS[GAME_PHASE_NUM] = {40, 20};
+const int64_t CONNECTED_ROOKS_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 40, [END_GAME] = 20};
 
-const int64_t OUTPOST_BONUS[GAME_PHASE_NUM] = {20, 10};
+const int64_t OUTPOST_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 20, [END_GAME] = 10};
 
-const int64_t OUTPOST_KNIGHT_BONUS[GAME_PHASE_NUM] = {100, 100};
+const int64_t OUTPOST_KNIGHT_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 100, [END_GAME] = 100};
 
-const int64_t OUTPOST_BISHOP_BONUS[GAME_PHASE_NUM] = {100, 100};
+const int64_t OUTPOST_BISHOP_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 100, [END_GAME] = 100};
 
 // penalty for double pawns
-const int64_t DOUBLE_PAWN_PENALTY[GAME_PHASE_NUM] = {-14, -57};
+const int64_t DOUBLE_PAWN_PENALTY[GAME_PHASE_NUM] = {[MIDDLE_GAME] = -14, [END_GAME] = -57};
 
 // penalty for tripled pawns
-const int64_t TRIPLE_PAWN_PENALTY[GAME_PHASE_NUM] = {-34, -100};
+const int64_t TRIPLE_PAWN_PENALTY[GAME_PHASE_NUM] = {[MIDDLE_GAME] = -34, [END_GAME] = -100};
 
 const int64_t PAWN_CHAIN_BONUS[GAME_PHASE_NUM][FILE_NUM] = {
-    // 0,  1,  2,  3,  4,  5,  6,  7
-    {  0,  0,  2,  4,  5,  5,  6,  7},
-    {  0,  0,  4, 10, 14, 20, 20, 20}
+                    // 0,  1,  2,  3,  4,  5,  6,  7
+    [MIDDLE_GAME] = {  0,  0,  2,  4,  5,  5,  6,  7},
+    [END_GAME]    = {  0,  0,  4, 10, 14, 20, 20, 20}
 };
 
 const int64_t CONNECTED_PAWNS_BONUS[GAME_PHASE_NUM][FILE_NUM + 1] = {
-    // 0,   1,  2,  3,  4,  5,  6,  7,  8
-    {  0, -40,  5,  8, 10, 12, 12, 12, 12},
-    {  0, -80, 10, 18, 25, 30, 30, 30, 30},
+                    // 0,   1,  2,  3,  4,  5,  6,  7,  8
+    [MIDDLE_GAME] = {  0, -40,  5,  8, 10, 12, 12, 12, 12},
+    [END_GAME]    = {  0, -80, 10, 18, 25, 30, 30, 30, 30},
 };
+
+const int64_t BACKWARD_PAWN_PENALTY[GAME_PHASE_NUM] = {[MIDDLE_GAME] = -30, [END_GAME] = -100};
+
+const int64_t KING_SAFETY_BONUS[GAME_PHASE_NUM] = {[MIDDLE_GAME] = 20, [END_GAME] = 0};
 
 
 Square flip(Square square)
@@ -332,6 +336,15 @@ int64_t PositionScorer::score(const Position& position)
     Bitboard bishop_outpost_bb = outpost_bb & position.pieces(side, BISHOP);
     value += popcount(bishop_outpost_bb) * OUTPOST_BISHOP_BONUS[phase];
 
+    constexpr Rank first_rank  = side == WHITE ? RANK_1 : RANK_8;
+    constexpr Rank second_rank = side == WHITE ? RANK_2 : RANK_7;
+    Square kingSq = position.piece_position(make_piece(side, KING), 0);
+    if (rank(kingSq) == first_rank)
+    {
+        Bitboard safetyPawns = (NEIGHBOUR_FILES_BB[file(kingSq)] | FILES_BB[file(kingSq)]) & RANKS_BB[second_rank] & position.pieces(side, PAWN);
+        value += popcount(safetyPawns) * KING_SAFETY_BONUS[phase];
+    }
+
     return value;
 }
 
@@ -403,6 +416,9 @@ int64_t PositionScorer::calculate_pawns(const Position& position)
             value += TRIPLE_PAWN_PENALTY[phase];
     }
 
+    Bitboard backpawns = backward_pawns<side>(position.pieces(side, PAWN),
+                                              position.pieces(!side, PAWN));
+    value += popcount(backpawns) * BACKWARD_PAWN_PENALTY[phase];
 
     return value;
 }

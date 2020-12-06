@@ -71,6 +71,18 @@ inline Bitboard get_outposts(const Position& position)
     return outpost_bb;
 }
 
+template <Color side>
+Bitboard backward_pawns(Bitboard ourPawns, Bitboard theirPawns)
+{
+    constexpr Direction forward  = side == WHITE ? NORTH : SOUTH;
+    constexpr Direction backward = side == WHITE ? SOUTH : NORTH;
+
+    Bitboard stops = shift<forward>(ourPawns);
+    Bitboard ourAttacks = pawn_attacks<side>(ourPawns);
+    Bitboard theirAttacks = pawn_attacks<!side>(theirPawns);
+
+    return shift<backward>(stops & theirAttacks & ~ourAttacks);
+}
 
 }  // namespace engine
 
