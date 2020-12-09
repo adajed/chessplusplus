@@ -243,6 +243,35 @@ inline int distance(Square from, Square to)
 
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb);
 
-}
+constexpr int MAX_DEPTH = 40;
+constexpr int MAX_MOVES = 256;
+constexpr int MAX_PINS = 16;
+
+struct Limits
+{
+    Limits()
+        : searchmovesnum(0)
+        , ponder(false)
+        , movestogo(0)
+        , depth(0)
+        , nodes(0)
+        , movetime(0)
+        , infinite(false)
+    {}
+
+    Move searchmoves[MAX_MOVES];
+    int searchmovesnum;
+    bool ponder;
+    int timeleft[COLOR_NUM];
+    int timeinc[COLOR_NUM];
+    int movestogo;
+    int depth;
+    int64_t nodes;
+    int mate;
+    int movetime;
+    bool infinite;
+};
+
+}  // namespace engine
 
 #endif  // CHESS_ENGINE_TYPES_H_

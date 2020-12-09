@@ -1,8 +1,11 @@
 #include "endgame.h"
 #include "movegen.h"
 #include "transposition_table.h"
+#include "types.h"
 #include "uci.h"
 #include "zobrist_hash.h"
+
+#include "time_manager.h"
 
 using namespace engine;
 

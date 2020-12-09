@@ -8,6 +8,7 @@
 #include "polyglot.h"
 #include "position.h"
 #include "search.h"
+#include "time_manager.h"
 #include "ucioption.h"
 
 namespace engine
