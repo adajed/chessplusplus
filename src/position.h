@@ -91,7 +91,7 @@ class Position
         HashKey _zobrist_hash;
 
         int32_t _history_counter;
-        uint8_t _history[MAX_PLIES];
+        uint64_t _history[MAX_PLIES];
 };
 
 std::ostream& operator<< (std::ostream& stream, const Position& position);
