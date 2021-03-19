@@ -168,6 +168,22 @@ TEST(PositionTest, do_move)
     }
 }
 
+TEST(PositionTest, threefold_repetition)
+{
+    using TestCase = std::tuple<std::vector<std::string>, bool>;
+    std::vector<TestCase> test_cases = {
+        {{"e2e4", "e7e5", "e1e2", "e8e7", "e2e1", "e7e8", "e1e2", "e8e7", "e2e1", "e7e8"}, true}
+    };
+
+    for (const TestCase& test_case : test_cases)
+    {
+        Position position;
+        for (const std::string& move : std::get<0>(test_case))
+            position.do_move(position.parse_move(move));
+        EXPECT_EQ(position.threefold_repetition(), std::get<1>(test_case));
+    }
+}
+
 TEST(PositionTest, hash)
 {
     using TestCase = std::tuple<std::string, Move>;
