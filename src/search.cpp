@@ -260,6 +260,9 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
     if (_root_moves.size() == 0)
         return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
 
+    if (position.is_draw())
+        return DRAW_SCORE;
+
     // check extension
     if (is_in_check)
         depth++;
