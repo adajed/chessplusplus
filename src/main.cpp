@@ -1,6 +1,5 @@
 #include "endgame.h"
 #include "movegen.h"
-#include "transposition_table.h"
 #include "uci.h"
 #include "zobrist_hash.h"
 

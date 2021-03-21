@@ -4,6 +4,7 @@
 #include "position.h"
 #include "move_picker.h"
 #include "score.h"
+#include "time_manager.h"
 #include "transposition_table.h"
 #include "types.h"
 
@@ -13,7 +14,6 @@ namespace engine
 {
 
 using MoveList = std::vector<Move>;
-
 using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
 using Score = int64_t;
@@ -33,31 +33,6 @@ constexpr Score lost_in(int ply)
     return -win_in(ply);
 }
 
-
-struct Limits
-{
-    Limits()
-        : searchmovesnum(0)
-        , ponder(false)
-        , movestogo(0)
-        , depth(0)
-        , nodes(0)
-        , movetime(0)
-        , infinite(false)
-    {}
-
-    Move searchmoves[MAX_MOVES];
-    int searchmovesnum;
-    bool ponder;
-    int timeleft[COLOR_NUM];
-    int timeinc[COLOR_NUM];
-    int movestogo;
-    int depth;
-    int64_t nodes;
-    int mate;
-    int movetime;
-    bool infinite;
-};
 
 class Search
 {
@@ -92,7 +67,7 @@ class Search
         int64_t check_limits_counter;
         bool stop_search;
 
-        int64_t _search_time;
+        Duration _search_time;
         int64_t _search_depth;
         int64_t _max_nodes_searched;
         int _current_depth;
@@ -107,8 +82,6 @@ class Search
 
         tt::TTable _ttable;
         OrderingInfo _info;
-
-
 };
 
 }

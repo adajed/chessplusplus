@@ -12,10 +12,6 @@
 namespace engine
 {
 
-constexpr int MAX_DEPTH = 40;
-constexpr int MAX_MOVES = 256;
-constexpr int MAX_PINS = 16;
-
 extern Move MOVE_LIST[MAX_DEPTH][MAX_MOVES];
 extern Move QUIESCENCE_MOVE_LIST[MAX_DEPTH][MAX_MOVES];
 
