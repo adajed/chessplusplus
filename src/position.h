@@ -46,6 +46,7 @@ class Position
         bool is_draw() const;
         bool threefold_repetition() const;
         bool rule50() const;
+        bool enough_material() const;
 
         Piece piece_at(Square square) const { return _board[square]; }
         int number_of_pieces(Piece piece) const { return _piece_count[piece]; }
@@ -61,6 +62,8 @@ class Position
         Bitboard pieces(Color c) const;
         Bitboard pieces(PieceKind p) const;
         Bitboard pieces(Color c, PieceKind p) const;
+        Bitboard pieces(Piece p) const;
+        Bitboard pieces(Piece p1, Piece p2) const;
 
         std::string move_to_string(Move move) const;
 
