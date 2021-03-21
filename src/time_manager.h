@@ -14,15 +14,17 @@ using Duration = std::chrono::milliseconds::rep;
 class TimeManager
 {
 public:
-    TimeManager(const Limits& limits, Color side, int ply);
-
-    Duration getTime() const { return _time; };
+    /**
+     * Calculate how much time can we spend on this move.
+     * \param limits Limits struct with info about 'go' command.
+     * \param side Color of current player.
+     * \param ply Current move ply.
+     */
+    static Duration calculateTime(const Limits& limits, Color side, int ply);
 
 private:
 
-    Duration calculateTime(Duration totalTime, int movesToGo, int ply) const;
-
-    Duration _time;
+    static Duration computeTimeForFixedLength(Duration totalTime, int movesToGo, int ply);
 };
 
 } // namespace engine

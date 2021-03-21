@@ -92,7 +92,7 @@ Search::Search(const Position& position, const Limits& limits)
     }
     else if (limits.timeleft[position.side_to_move()] != 0)
     {
-        _search_time = TimeManager(limits, position.side_to_move(), position.ply_count()).getTime();
+        _search_time = TimeManager::calculateTime(limits, position.side_to_move(), position.ply_count());
         _search_depth = MAX_DEPTH;
     }
     else
