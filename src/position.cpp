@@ -164,9 +164,9 @@ std::string Position::fen() const
 
 bool Position::is_draw() const
 {
-    if (popcount(pieces()) == 2
-            || rule50()
-            || threefold_repetition())
+    if (rule50()
+            || threefold_repetition()
+            || !enough_material())
         return true;
     return false;
 }
@@ -182,6 +182,29 @@ bool Position::threefold_repetition() const
 bool Position::rule50() const
 {
     return int(_half_move_counter) >= 100;
+}
+
+bool Position::enough_material() const
+{
+    if (popcount(pieces()) > 4)
+        return true;
+
+    if (popcount(pieces(WHITE)) == 1)
+    {
+        if (pieces(BLACK) == pieces(B_KING, B_KNIGHT) && _piece_count[B_KNIGHT] <= 2)
+            return false;
+        if (pieces(BLACK) == pieces(B_KING, B_BISHOP) && _piece_count[B_BISHOP] <= 1)
+            return false;
+    }
+    else if (popcount(pieces(BLACK)) == 1)
+    {
+        if (pieces(WHITE) == pieces(W_KING, W_KNIGHT) && _piece_count[W_KNIGHT] <= 2)
+            return false;
+        if (pieces(WHITE) == pieces(W_KING, W_BISHOP) && _piece_count[W_BISHOP] <= 1)
+            return false;
+    }
+
+    return true;
 }
 
 Bitboard Position::pieces() const
@@ -202,6 +225,16 @@ Bitboard Position::pieces(PieceKind p) const
 Bitboard Position::pieces(Color c, PieceKind p) const
 {
     return _by_color_bb[c] & _by_piece_kind_bb[p];
+}
+
+Bitboard Position::pieces(Piece p) const
+{
+    return pieces(get_color(p), get_piece_kind(p));
+}
+
+Bitboard Position::pieces(Piece p1, Piece p2) const
+{
+    return pieces(p1) | pieces(p2);
 }
 
 void Position::add_piece(Piece piece, Square square)
