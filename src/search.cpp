@@ -2,6 +2,7 @@
 #include "move_picker.h"
 #include "logger.h"
 #include "search.h"
+#include "time_manager.h"
 #include "transposition_table.h"
 
 #include <algorithm>
@@ -39,7 +40,7 @@ const bool is_mate(Score score)
     return score < lost_in(MAX_DEPTH) || score > win_in(MAX_DEPTH);
 }
 
-const int64_t INFINITE = 1LL << 32;
+const Duration INFINITE = 1LL << 32;
 
 Search::Search(const Position& position, const Limits& limits)
     : _position(position)
@@ -91,10 +92,7 @@ Search::Search(const Position& position, const Limits& limits)
     }
     else if (limits.timeleft[position.side_to_move()] != 0)
     {
-        int our_time = limits.timeleft[position.side_to_move()];
-        int movestogo = limits.movestogo == 0 ? 20 : limits.movestogo;
-
-        _search_time = our_time / (movestogo + 1) + limits.timeinc[position.side_to_move()];
+        _search_time = TimeManager::calculateTime(limits, position.side_to_move(), position.ply_count());
         _search_depth = MAX_DEPTH;
     }
     else

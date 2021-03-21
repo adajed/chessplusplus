@@ -5,6 +5,7 @@ weights/*
 compile_commands.json
 .clangd/
 Logfile.log
+examples.txt
 
 # list of things to fix
 fix-me.log
