@@ -248,6 +248,8 @@ void Search::iter_search()
 
 Score Search::root_search(Position& position, int depth, Score alpha, Score beta)
 {
+    assert(depth > 0);
+    assert(alpha <= beta);
     bool is_in_check = position.is_in_check(position.side_to_move());
 
     PV_LIST_LENGTH[_ply_counter] = 0;
@@ -258,17 +260,9 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
     if (_root_moves.size() == 0)
         return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
 
-    if (position.is_draw())
-        return DRAW_SCORE;
-
     // check extension
     if (is_in_check)
         depth++;
-
-    // quiescence search
-    if (depth == 0)
-        return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
-
 
     Move* begin = _root_moves.data();
     Move* end = _root_moves.data() + _root_moves.size();
