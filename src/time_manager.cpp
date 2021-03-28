@@ -27,7 +27,7 @@ Duration TimeManager::calculateTime(const Limits& limits, Color side, int ply)
         time = std::min(time, t);
     }
 
-    Duration time_max = 0.7 * our_time;
+    Duration time_max(0.7 * our_time);
 
     return std::min(time, time_max);
 };

@@ -257,7 +257,10 @@ struct Limits
         , nodes(0)
         , movetime(0)
         , infinite(false)
-    {}
+    {
+        timeleft[WHITE] = timeleft[BLACK] = 0;
+        timeinc[WHITE] = timeinc[BLACK] = 0;
+    }
 
     Move searchmoves[MAX_MOVES];
     int searchmovesnum;
