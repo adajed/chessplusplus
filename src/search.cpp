@@ -103,7 +103,6 @@ Search::Search(const Position& position, const Limits& limits)
 
     if (_max_nodes_searched == 0)
         _max_nodes_searched = INFINITE;
-
 }
 
 void Search::stop()
@@ -275,6 +274,7 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
     {
         Move move = movepicker.get_next();
         MoveInfo moveinfo = position.do_move(move);
+        _nodes_searched++;
 
         _info.ply++;
         _ply_counter++;
@@ -389,7 +389,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
     if (depth == 0)
         return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
 
-    if (allow_null_move)
+    if constexpr (allow_null_move)
     {
         Color side = position.side_to_move();
         int num_of_pieces = position.number_of_pieces(make_piece(side, KNIGHT))
@@ -422,6 +422,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
     {
         Move move = movepicker.get_next();
         MoveInfo moveinfo = position.do_move(move);
+        _nodes_searched++;
 
         _info.ply++;
         _ply_counter++;
@@ -508,7 +509,6 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
     end = generate_quiescence_moves(position, position.side_to_move(), begin);
 
     Score standpat = _scorer.score(position);
-    _nodes_searched++;
 
     if (depth <= 0)
         return standpat;
@@ -526,6 +526,7 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
     {
         Move move = movepicker.get_next();
         MoveInfo moveinfo = position.do_move(move);
+        _nodes_searched++;
 
         Score result;
         _ply_counter++;
