@@ -8,37 +8,72 @@
 namespace engine
 {
 
+struct Score
+{
+    Value mg, eg;
+
+    Score() : mg(0), eg(0) {}
+    Score(Value mg, Value eg) : mg(mg), eg(eg) {}
+    explicit Score(Value v) : mg(v), eg(v) {}
+    Score(const Score& other) = default;
+    Score(Score&& other) = default;
+
+    Score& operator= (const Score& other) = default;
+    Score& operator= (Score&& other) = default;
+
+    Score operator+ (const Score& other) const { return Score(mg + other.mg, eg + other.eg); }
+    Score operator- (const Score& other) const { return Score(mg - other.mg, eg - other.mg); }
+
+    Score& operator+= (const Score& other)
+    {
+        mg += other.mg;
+        eg += other.eg;
+
+        return *this;
+    }
+};
+
+inline Score operator* (const Score& score, const Value& value)
+{
+    return Score(score.mg * value, score.eg * value);
+}
+
+inline Score operator* (const Value& value, const Score& score)
+{
+    return Score(score.mg * value, score.eg * value);
+}
+
+
 class PositionScorer
 {
     public:
-        using Score = int64_t;
-
         PositionScorer();
 
-        Score score(const Position& position);
+        Value score(const Position& position);
 
         void clear();
 
     private:
 
-        template <Color side>
-        Score score_side(const Position& position, int64_t weight);
-
-        template <Color side, GamePhase phase>
-        Score score(const Position& position);
+        Score score_pieces(const Position& position);
 
         template <Color side>
-        Score score_pawns(const Position& position, int64_t weight);
+        Score score_pieces_for_side(const Position& position);
 
-        template <Color side, GamePhase phase>
-        Score calculate_pawns(const Position& position);
+        Score score_pawns(const Position& position);
 
-        int64_t game_phase_weight(const Position& position);
+        template <Color side>
+        Score score_pawns_for_side(const Position& position);
+
+        Value combine(const Score& score);
+
+        Value game_phase_weight(const Position& position);
 
         Move move_list[MAX_MOVES];
         int move_count[COLOR_NUM][PIECE_KIND_NUM];
 
         PawnHashTable _pawn_hash_table;
+        Value _weight;
 };
 
 }

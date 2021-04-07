@@ -25,7 +25,7 @@ void set_new_pv(int depth, int move)
     PV_LIST[depth][0] = move;
 }
 
-std::string score2str(Score score)
+std::string score2str(Value score)
 {
     if (score <= lost_in(MAX_DEPTH))
         return "mate -" + std::to_string(score + INFINITY_SCORE);
@@ -35,7 +35,7 @@ std::string score2str(Score score)
         return "cp " + std::to_string(score * 100LL / 300LL);
 }
 
-const bool is_mate(Score score)
+const bool is_mate(Value score)
 {
     return score < lost_in(MAX_DEPTH) || score > win_in(MAX_DEPTH);
 }
@@ -155,7 +155,7 @@ MoveList Search::get_pv(int length)
     return pv;
 }
 
-void Search::print_info(Score result, int depth, int64_t nodes_searched, int64_t elapsed)
+void Search::print_info(Value result, int depth, int64_t nodes_searched, int64_t elapsed)
 {
     logger << "info "
            << "depth " << depth << " "
@@ -182,9 +182,9 @@ void Search::iter_search()
     int64_t elapsed = 0LL;
 
     MoveList pv_list;
-    Score previous_score;
-    Score min_bound = -INFINITY_SCORE;
-    Score max_bound = INFINITY_SCORE;
+    Value previous_score;
+    Value min_bound = -INFINITY_SCORE;
+    Value max_bound = INFINITY_SCORE;
 
     _current_depth = 0;
     while (!stop_search)
@@ -193,8 +193,8 @@ void Search::iter_search()
         _nodes_searched = 0;
         _ply_counter = 0;
 
-        Score result;
-        Score delta = 100;
+        Value result;
+        Value delta = 100;
 
         if (_current_depth >= 4)
         {
@@ -218,7 +218,7 @@ void Search::iter_search()
             if (check_limits())
                 break;
 
-            delta = static_cast<Score>(static_cast<float>(delta) * 1.25f);
+            delta = static_cast<Value>(static_cast<float>(delta) * 1.25f);
         }
 
         previous_score = result;
@@ -245,7 +245,7 @@ void Search::iter_search()
 
 }
 
-Score Search::root_search(Position& position, int depth, Score alpha, Score beta)
+Value Search::root_search(Position& position, int depth, Value alpha, Value beta)
 {
     assert(depth > 0);
     assert(alpha <= beta);
@@ -278,7 +278,7 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
 
         _info.ply++;
         _ply_counter++;
-        Score result;
+        Value result;
         if (search_full_window)
         {
             result = -search<true>(position, depth - 1, -beta, -alpha);
@@ -335,7 +335,7 @@ Score Search::root_search(Position& position, int depth, Score alpha, Score beta
 }
 
 template <bool allow_null_move>
-Score Search::search(Position& position, int depth, Score alpha, Score beta)
+Value Search::search(Position& position, int depth, Value alpha, Value beta)
 {
     assert(alpha < beta);
     PV_LIST_LENGTH[_ply_counter] = 0;
@@ -343,7 +343,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
     if (stop_search || check_limits())
     {
         stop_search = true;
-        return 0;
+        return Value(0);
     }
 
     if (position.is_draw())
@@ -354,7 +354,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
     Move* begin = MOVE_LIST[_ply_counter];
     Move* end = generate_moves(position, position.side_to_move(), begin);
 
-    Score alphaOriginal = alpha;
+    Value alphaOriginal = alpha;
     const tt::TTEntry* entryPtr = _ttable.get(position.hash());
     if (entryPtr && (entryPtr->depth >= depth) && (std::find(begin, end, entryPtr->move) != end))
     {
@@ -363,7 +363,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
             case tt::Flag::kEXACT:
                 PV_LIST_LENGTH[_ply_counter] = 1;
                 PV_LIST[_ply_counter][0] = entryPtr->move;
-                return entryPtr->score;
+                return Value(entryPtr->score);
             case tt::Flag::kLOWER_BOUND:
                 alpha = std::max(alpha, entryPtr->score);
                 break;
@@ -374,7 +374,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
 
         if (alpha >= beta)
         {
-            return entryPtr->score;
+            return Value(entryPtr->score);
         }
     }
 
@@ -401,7 +401,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
             _ply_counter++;
             _info.ply++;
             MoveInfo moveinfo = position.do_null_move();
-            Score result = -search<false>(position, depth - 4, -beta, -alpha);
+            Value result = -search<false>(position, depth - 4, -beta, -alpha);
             position.undo_null_move(moveinfo);
             _info.ply--;
             _ply_counter--;
@@ -426,7 +426,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
 
         _info.ply++;
         _ply_counter++;
-        Score result;
+        Value result;
         if (search_full_window)
         {
             result = -search<true>(position, depth - 1, -beta, -alpha);
@@ -485,7 +485,7 @@ Score Search::search(Position& position, int depth, Score alpha, Score beta)
     return alpha;
 }
 
-Score Search::quiescence_search(Position& position, int depth, Score alpha, Score beta)
+Value Search::quiescence_search(Position& position, int depth, Value alpha, Value beta)
 {
     if (stop_search || check_limits())
     {
@@ -508,7 +508,7 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
 
     end = generate_quiescence_moves(position, position.side_to_move(), begin);
 
-    Score standpat = _scorer.score(position);
+    Value standpat = _scorer.score(position);
 
     if (depth <= 0)
         return standpat;
@@ -528,7 +528,7 @@ Score Search::quiescence_search(Position& position, int depth, Score alpha, Scor
         MoveInfo moveinfo = position.do_move(move);
         _nodes_searched++;
 
-        Score result;
+        Value result;
         _ply_counter++;
         if (search_full_window)
             result = -quiescence_search(position, depth - 1, -beta, -alpha);
