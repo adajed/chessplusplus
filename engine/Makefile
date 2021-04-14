@@ -1,7 +1,7 @@
 include ../makes/defines.makefile
 
-BINARY_RELEASE=$(BUILD_DIR)/engine
-BINARY_DEBUG=$(BUILD_DIR)/engine_debug
+BINARY_RELEASE=$(BUILD_DIR)/chessplusplus
+BINARY_DEBUG=$(BUILD_DIR)/chessplusplus_debug
 
 LIB_RELEASE=$(BUILD_DIR)/libchess_static.a
 LIB_DEBUG=$(BUILD_DIR)/libchess_static_debug.a
