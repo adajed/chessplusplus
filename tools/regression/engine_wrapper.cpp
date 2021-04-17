@@ -2,8 +2,27 @@
 
 #include "position.h"
 
-EngineWrapper::EngineWrapper(std::string engine_str)
-    : command_(engine_str)
+#define SEND(msg)                                       \
+    {                                                   \
+        if (debug_) {                                   \
+            std::cout << name_ << "< " << msg << "\n"; \
+        }                                               \
+        in_stream_ << msg << "\n";                    \
+    }
+
+#define READ(msg)                                           \
+    {                                                       \
+        getline_fd(out_stream_, msg);                       \
+        if (debug_)                                         \
+        {                                                   \
+            std::cout << name_ << "> " << msg << std::endl; \
+        }                                                   \
+    }
+
+EngineWrapper::EngineWrapper(const std::string& command, const std::string& name, bool debug)
+    : command_(command)
+    , name_(name)
+    , debug_(debug)
     , running_(false)
 {
     pipe_status_ = pipe(pipefds_input_);
@@ -70,14 +89,17 @@ void EngineWrapper::uci()
 {
     std::string message = "";
 
-    std::cout << "engine< " << "uci\n";
-    in_stream_ << "uci\n";
+    SEND("uci");
 
     do
     {
-        getline_fd(out_stream_, message);
-        std::cout << "engine> " << message << std::endl;
+        READ(message);
     } while (message != "uciok");
+}
+
+void EngineWrapper::ucinewgame()
+{
+    SEND("ucinewgame");
 }
 
 void EngineWrapper::position(const std::string& fen, const std::vector<Move>& moves)
@@ -104,14 +126,12 @@ void EngineWrapper::position(const std::string& fen, const std::vector<Move>& mo
         }
     }
 
-    std::cout << "engine< " << command << "\n";
-    in_stream_ << command << "\n";
+    SEND(command);
 }
 
 void EngineWrapper::quit()
 {
-    std::cout << "engine< " << "quit\n";
-    in_stream_ << "quit\n";
+    SEND("quit");
 
     close(CHILD_STDIN_WRITE);
     close(CHILD_STDOUT_READ);
@@ -145,15 +165,13 @@ Move EngineWrapper::go(const CommandGoParams& params)
     }
 
 
-    std::cout << "engine< " << command << "\n";
-    in_stream_ << command << "\n";
+    SEND(command);
 
     running_ = true;
     std::string message = "";
     do
     {
-        getline_fd(out_stream_, message);
-        std::cout << "engine> \"" << message << "\"" << std::endl;
+        READ(message);
     } while (message.find("bestmove") != 0);
 
     CommandBestmoveData data = parse_command_bestmove(message);
@@ -163,29 +181,23 @@ Move EngineWrapper::go(const CommandGoParams& params)
 
 void EngineWrapper::set_option(const std::string& name, const std::string& value)
 {
-    std::cout << "engine< " << "setoption name " << name << " value " << value << "\n";
-    in_stream_ << "setoption name " << name << " value " << value << "\n";
-    std::cout << "engine< " << "isready\n";
-    in_stream_ << "isready\n";
+    SEND("set_option name " << name << " value " << value);
+    SEND("isready");
     std::string message = "";
     do
     {
-        getline_fd(out_stream_, message);
-        std::cout << "engine> \"" << message << "\"" << std::endl;
+        READ(message);
     } while (message != "readyok");
 }
 
 void EngineWrapper::set_option(const std::string& name)
 {
-    std::cout << "engine< " << "setoption name " << name << "\n";
-    in_stream_ << "setoption name " << name << "\n";
-    std::cout << "engine< " << "isready\n";
-    in_stream_ << "isready\n";
+    SEND("setoption name " << name);
+    SEND("isready");
     std::string message = "";
     do
     {
-        getline_fd(out_stream_, message);
-        std::cout << "engine> \"" << message << "\"" << std::endl;
+        READ(message);
     } while (message != "readyok");
 }
 

@@ -50,9 +50,12 @@ class EngineWrapper
 {
 
     public:
-        explicit EngineWrapper(std::string engine_str);
+        explicit EngineWrapper(const std::string& command, const std::string& name, bool debug);
+
+        std::string get_name() const { return name_; }
 
         void uci();
+        void ucinewgame();
 
         void position(const std::string& fen, const std::vector<Move>& moves);
 
@@ -68,6 +71,8 @@ class EngineWrapper
         CommandBestmoveData parse_command_bestmove(const std::string& command);
 
         std::string command_;
+        std::string name_;
+        bool debug_;
 
         int pipe_status_;
         int pipefds_input_[2];
