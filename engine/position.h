@@ -20,6 +20,8 @@ namespace engine
 class Position
 {
     public:
+        static const std::string STARTPOS_FEN;
+
         explicit Position();
         explicit Position(std::string fen);
 
@@ -30,7 +32,6 @@ class Position
 
         MoveInfo do_move(Move move);
         void undo_move(Move move, MoveInfo moveinfo);
-        Move parse_move(std::string str);
 
         MoveInfo do_null_move();
         void undo_null_move(MoveInfo moveinfo);
@@ -65,7 +66,8 @@ class Position
         Bitboard pieces(Piece p) const;
         Bitboard pieces(Piece p1, Piece p2) const;
 
-        std::string move_to_string(Move move) const;
+        Move parse_uci(const std::string& str);
+        std::string uci(Move move) const;
 
     private:
 

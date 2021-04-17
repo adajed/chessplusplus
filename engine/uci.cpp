@@ -24,16 +24,16 @@ Uci::Uci()
             });
     options["Logfile"] = UciOption("",
             [](std::string path) {
-                if (path == "")
-                    logger.close_file();
-                else
-                    logger.open_file(path);
+                /* if (path == "") */
+                /*     logger.close_file(); */
+                /* else */
+                /*     logger.open_file(path); */
             });
 }
 
 void Uci::loop()
 {
-    logger << "Chess engine by Adam Jedrych"
+    std::cout << "Chess engine by Adam Jedrych"
            << " (build " << __DATE__ << " " << __TIME__ << ")" << std::endl;
 
     position = Position();
@@ -44,7 +44,7 @@ void Uci::loop()
 
     while (!quit && std::getline(std::cin, line))
     {
-        logger.fout << line << std::endl;
+        /* logger.fout << line << std::endl; */
         std::istringstream istream(line);
         istream >> token;
 
@@ -54,7 +54,7 @@ void Uci::loop()
         if (token == #name)                 \
         {                                   \
             b = name##_command(istream);    \
-        }                                   \
+        } else                              \
 
         COMMAND(uci)
         COMMAND(ucinewgame)
@@ -69,21 +69,24 @@ void Uci::loop()
         COMMAND(hash)
         COMMAND(perft)
         COMMAND(moves)
+        {
+            std::cout << "Unknown command" << std::endl;
+        }
 
 #undef COMMAND
 
         if (!b)
         {
-            logger << "Unknown command" << std::endl;
+            std::cout << "Unknown command" << std::endl;
         }
     }
 }
 
 bool Uci::uci_command(std::istringstream& istream)
 {
-    logger << "id name Deep Chess" << std::endl;
-    logger << "id author Adam Jedrych" << std::endl;
-    logger << std::endl;
+    std::cout << "id name Deep Chess" << std::endl;
+    std::cout << "id author Adam Jedrych" << std::endl;
+    std::cout << std::endl;
 
     for (auto option_pair : options)
     {
@@ -91,30 +94,30 @@ bool Uci::uci_command(std::istringstream& istream)
         UciOption option = option_pair.second;
         OptionType optiontype = option.get_type();
 
-        logger << "option ";
-        logger << "name " << name << " ";
-        logger << "type " << optiontype_to_string(optiontype) << " ";
+        std::cout << "option ";
+        std::cout << "name " << name << " ";
+        std::cout << "type " << optiontype_to_string(optiontype) << " ";
         if (optiontype == kCHECK)
-            logger << "default " << (option.get_check() ? "true" : "false") << " ";
+            std::cout << "default " << (option.get_check() ? "true" : "false") << " ";
         else if (optiontype == kSPIN)
         {
-            logger << "default " << option.get_spin_initial() << " ";
-            logger << "min " << option.get_spin_min() << " ";
-            logger << "max " << option.get_spin_max() << " ";
+            std::cout << "default " << option.get_spin_initial() << " ";
+            std::cout << "min " << option.get_spin_min() << " ";
+            std::cout << "max " << option.get_spin_max() << " ";
         }
         else if (optiontype == kCOMBO)
         {
-            logger << "default " << option.get_string() << " ";
+            std::cout << "default " << option.get_string() << " ";
             for (std::string s : option.get_combo_options())
-                logger << "var " << s << " ";
+                std::cout << "var " << s << " ";
         }
         else if (optiontype == kSTRING)
-            logger << "default " << option.get_string() << " ";
+            std::cout << "default " << option.get_string() << " ";
 
-        logger << std::endl;
+        std::cout << std::endl;
     }
 
-    logger << "uciok" << std::endl;
+    std::cout << "uciok" << std::endl;
     return true;
 }
 
@@ -126,7 +129,7 @@ bool Uci::ucinewgame_command(std::istringstream& istream)
 
 bool Uci::isready_command(std::istringstream& istream)
 {
-    logger << "readyok" << std::endl;
+    std::cout << "readyok" << std::endl;
     return true;
 }
 
@@ -204,7 +207,7 @@ bool Uci::position_command(std::istringstream& istream)
         if (token == "moves")
             continue;
 
-        position.do_move(position.parse_move(token));
+        position.do_move(position.parse_uci(token));
     }
 
     return true;
@@ -215,10 +218,22 @@ bool Uci::moves_command(std::istringstream& istream)
     std::string token;
     while (istream >> token)
     {
-        position.do_move(position.parse_move(token));
+        position.do_move(position.parse_uci(token));
     }
 
     return true;
+}
+
+void start_searching(Uci* uci)
+{
+    uint64_t key = PolyglotBook::hash(uci->position);
+    if (uci->polyglot.contains(key))
+    {
+        Move move = uci->polyglot.sample_move(key, uci->position);
+        std::cout << "bestmove " << uci->position.uci(move) << std::endl;
+    }
+    else
+        uci->search->go();
 }
 
 bool Uci::go_command(std::istringstream& istream)
@@ -253,23 +268,13 @@ bool Uci::go_command(std::istringstream& istream)
         else if (token == "searchmoves")
         {
             while (istream >> token)
-                limits.searchmoves[limits.searchmovesnum++] = position.parse_move(token);
+                limits.searchmoves[limits.searchmovesnum++] = position.parse_uci(token);
         }
     }
 
     search = std::make_shared<Search>(position, limits);
 
-    std::thread search_thread(
-            [this](){
-                uint64_t key = PolyglotBook::hash(this->position);
-                if (this->polyglot.contains(key))
-                {
-                    Move move = this->polyglot.sample_move(key, this->position);
-                    logger << "bestmove " << this->position.move_to_string(move) << std::endl;
-                }
-                else
-                    this->search->go();
-            });
+    std::thread search_thread(start_searching, this);
     search_thread.detach();
 
     return true;
@@ -297,13 +302,13 @@ bool Uci::quit_command(std::istringstream& istream)
 
 bool Uci::printboard_command(std::istringstream& istream)
 {
-    logger << position << std::endl;
+    std::cout << position << std::endl;
     return true;
 }
 
 bool Uci::hash_command(std::istringstream& istream)
 {
-    logger << "Hex: " << std::hex << position.hash() << std::dec << std::endl;
+    std::cout << "Hex: " << std::hex << position.hash() << std::dec << std::endl;
     return true;
 }
 
@@ -329,7 +334,7 @@ bool Uci::perft_command(std::istringstream& istream)
 
             position.undo_move(move, moveinfo);
 
-            logger << position.move_to_string(move) << ": " << n << std::endl;
+            std::cout << position.uci(move) << ": " << n << std::endl;
             sum += n;
         }
     }
@@ -337,10 +342,10 @@ bool Uci::perft_command(std::istringstream& istream)
     TimePoint end_time = std::chrono::steady_clock::now();
     uint64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 
-    logger << std::endl;
-    logger << "Number of nodes: " << sum << std::endl;
-    logger << "Time: " << duration << "ms" << std::endl;
-    logger << "Speed: " << sum * 1000LL / duration << "nps" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Number of nodes: " << sum << std::endl;
+    std::cout << "Time: " << duration << "ms" << std::endl;
+    std::cout << "Speed: " << sum * 1000LL / duration << "nps" << std::endl;
 
 
     return true;

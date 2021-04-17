@@ -46,7 +46,7 @@ before_script:
     - make GTEST_LIB_PATH=/usr/local/lib GTEST_INCLUDE_PATH=/usr/local/include
 
 script:
-    - ./build/test
-    - ./build/test_debug
+    - ./build/tests
+    - ./build/tests_debug
     - ./tests/run_perft_tests.sh release
     - ./tests/run_search_tests.sh release

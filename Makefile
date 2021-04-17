@@ -1,112 +1,40 @@
-ROOTDIR=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BUILDDIR=$(ROOTDIR)/build
-OBJS_DIR_RELEASE=$(BUILDDIR)/.objs
-OBJS_DIR_DEBUG=$(BUILDDIR)/.dobjs
-
-GTEST_INCLUDE_PATH ?= /usr/local/include
-GTEST_LIB_PATH     ?= /usr/local/lib
-
-#### compilation flags
-
-CFLAGS = -Wall -std=c++17 -flto
-CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
-CFLAGS_DEBUG = $(CFLAGS) -g -DDEBUG
-
-LFLAGS = -pthread -flto
-LFLAGS_RELEASE = $(LFLAGS) -Ofast
-LFLAGS_DEBUG = $(LFLAGS) -g
-
-LCOV_CFLAGS = -fprofile-arcs -ftest-coverage
-LCOV_LFLAGS = --coverage
-
-ENGINE_RELEASE=$(BUILDDIR)/chessplusplus
-ENGINE_DEBUG=$(BUILDDIR)/chessplusplus_debug
-
-TEST_RELEASE=$(BUILDDIR)/test
-TEST_DEBUG=$(BUILDDIR)/test_debug
-
-ENGINE_SOURCES=$(wildcard src/*.cpp)
-ENGINE_OBJS_RELEASE=$(ENGINE_SOURCES:src/%.cpp=$(OBJS_DIR_RELEASE)/src/%.o)
-ENGINE_OBJS_DEBUG=$(ENGINE_SOURCES:src/%.cpp=$(OBJS_DIR_DEBUG)/src/%.o)
-
-TEST_SOURCES=$(wildcard tests/*.cpp)
-TEST_OBJS_RELEASE=$(TEST_SOURCES:tests/%.cpp=$(OBJS_DIR_RELEASE)/tests/%.o)
-TEST_OBJS_DEBUG=$(TEST_SOURCES:tests/%.cpp=$(OBJS_DIR_DEBUG)/tests/%.o)
+include ./makes/defines.makefile
 
 all: release debug
 
-release: engine test
-debug: engine_debug test_debug
-
-engine: $(ENGINE_RELEASE)
-engine_debug: $(ENGINE_DEBUG)
-
-test: $(TEST_RELEASE)
-test_debug: $(TEST_DEBUG)
+release: engine test tools
+debug: engine_debug test_debug tools_debug
 
 #### engine
 
-$(ENGINE_RELEASE): $(ENGINE_OBJS_RELEASE) | $(OBJS_DIR_RELEASE)
-	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS_RELEASE)
+engine:
+	@+make -C engine release
 
-$(ENGINE_DEBUG): $(ENGINE_OBJS_DEBUG) | $(OBJS_DIR_DEBUG)
-	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS_DEBUG) $(LCOV_LFLAGS)
+engine_debug:
+	@+make -C engine debug
+
 
 #### test
 
-$(TEST_RELEASE): $(TEST_OBJS_RELEASE) $(filter-out $(OBJS_DIR_RELEASE)/src/main.o,$(ENGINE_OBJS_RELEASE)) | $(OBJS_DIR_RELEASE)
-	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS_RELEASE) -L$(GTEST_LIB_PATH) -lgtest
+test: engine
+	@+make -C tests release
 
-$(TEST_DEBUG): $(TEST_OBJS_DEBUG) $(filter-out $(OBJS_DIR_DEBUG)/src/main.o,$(ENGINE_OBJS_DEBUG)) | $(OBJS_DIR_DEBUG)
-	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS_DEBUG) $(LCOV_LFLAGS) -L$(GTEST_LIB_PATH) -lgtest
+test_debug: engine_debug
+	@+make -C tests debug
 
-#### objs
 
-$(OBJS_DIR_RELEASE)/src/%.o : src/%.cpp | $(OBJS_DIR_RELEASE)/src
-	@echo "Compiling release $<"
-	@$(CXX) -c -o $@ $< $(CFLAGS_RELEASE)
+#### tools
 
-$(OBJS_DIR_DEBUG)/src/%.o : src/%.cpp | $(OBJS_DIR_DEBUG)/src
-	@echo "Compiling debug $<"
-	@$(CXX) -c -o $@ $< $(CFLAGS_DEBUG) $(LCOV_CFLAGS)
+tools: engine
+	@+make -C tools release
 
-$(OBJS_DIR_RELEASE)/tests/%.o : tests/%.cpp | $(OBJS_DIR_RELEASE)/tests
-	@echo "Compiling release $<"
-	@$(CXX) -c -o $@ $< $(CFLAGS_RELEASE) -Isrc
-
-$(OBJS_DIR_DEBUG)/tests/%.o : tests/%.cpp | $(OBJS_DIR_DEBUG)/tests
-	@echo "Compiling debug $<"
-	@$(CXX) -c -o $@ $< $(CFLAGS_DEBUG) $(LCOV_CFLAGS) -Isrc
-
-#### dirs
-
-$(OBJS_DIR_RELEASE):
-	mkdir -p $@
-
-$(OBJS_DIR_DEBUG):
-	mkdir -p $@
-
-$(OBJS_DIR_RELEASE)/src:
-	mkdir -p $@
-
-$(OBJS_DIR_DEBUG)/src:
-	mkdir -p $@
-
-$(OBJS_DIR_RELEASE)/tests:
-	mkdir -p $@
-
-$(OBJS_DIR_DEBUG)/tests:
-	mkdir -p $@
-
+tools_debug: engine_debug
+	@+make -C tools debug
 
 #### utils
 
 clean:
-	$(RM) -r $(BUILDDIR)
+	$(RM) -r $(BUILD_DIR)
 
 ctags:
 	ctags -R --tag-relative=yes --exclude=.git $(ROOTDIR)
@@ -132,6 +60,6 @@ help:
 	@echo "\compiledb - create compile_commands.json
 
 
-.PHONY: release engine_release tests_release
-.PHONY: debug engine_debug tests_debug
-.PHONY: clean compiledb ctags help
+.PHONY: release engine test tools
+.PHONY: debug engine_debug test_debug tools_debug
+.PHONY: clean compiledb ctags tidy coverage ehelp
