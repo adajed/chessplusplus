@@ -8,7 +8,8 @@
 namespace engine
 {
 
-constexpr Bitboard all_squares_bb = ~Bitboard(0);
+constexpr Bitboard no_squares_bb = 0ULL;
+constexpr Bitboard all_squares_bb = ~no_squares_bb;
 constexpr Bitboard white_squares_bb = 0x55aa55aa55aa55aaULL;
 constexpr Bitboard black_squares_bb = ~white_squares_bb;
 

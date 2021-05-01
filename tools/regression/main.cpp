@@ -83,17 +83,22 @@ int game(GameParams& params)
         depth++;
     }
 
+    std::cout << "[Event \"?\"]" << std::endl;
+    std::cout << "[Site \"?\"]" << std::endl;
+    std::cout << "[White \"" << engines[WHITE]->get_name() << "\"]" << std::endl;
+    std::cout << "[Black \"" << engines[BLACK]->get_name() << "\"]" << std::endl;
+    std::cout << "[Result \"?\"]" << std::endl;
+    std::cout << std::endl;
     Position temp_position;
-    std::cout << "Moves: ";
     for (int i = 0; i < moves.size(); i++) {
         if (i % 2 == 0)
         {
             std::cout << (i / 2) + 1 << ". ";
         }
-        std::cout << temp_position.uci(moves[i]) << " ";
+        std::cout << temp_position.san(moves[i]) << " ";
         temp_position.do_move(moves[i]);
     }
-    std::cout << std::endl;
+    std::cout << "*" << std::endl;
 
 
     if (timers[WHITE].get_time_left_ms() == 0)

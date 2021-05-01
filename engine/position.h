@@ -6,6 +6,7 @@
 #include <cinttypes>
 #include <iostream>
 #include <map>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -21,6 +22,7 @@ class Position
 {
     public:
         static const std::string STARTPOS_FEN;
+        static const std::regex SAN_REGEX;
 
         explicit Position();
         explicit Position(std::string fen);
@@ -70,6 +72,8 @@ class Position
         Move parse_uci(const std::string& str);
         std::string uci(Move move) const;
 
+        std::string san(Move move) const;
+
     private:
 
         void add_piece(Piece piece, Square square);
@@ -78,6 +82,8 @@ class Position
 
         void change_current_side();
         void set_enpassant_square(Square sq);
+
+        std::string san_without_check(Move move) const;
 
         Color _current_side;
 
