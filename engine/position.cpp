@@ -15,7 +15,9 @@ Square notationToSquare(std::string notation)
     return make_square(rank, file);
 }
 
-Position::Position() : Position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+const std::string Position::STARTPOS_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+Position::Position() : Position(STARTPOS_FEN)
 {
 }
 
@@ -511,7 +513,7 @@ bool Position::is_checkmate() const
     return (begin == end) && is_in_check(_current_side);
 }
 
-std::string Position::move_to_string(Move move) const
+std::string Position::uci(Move move) const
 {
     const std::string files = "abcdefgh";
     const std::string ranks = "12345678";
@@ -534,7 +536,7 @@ std::string Position::move_to_string(Move move) const
     return str;
 }
 
-Move Position::parse_move(std::string str)
+Move Position::parse_uci(const std::string& str)
 {
     Move move = NO_MOVE;
     Square from = make_square(Rank(str[1] - '1'), File(str[0] - 'a'));

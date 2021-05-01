@@ -57,6 +57,8 @@ class Uci
 
         std::map<std::string, UciOption> options;
         PolyglotBook polyglot;
+
+        friend void start_searching(Uci* uci);
 };
 
 }

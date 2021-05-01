@@ -128,8 +128,7 @@ void Search::go()
     }
 
     assert(_best_move != NO_MOVE);
-    logger << "bestmove " << _position.move_to_string(_best_move) << std::endl;
-    _ttable.clear();
+    logger << "bestmove " << _position.uci(_best_move) << std::endl;
 }
 
 MoveList Search::get_pv(int length)
@@ -168,7 +167,7 @@ void Search::print_info(Value result, int depth, int64_t nodes_searched, int64_t
     for (int i = 0; i < PV_LIST_LENGTH[0]; ++i)
     {
         Move m = PV_LIST[0][i];
-        logger << temp_position.move_to_string(m) << " ";
+        logger << temp_position.uci(m) << " ";
         temp_position.do_move(m);
     }
     logger << std::endl;

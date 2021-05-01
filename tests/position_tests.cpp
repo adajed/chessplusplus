@@ -179,7 +179,7 @@ TEST(PositionTest, threefold_repetition)
     {
         Position position;
         for (const std::string& move : std::get<0>(test_case))
-            position.do_move(position.parse_move(move));
+            position.do_move(position.parse_uci(move));
         EXPECT_EQ(position.threefold_repetition(), std::get<1>(test_case));
     }
 }
