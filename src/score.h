@@ -55,6 +55,9 @@ class PositionScorer
 
     private:
 
+        template <Color side>
+        void setup(const Position& position);
+
         Score score_pieces(const Position& position);
 
         template <Color side>
@@ -74,6 +77,9 @@ class PositionScorer
 
         PawnHashTable _pawn_hash_table;
         Value _weight;
+
+        Bitboard _attacked_by_bb[COLOR_NUM][PIECE_KIND_NUM];
+        Bitboard _attacked_by_piece[COLOR_NUM];
 };
 
 }

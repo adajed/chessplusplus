@@ -60,6 +60,36 @@ extern Bitboard BISHOP_TABLE[SQUARE_NUM][4096];
 
 void init_move_bitboards();
 
+template <PieceKind piece>
+inline Bitboard slider_attack(Square sq, Bitboard blockers)
+{
+    assert(false);
+    return 0ULL;
+}
+
+template <>
+inline Bitboard slider_attack<BISHOP>(Square sq, Bitboard blockers)
+{
+    blockers &= BISHOP_MASK[sq];
+    uint64_t key = (blockers * BISHOP_MAGICS[sq]) >> (64 - BISHOP_INDEX_BITS[sq]);
+    return BISHOP_TABLE[sq][key];
+}
+
+template <>
+inline Bitboard slider_attack<ROOK>(Square sq, Bitboard blockers)
+{
+    blockers &= ROOK_MASK[sq];
+    uint64_t key = (blockers * ROOK_MAGICS[sq]) >> (64 - ROOK_INDEX_BITS[sq]);
+    return ROOK_TABLE[sq][key];
+}
+
+template <>
+inline Bitboard slider_attack<QUEEN>(Square sq, Bitboard blockers)
+{
+    return slider_attack<BISHOP>(sq, blockers)
+            | slider_attack<ROOK>(sq, blockers);
+}
+
 }
 
 #endif  // CHESS_ENGINE_MOVE_BITBOARDS_H_

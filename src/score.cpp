@@ -66,6 +66,9 @@ const Score BACKWARD_PAWN_PENALTY = S(-30, -100);
 
 const Score KING_SAFETY_BONUS = S(20, 0);
 
+const Score SAFE_KNIGHT = S(10, 2);
+const Score CONTROL_CENTER_KNIGHT = S(10, 10);
+
 
 Square flip(Square square)
 {
@@ -95,6 +98,9 @@ Value PositionScorer::score(const Position& position)
     if (!popcount_more_than_one(position.pieces(BLACK)))
         return endgame::score_endgame<WHITE>(position);
 
+    setup<WHITE>(position);
+    setup<BLACK>(position);
+
     for (Color side : {WHITE, BLACK})
     {
         for (PieceKind piecekind : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING})
@@ -117,6 +123,53 @@ Value PositionScorer::score(const Position& position)
     Value value = combine(pawns + pieces);
 
     return position.side_to_move() == WHITE ? value : -value;
+}
+
+template <Color side>
+void PositionScorer::setup(const Position& position)
+{
+    _attacked_by_bb[side][PAWN] = pawn_attacks<side>(position.pieces(make_piece(side, PAWN)));
+
+    _attacked_by_bb[side][KNIGHT] = 0ULL;
+    for (int i = 0; i < position.number_of_pieces(make_piece(side, KNIGHT)); ++i)
+    {
+        _attacked_by_bb[side][KNIGHT] |= KNIGHT_MASK[position.piece_position(make_piece(side, KNIGHT), i)];
+    }
+
+    _attacked_by_bb[side][BISHOP] = 0ULL;
+    for (int i = 0; i < position.number_of_pieces(make_piece(side, BISHOP)); ++i)
+    {
+        Square sq = position.piece_position(make_piece(side, BISHOP), i);
+        // remove own bishops and queens from blockers (x-ray attack)
+        Bitboard blockers = position.pieces() & (~position.pieces(side, BISHOP, QUEEN));
+        _attacked_by_bb[side][KNIGHT] |= slider_attack<BISHOP>(sq, blockers);
+    }
+
+    _attacked_by_bb[side][ROOK] = 0ULL;
+    for (int i = 0; i < position.number_of_pieces(make_piece(side, ROOK)); ++i)
+    {
+        Square sq = position.piece_position(make_piece(side, ROOK), i);
+        // remove own rooks and queens from blockers (x-ray attack)
+        Bitboard blockers = position.pieces() & (~position.pieces(side, ROOK, QUEEN));
+        _attacked_by_bb[side][ROOK] |= slider_attack<ROOK>(sq, blockers);
+    }
+
+    _attacked_by_bb[side][QUEEN] = 0ULL;
+    for (int i = 0; i < position.number_of_pieces(make_piece(side, QUEEN)); ++i)
+    {
+        Square sq = position.piece_position(make_piece(side, ROOK), i);
+        // remove own bishops and queens from blockers (x-ray attack)
+        Bitboard blockers = position.pieces() & (~position.pieces(side, BISHOP, QUEEN));
+        _attacked_by_bb[side][QUEEN] |= slider_attack<BISHOP>(sq, blockers);
+        // remove own bishops and rooks from blockers (x-ray attack)
+        blockers = position.pieces() & (~position.pieces(side, ROOK, QUEEN));
+        _attacked_by_bb[side][QUEEN] |= slider_attack<ROOK>(sq, blockers);
+    }
+
+    _attacked_by_piece[side] = _attacked_by_bb[side][KNIGHT]
+                             | _attacked_by_bb[side][BISHOP]
+                             | _attacked_by_bb[side][ROOK]
+                             | _attacked_by_bb[side][QUEEN];
 }
 
 Score PositionScorer::score_pieces(const Position& position)
@@ -142,10 +195,38 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
     }                                                           \
     }
 
-    FOR_EACH_PIECE(KNIGHT, ;);
     FOR_EACH_PIECE(BISHOP, ;);
     FOR_EACH_PIECE(ROOK, ;);
     FOR_EACH_PIECE(QUEEN, ;);
+
+    // knights
+    {
+        constexpr Piece piece = make_piece(side, KNIGHT);
+        int no_pieces = position.number_of_pieces(piece);
+        value += PIECE_VALUE[piece] * Value(no_pieces);
+        for (int i = 0; i < no_pieces; ++i)
+        {
+            Square sq = position.piece_position(piece, i);
+            sq = (side == WHITE) ? sq : flip(sq);
+
+            Bitboard attacking = KNIGHT_MASK[sq];
+
+            if (square_bb(sq) & _attacked_by_bb[side][PAWN])
+            {
+                value += SAFE_KNIGHT;
+            }
+            value += CONTROL_CENTER_KNIGHT * Value(popcount(attacking & center_bb));
+
+            Bitboard moves = attacking;
+            // cannot move into square with our piece
+            moves &= ~position.pieces(side);
+            // attacked by opponents pawns
+            moves &= ~_attacked_by_bb[!side][PAWN];
+            // attacked by opponents piece and not defended by our pawns
+            moves &= ~(_attacked_by_piece[!side] & ~_attacked_by_bb[side][PAWN]);
+            value += MOBILITY_BONUS[KNIGHT] * Value(popcount(moves));
+        }
+    }
 
     constexpr Piece ROOK_PIECE = make_piece(side, ROOK);
     for (int i = 0; i < position.number_of_pieces(ROOK_PIECE); ++i)

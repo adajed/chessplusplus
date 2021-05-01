@@ -49,6 +49,8 @@ const Bitboard NEIGHBOUR_FILES_BB[FILE_NUM] = {
     fileG_bb
 };
 
+constexpr Bitboard center_bb = (fileD_bb | fileE_bb) & (rank4_bb & rank5_bb);
+
 template<Color side>
 inline Bitboard forward_ranks_bb(Square square)
 {

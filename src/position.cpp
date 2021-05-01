@@ -237,6 +237,11 @@ Bitboard Position::pieces(Piece p1, Piece p2) const
     return pieces(p1) | pieces(p2);
 }
 
+Bitboard Position::pieces(Color c, PieceKind p1, PieceKind p2) const
+{
+    return pieces(c, p1) | pieces(c, p2);
+}
+
 void Position::add_piece(Piece piece, Square square)
 {
     assert(_board[square] == NO_PIECE);

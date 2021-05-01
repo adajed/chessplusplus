@@ -64,6 +64,7 @@ class Position
         Bitboard pieces(Color c, PieceKind p) const;
         Bitboard pieces(Piece p) const;
         Bitboard pieces(Piece p1, Piece p2) const;
+        Bitboard pieces(Color c, PieceKind p1, PieceKind p2) const;
 
         std::string move_to_string(Move move) const;
 
