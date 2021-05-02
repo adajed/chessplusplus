@@ -611,7 +611,7 @@ std::string Position::san_without_check(Move move) const
     const std::string piece_str = "  NBRQK";
     const std::string rank_str = "12345678";
     const std::string file_str = "abcdefgh";
-    const std::string promotion_str = "  nbrq ";
+    const std::string promotion_str = "  NBRQ ";
 
     if (castling(move) == KING_CASTLING)
         return "O-O";

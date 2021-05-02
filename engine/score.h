@@ -80,6 +80,7 @@ class PositionScorer
 
         Bitboard _attacked_by_bb[COLOR_NUM][PIECE_KIND_NUM];
         Bitboard _attacked_by_piece[COLOR_NUM];
+        Bitboard _outposts_bb[COLOR_NUM];
 };
 
 }

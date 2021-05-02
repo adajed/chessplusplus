@@ -24,7 +24,7 @@ const Score PIECE_VALUE[PIECE_KIND_NUM] = {
 
 const Score MOBILITY_BONUS[PIECE_KIND_NUM] =
 {
-    S(0, 0), S(3, 2), S(6, 12), S(9, 4), S(2, 12), S(2, 6), S(0, 2)
+    S(0, 0), S(5, 10), S(6, 12), S(9, 4), S(2, 12), S(2, 6), S(0, 2)
 };
 
 // bonus for rook on semiopen file
@@ -142,7 +142,7 @@ void PositionScorer::setup(const Position& position)
         Square sq = position.piece_position(make_piece(side, BISHOP), i);
         // remove own bishops and queens from blockers (x-ray attack)
         Bitboard blockers = position.pieces() & (~position.pieces(side, BISHOP, QUEEN));
-        _attacked_by_bb[side][KNIGHT] |= slider_attack<BISHOP>(sq, blockers);
+        _attacked_by_bb[side][BISHOP] |= slider_attack<BISHOP>(sq, blockers);
     }
 
     _attacked_by_bb[side][ROOK] = 0ULL;
@@ -157,7 +157,7 @@ void PositionScorer::setup(const Position& position)
     _attacked_by_bb[side][QUEEN] = 0ULL;
     for (int i = 0; i < position.number_of_pieces(make_piece(side, QUEEN)); ++i)
     {
-        Square sq = position.piece_position(make_piece(side, ROOK), i);
+        Square sq = position.piece_position(make_piece(side, QUEEN), i);
         // remove own bishops and queens from blockers (x-ray attack)
         Bitboard blockers = position.pieces() & (~position.pieces(side, BISHOP, QUEEN));
         _attacked_by_bb[side][QUEEN] |= slider_attack<BISHOP>(sq, blockers);
@@ -170,11 +170,16 @@ void PositionScorer::setup(const Position& position)
                              | _attacked_by_bb[side][BISHOP]
                              | _attacked_by_bb[side][ROOK]
                              | _attacked_by_bb[side][QUEEN];
+
+    _outposts_bb[side] = get_outposts<side>(position);
 }
 
 Score PositionScorer::score_pieces(const Position& position)
 {
-    return score_pieces_for_side<WHITE>(position) - score_pieces_for_side<BLACK>(position);
+    Score w = score_pieces_for_side<WHITE>(position);
+    Score b = score_pieces_for_side<BLACK>(position);
+
+    return w - b;
 }
 
 template <Color side>
@@ -189,26 +194,28 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
     value += PIECE_VALUE[piece] * Value(no_pieces);             \
     for (int i = 0; i < no_pieces; ++i)                         \
     {                                                           \
-        Square sq = position.piece_position(pieceT, i);               \
+        Square sq = position.piece_position(pieceT, i);         \
         sq = side == WHITE ? sq : flip(sq);                     \
         code;                                                   \
     }                                                           \
     }
 
+    /* FOR_EACH_PIECE(KNIGHT, ;); */
     FOR_EACH_PIECE(BISHOP, ;);
     FOR_EACH_PIECE(ROOK, ;);
     FOR_EACH_PIECE(QUEEN, ;);
 
+
     // knights
     {
         constexpr Piece piece = make_piece(side, KNIGHT);
+        Bitboard opponent_pieces = position.pieces(!side) & ~position.pieces(!side, PAWN);
         int no_pieces = position.number_of_pieces(piece);
-        value += PIECE_VALUE[piece] * Value(no_pieces);
+
+        value += PIECE_VALUE[KNIGHT] * Value(no_pieces);
         for (int i = 0; i < no_pieces; ++i)
         {
             Square sq = position.piece_position(piece, i);
-            sq = (side == WHITE) ? sq : flip(sq);
-
             Bitboard attacking = KNIGHT_MASK[sq];
 
             if (square_bb(sq) & _attacked_by_bb[side][PAWN])
@@ -217,14 +224,20 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             }
             value += CONTROL_CENTER_KNIGHT * Value(popcount(attacking & center_bb));
 
+
             Bitboard moves = attacking;
             // cannot move into square with our piece
             moves &= ~position.pieces(side);
             // attacked by opponents pawns
-            moves &= ~_attacked_by_bb[!side][PAWN];
+            moves &= ~(_attacked_by_bb[!side][PAWN] & ~opponent_pieces);
             // attacked by opponents piece and not defended by our pawns
             moves &= ~(_attacked_by_piece[!side] & ~_attacked_by_bb[side][PAWN]);
             value += MOBILITY_BONUS[KNIGHT] * Value(popcount(moves));
+
+            if (_outposts_bb[side] & square_bb(sq))
+            {
+                value += OUTPOST_KNIGHT_BONUS;
+            }
         }
     }
 
@@ -258,12 +271,7 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             (position.pieces(side, BISHOP) & black_squares_bb))
         value += BISHOP_PAIR_BONUS;
 
-    Bitboard outpost_bb = get_outposts<side>(position);
-
-    Bitboard knigh_outpost_bb = outpost_bb & position.pieces(side, KNIGHT);
-    value += Value(popcount(knigh_outpost_bb)) * OUTPOST_KNIGHT_BONUS;
-
-    Bitboard bishop_outpost_bb = outpost_bb & position.pieces(side, BISHOP);
+    Bitboard bishop_outpost_bb = _outposts_bb[side] & position.pieces(side, BISHOP);
     value += Value(popcount(bishop_outpost_bb)) * OUTPOST_BISHOP_BONUS;
 
     constexpr Rank first_rank  = side == WHITE ? RANK_1 : RANK_8;
