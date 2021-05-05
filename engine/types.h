@@ -237,7 +237,7 @@ inline int distance(Square from, Square to)
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb);
 
 constexpr int MAX_DEPTH = 40;
-constexpr int MAX_MOVES = 256;
+constexpr int MAX_MOVES = 512;
 constexpr int MAX_PINS = 16;
 
 struct Limits

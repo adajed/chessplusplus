@@ -32,6 +32,29 @@ ENABLE_INCREMENT_OPERATIONS(Ray)
 
 extern Bitboard RAYS[RAYS_NUM][SQUARE_NUM];
 
+/*
+ * Returns squares that given slider piece would attack
+ *  on empty board.
+ */
+template <PieceKind piecekind>
+inline Bitboard pseudoattacks(Square sq)
+{
+    assert(piecekind == BISHOP || piecekind == ROOK || piecekind == QUEEN);
+    assert(sq != NO_SQUARE);
+
+    Bitboard bb = 0ULL;
+    if (piecekind == BISHOP || piecekind == QUEEN)
+    {
+        bb |= (RAYS[RAY_NW][sq] | RAYS[RAY_NE][sq] | RAYS[RAY_SE][sq] | RAYS[RAY_SW][sq]);
+    }
+    if (piecekind == ROOK || piecekind == QUEEN)
+    {
+        bb |= (RAYS[RAY_N][sq] | RAYS[RAY_S][sq] | RAYS[RAY_W][sq] | RAYS[RAY_E][sq]);
+    }
+
+    return bb;
+}
+
 // contains all squares that a king can move to
 //  from a given sqare
 extern Bitboard KING_MASK[SQUARE_NUM];

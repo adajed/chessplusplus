@@ -25,6 +25,14 @@ const Bitboard RANKS_BB[RANK_NUM] = {
     rank1_bb, rank2_bb, rank3_bb, rank4_bb, rank5_bb, rank6_bb, rank7_bb, rank8_bb
 };
 
+/*
+ * Bitboard containing ranks of opponent
+ */
+const Bitboard OPPONENT_RANKS[COLOR_NUM] = {
+    rank5_bb | rank6_bb | rank7_bb | rank8_bb,
+    rank1_bb | rank2_bb | rank3_bb | rank4_bb
+};
+
 constexpr Bitboard middle_ranks = rank2_bb | rank3_bb | rank4_bb | rank5_bb | rank6_bb | rank7_bb;
 
 constexpr Bitboard fileA_bb = 0x0101010101010101ULL;

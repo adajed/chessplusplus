@@ -214,7 +214,7 @@ void Search::iter_search()
             else
                 break;
 
-            if (check_limits())
+            if (stop_search || check_limits())
                 break;
 
             delta = static_cast<Value>(static_cast<float>(delta) * 1.25f);
@@ -248,6 +248,7 @@ Value Search::root_search(Position& position, int depth, Value alpha, Value beta
 {
     assert(depth > 0);
     assert(alpha <= beta);
+
     bool is_in_check = position.is_in_check(position.side_to_move());
 
     PV_LIST_LENGTH[_ply_counter] = 0;
@@ -277,6 +278,7 @@ Value Search::root_search(Position& position, int depth, Value alpha, Value beta
 
         _info.ply++;
         _ply_counter++;
+        assert(_ply_counter < 2 * MAX_DEPTH);
         Value result;
         if (search_full_window)
         {
@@ -290,14 +292,22 @@ Value Search::root_search(Position& position, int depth, Value alpha, Value beta
         }
         _info.ply--;
         _ply_counter--;
-
-
         position.undo_move(move, moveinfo);
 
         if (stop_search || check_limits())
         {
             stop_search = true;
             return alpha;
+        }
+
+        if (result >= beta)
+        {
+            tt::TTEntry entry(result, depth, tt::Flag::kLOWER_BOUND, move);
+            _ttable.update(position.hash(), entry);
+
+            set_new_pv(_ply_counter, move);
+
+            return beta;
         }
 
         if (result > alpha)
@@ -398,6 +408,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta)
         if (!is_in_check && num_of_pieces > 0 && depth > 4)
         {
             _ply_counter++;
+            assert(_ply_counter < 2 * MAX_DEPTH);
             _info.ply++;
             MoveInfo moveinfo = position.do_null_move();
             Value result = -search<false>(position, depth - 4, -beta, -alpha);
@@ -425,6 +436,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta)
 
         _info.ply++;
         _ply_counter++;
+        assert(_ply_counter < 2 * MAX_DEPTH);
         Value result;
         if (search_full_window)
         {

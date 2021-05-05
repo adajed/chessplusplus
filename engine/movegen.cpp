@@ -4,8 +4,8 @@
 namespace engine
 {
 
-Move MOVE_LIST[MAX_DEPTH][MAX_MOVES];
-Move QUIESCENCE_MOVE_LIST[MAX_DEPTH][MAX_MOVES];
+Move MOVE_LIST[2 * MAX_DEPTH][MAX_MOVES];
+Move QUIESCENCE_MOVE_LIST[2 * MAX_DEPTH][MAX_MOVES];
 Move TEMP_MOVE_LIST[MAX_MOVES];
 
 Bitboard attack_in_ray(Square sq, Ray ray, Bitboard blockers)
