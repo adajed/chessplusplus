@@ -17,17 +17,15 @@ using namespace engine;
 
 // check if only squares that are in bb satisfy pred
 // (i.e. pred(x, y) <=> (x, y) in bb)
-bool check_bb(Bitboard bb, std::function<bool(int, int)> pred)
+void check_bb(Bitboard bb, std::function<bool(int, int)> pred)
 {
     for (int rank = 0; rank < 8; ++rank)
     {
         for (int file = 0; file < 8; ++file)
         {
-            if (pred(rank, file) != bool(bb & square_bb(make_square(Rank(rank), File(file)))))
-                return false;
+            EXPECT_EQ(pred(rank, file), bool(bb & square_bb(make_square(Rank(rank), File(file))))) << rank << "," << file;
         }
     }
-    return true;
 }
 
 Bitboard bb_from_function(std::function<bool(int, int)> pred)
@@ -53,8 +51,8 @@ TEST(Bitboard, forward_ranks_bb)
         for (int file = 0; file < 8; file++)
         {
             Square sq = make_square(Rank(rank), File(file));
-            EXPECT_TRUE(check_bb(forward_ranks_bb<WHITE>(sq), [rank](int x, int y){return x > rank;}));
-            EXPECT_TRUE(check_bb(forward_ranks_bb<BLACK>(sq), [rank](int x, int y){return x < rank;}));
+            check_bb(forward_ranks_bb<WHITE>(sq), [rank](int x, int y){return x > rank;});
+            check_bb(forward_ranks_bb<BLACK>(sq), [rank](int x, int y){return x < rank;});
         }
     }
 }
@@ -70,12 +68,12 @@ TEST(Bitboard, passed_pawn_bb)
             auto f_white = [rank, file](int x, int y) {
                 return x > rank && abs(y - file) <= 1;
             };
-            EXPECT_TRUE(check_bb(passed_pawn_bb<WHITE>(sq), f_white));
+            check_bb(passed_pawn_bb<WHITE>(sq), f_white);
 
             auto f_black = [rank, file](int x, int y) {
                 return x < rank && abs(y - file) <= 1;
             };
-            EXPECT_TRUE(check_bb(passed_pawn_bb<BLACK>(sq), f_black));
+            check_bb(passed_pawn_bb<BLACK>(sq), f_black);
         }
     }
 }
@@ -91,12 +89,12 @@ TEST(Bitboard, squares_left_behind_bb)
             auto f_white = [rank, file](int x, int y) {
                 return x <= rank && abs(y - file) == 1;
             };
-            EXPECT_TRUE(check_bb(squares_left_behind_bb<WHITE>(sq), f_white));
+            check_bb(squares_left_behind_bb<WHITE>(sq), f_white);
 
             auto f_black = [rank, file](int x, int y) {
                 return x >= rank && abs(y - file) == 1;
             };
-            EXPECT_TRUE(check_bb(squares_left_behind_bb<BLACK>(sq), f_black));
+            check_bb(squares_left_behind_bb<BLACK>(sq), f_black);
         }
     }
 }
@@ -124,7 +122,7 @@ TEST(Bitboard, get_outposts)
         };
 
 
-        EXPECT_TRUE(check_bb(get_outposts<WHITE>(position), f_white));
+        check_bb(get_outposts<WHITE>(position), f_white);
 
         auto f_black = [&position](int x, int y) {
             Square sq = make_square(Rank(x), File(y));
@@ -142,7 +140,7 @@ TEST(Bitboard, get_outposts)
             return false;
         };
 
-        EXPECT_TRUE(check_bb(get_outposts<BLACK>(position), f_black));
+        check_bb(get_outposts<BLACK>(position), f_black);
     }
 }
 
@@ -170,7 +168,7 @@ TEST(Bitboard, backward_pawns)
             return true;
         };
 
-        EXPECT_TRUE(check_bb(backward_pawns<WHITE>(wPawns, bPawns), f_white));
+        check_bb(backward_pawns<WHITE>(wPawns, bPawns), f_white);
 
         auto f_black = [&position](int x, int y) {
             if (x == 0)
@@ -188,10 +186,131 @@ TEST(Bitboard, backward_pawns)
             return true;
         };
 
-        EXPECT_TRUE(check_bb(backward_pawns<BLACK>(bPawns, wPawns), f_black));
+        check_bb(backward_pawns<BLACK>(bPawns, wPawns), f_black);
     }
 
 }
+
+TEST(Bitboard, pseudoattacks_ROOK)
+{
+    for (Square sq = SQ_A1; sq <= SQ_H8; ++sq)
+    {
+        auto f = [sq](int x, int y)
+        {
+            if (rank(sq) == x && file(sq) == y)
+                return false;
+            return (x == rank(sq) || y == file(sq));
+        };
+
+        check_bb(pseudoattacks<ROOK>(sq), f);
+    }
+}
+
+TEST(Bitboard, pseudoattacks_BISHOP)
+{
+    for (Square sq = SQ_A1; sq <= SQ_H8; ++sq)
+    {
+        auto f = [sq](int x, int y)
+        {
+            if (rank(sq) == x && file(sq) == y)
+                return false;
+
+            int c1 = rank(sq) - file(sq);
+            int c2 = rank(sq) + file(sq);
+            return ((x - y) == c1 || (x + y) == c2);
+        };
+
+        check_bb(pseudoattacks<BISHOP>(sq), f);
+    }
+}
+
+
+TEST(Bitboard, pseudoattacks_QUEEN)
+{
+    for (Square sq = SQ_A1; sq <= SQ_H8; ++sq)
+    {
+        auto f = [sq](int x, int y)
+        {
+            if (rank(sq) == x && file(sq) == y)
+                return false;
+
+            int c1 = rank(sq) - file(sq);
+            int c2 = rank(sq) + file(sq);
+            return ((x - y) == c1 || (x + y) == c2 || x == rank(sq) || y == file(sq));
+        };
+
+        check_bb(pseudoattacks<QUEEN>(sq), f);
+    }
+}
+
+TEST(Bitboard, lines)
+{
+    for (Square from = SQ_A1; from <= SQ_H8; ++from)
+    {
+        for (Square to = SQ_A1; to <= SQ_H8; ++to)
+        {
+            auto f = [from, to](int r, int f)
+            {
+                int r_from = static_cast<int>(rank(from));
+                int r_to = static_cast<int>(rank(to));
+                int f_from = static_cast<int>(file(from));
+                int f_to = static_cast<int>(file(to));
+
+                if (r_from == r_to)
+                    return r == r_from && (std::min(f_from, f_to) <= f && f <= std::max(f_from, f_to));
+
+                if (f_from == f_to)
+                    return f == f_from && (std::min(r_from, r_to) <= r && r <= std::max(r_from, r_to));
+
+                if ((f_from - r_from) == (f_to - r_to))
+                    return (f - r) == (f_to - r_to) && (std::min(r_from, r_to) <= r && r <= std::max(r_from, r_to));
+
+                if ((f_from + r_from) == (f_to + r_to))
+                    return (f + r) == (f_to + r_to) && (std::min(r_from, r_to) <= r && r <= std::max(r_from, r_to));
+
+                return false;
+            };
+            check_bb(LINES[from][to], f);
+        }
+    }
+}
+
+TEST(Bitboard, full_lines)
+{
+    for (Square from = SQ_A1; from <= SQ_H8; ++from)
+    {
+        for (Square to = SQ_A1; to <= SQ_H8; ++to)
+        {
+            auto f = [from, to](int r, int f)
+            {
+                int r_from = static_cast<int>(rank(from));
+                int r_to = static_cast<int>(rank(to));
+                int f_from = static_cast<int>(file(from));
+                int f_to = static_cast<int>(file(to));
+
+                if (from == to)
+                    return false;
+
+                if (r_from == r_to)
+                    return r == r_from;
+
+                if (f_from == f_to)
+                    return f == f_from;
+
+                if ((f_from - r_from) == (f_to - r_to))
+                    return (f - r) == (f_to - r_to);
+
+                if ((f_from + r_from) == (f_to + r_to))
+                    return (f + r) == (f_to + r_to);
+
+                return false;
+            };
+
+            check_bb(FULL_LINES[from][to], f);
+        }
+    }
+}
+
 
 const std::map<Direction, std::tuple<int, int, std::string>> DIRECTION_MAP = {
     {NORTH,         { 1,  0, "north"}},
@@ -265,7 +384,7 @@ TEST_P(ShiftTest, shift)
 
             return false;
         };
-        EXPECT_TRUE(check_bb(shift(bb, dir), f));
+        check_bb(shift(bb, dir), f);
     }
 }
 INSTANTIATE_TEST_SUITE_P(Test, ShiftTest,

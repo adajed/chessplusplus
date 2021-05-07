@@ -71,6 +71,7 @@ Bitboard ROOK_TABLE[SQUARE_NUM][4096];
 
 Bitboard CASTLING_PATHS[1 << 4];
 Bitboard LINES[SQUARE_NUM][SQUARE_NUM];
+Bitboard FULL_LINES[SQUARE_NUM][SQUARE_NUM];
 
 Bitboard QUEEN_CASTLING_BLOCK[COLOR_NUM] = {square_bb(SQ_B1), square_bb(SQ_B8)};
 
@@ -289,6 +290,53 @@ void init_lines_bitboards()
     }
 }
 
+void init_full_lines_bitboards()
+{
+    for (Square from = SQ_A1; from <= SQ_H8; ++from)
+        for (Square to = SQ_A1; to <= SQ_H8; ++to)
+            FULL_LINES[from][to] = no_squares_bb;
+
+    for (Square from = SQ_A1; from <= SQ_H8; ++from)
+    {
+        int r_from = static_cast<int>(rank(from));
+        int f_from = static_cast<int>(file(from));
+
+        for (Square to = SQ_A1; to <= SQ_H8; ++to)
+        {
+            int r_to = static_cast<int>(rank(to));
+            int f_to = static_cast<int>(file(to));
+
+            if (from == to)
+                continue;
+
+            if (r_from == r_to)
+                FULL_LINES[from][to] = RANKS_BB[r_from];
+            else if (f_from == f_to)
+                FULL_LINES[from][to] = FILES_BB[f_from];
+            else if ((r_from + f_from) == (r_to + f_to))
+            {
+                int c = r_from + f_from;
+                for (int f = 0; f < 8; ++f)
+                {
+                    int r = c - f;
+                    if (0 <= r && r < 8)
+                        FULL_LINES[from][to] |= square_bb(make_square(static_cast<Rank>(r), static_cast<File>(f)));
+                }
+            }
+            else if ((r_from - f_from) == (r_to - f_to))
+            {
+                int c = r_from - f_from;
+                for (int f = 0; f < 8; ++f)
+                {
+                    int r = c + f;
+                    if (0 <= r && r < 8)
+                        FULL_LINES[from][to] |= square_bb(make_square(static_cast<Rank>(r), static_cast<File>(f)));
+                }
+            }
+        }
+    }
+}
+
 }
 
 void init_move_bitboards()
@@ -302,6 +350,7 @@ void init_move_bitboards()
     init_rook_magics();
     init_castling_paths_bitboards();
     init_lines_bitboards();
+    init_full_lines_bitboards();
 }
 
 }

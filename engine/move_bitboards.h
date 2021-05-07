@@ -71,6 +71,7 @@ extern Bitboard CASTLING_PATHS[1 << 4];
 extern Bitboard QUEEN_CASTLING_BLOCK[COLOR_NUM];
 
 extern Bitboard LINES[SQUARE_NUM][SQUARE_NUM];
+extern Bitboard FULL_LINES[SQUARE_NUM][SQUARE_NUM];
 
 extern uint64_t ROOK_MAGICS[SQUARE_NUM];
 extern uint64_t BISHOP_MAGICS[SQUARE_NUM];
@@ -112,7 +113,6 @@ inline Bitboard slider_attack<QUEEN>(Square sq, Bitboard blockers)
     return slider_attack<BISHOP>(sq, blockers)
             | slider_attack<ROOK>(sq, blockers);
 }
-
 }
 
 #endif  // CHESS_ENGINE_MOVE_BITBOARDS_H_
