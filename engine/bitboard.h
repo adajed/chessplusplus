@@ -60,6 +60,10 @@ const Bitboard NEIGHBOUR_FILES_BB[FILE_NUM] = {
 
 constexpr Bitboard center_bb = (fileD_bb | fileE_bb) & (rank4_bb & rank5_bb);
 
+/*
+ * Returns bb with ranks in front of the given square
+ * (from the persepctive of side).
+ */
 template<Color side>
 inline Bitboard forward_ranks_bb(Square square)
 {
@@ -134,6 +138,17 @@ Bitboard pawn_attacks(Bitboard bb)
 {
     return side == WHITE ? (shift<NORTHWEST>(bb) | shift<NORTHEAST>(bb))
                          : (shift<SOUTHWEST>(bb) | shift<SOUTHEAST>(bb));
+}
+
+/*
+ * Returns bb with squares that are attacked by at least two pawns.
+ * \input bb Bitboard with position of pawns.
+ */
+template <Color side>
+Bitboard pawn_doubled_attacks(Bitboard bb)
+{
+    return side == WHITE ? (shift<NORTHWEST>(bb) & shift<NORTHEAST>(bb))
+                         : (shift<SOUTHWEST>(bb) & shift<SOUTHEAST>(bb));
 }
 
 inline Bitboard king_attacks(Bitboard bb)
