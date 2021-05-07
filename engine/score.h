@@ -68,12 +68,15 @@ class PositionScorer
         template <Color side>
         Score score_pawns_for_side(const Position& position);
 
+        template <Color side>
+        Score score_king_safety(const Position& position);
+
         Value combine(const Score& score);
 
         Value game_phase_weight(const Position& position);
 
-        Move move_list[MAX_MOVES];
-        int move_count[COLOR_NUM][PIECE_KIND_NUM];
+        template <Color side>
+        Bitboard blockers_for_square(const Position& position, Square sq, Bitboard& snipers);
 
         PawnHashTable _pawn_hash_table;
         Value _weight;
@@ -81,6 +84,9 @@ class PositionScorer
         Bitboard _attacked_by_bb[COLOR_NUM][PIECE_KIND_NUM];
         Bitboard _attacked_by_piece[COLOR_NUM];
         Bitboard _outposts_bb[COLOR_NUM];
+
+        Bitboard _blockers_for_king[COLOR_NUM];
+        Bitboard _snipers_for_king[COLOR_NUM];
 };
 
 }

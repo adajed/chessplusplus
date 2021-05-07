@@ -24,7 +24,12 @@ const Score PIECE_VALUE[PIECE_KIND_NUM] = {
 
 const Score MOBILITY_BONUS[PIECE_KIND_NUM] =
 {
-    S(0, 0), S(5, 10), S(6, 12), S(9, 4), S(2, 12), S(2, 6), S(0, 2)
+    S(0, 0), S(5, 10), S(6, 12), S(9, 4), S(2, 12), S(2, 6), S(0, 5)
+};
+
+const Score PINNED_PENALTY[PIECE_KIND_NUM] =
+{
+    S(0, 0), S(-20, -20), S(-10, -15), S(-10, -20), S(0, 0), S(0, 0)
 };
 
 // bonus for rook on semiopen file
@@ -87,6 +92,10 @@ const Score PAWN_ISLAND_PENALTY = S(-10, -20);
 
 const Score VULNERABLE_QUEEN_PENALTY = S(-30, -15);
 
+const Score WEAK_BACKRANK_PENALTY = S(-30, -20);
+
+const Score REAL_SNIPER_PENALTY = S(-15, -20);
+
 Square flip(Square square)
 {
     return make_square(RANK_8 - rank(square), file(square));
@@ -118,21 +127,6 @@ Value PositionScorer::score(const Position& position)
     setup<WHITE>(position);
     setup<BLACK>(position);
 
-    for (Color side : {WHITE, BLACK})
-    {
-        for (PieceKind piecekind : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING})
-        {
-            move_count[side][piecekind] = 0;
-        }
-        Move* begin = move_list;
-        Move* end = generate_moves(position, side, begin);
-        for (Move* it = begin; it != end; ++it)
-        {
-            PieceKind piecekind = make_piece_kind(position.piece_at(from(*it)));
-            move_count[side][piecekind]++;
-        }
-    }
-
     _weight = game_phase_weight(position);
 
     Score pieces = score_pieces(position);
@@ -145,9 +139,6 @@ Value PositionScorer::score(const Position& position)
 template <Color side>
 void PositionScorer::setup(const Position& position)
 {
-    _distance_to_own_king[side] = 0;
-    _distance_to_opponents_king[side] = 0;
-
     const Square ownKing = position.piece_position(make_piece(side, KING), 0);
     const Square opponentsKing = position.piece_position(make_piece(!side, KING), 0);
 
@@ -190,12 +181,16 @@ void PositionScorer::setup(const Position& position)
         _attacked_by_bb[side][QUEEN] |= slider_attack<ROOK>(sq, blockers);
     }
 
+    _attacked_by_bb[side][KING] = KING_MASK[position.piece_position(make_piece(side, KING), 0)];
+
     _attacked_by_piece[side] = _attacked_by_bb[side][KNIGHT]
                              | _attacked_by_bb[side][BISHOP]
                              | _attacked_by_bb[side][ROOK]
                              | _attacked_by_bb[side][QUEEN];
 
     _outposts_bb[side] = get_outposts<side>(position);
+
+    _blockers_for_king[side] = blockers_for_square<side>(position, ownKing, _snipers_for_king[side]);
 }
 
 Score PositionScorer::score_pieces(const Position& position)
@@ -236,6 +231,10 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             value += KING_ATTACKER_PENALTY[KNIGHT] * Value(distance(opponentsKing, sq));
 
             Bitboard moves = attacking;
+            if (square_bb(sq) & _blockers_for_king[side])
+            {
+                moves &= FULL_LINES[sq][ownKing];
+            }
             // cannot move into square with our piece
             moves &= ~position.pieces(side);
             // attacked by opponents pawns
@@ -265,6 +264,10 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             Bitboard attacking = slider_attack<BISHOP>(sq, position.pieces());
 
             Bitboard moves = attacking;
+            if (square_bb(sq) & _blockers_for_king[side])
+            {
+                moves &= FULL_LINES[sq][ownKing];
+            }
             // cannot move into square with our piece
             moves &= ~position.pieces(side);
             // attacked by opponents pawns
@@ -313,6 +316,10 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             Bitboard attacking = slider_attack<ROOK>(sq, position.pieces());
 
             Bitboard moves = attacking;
+            if (square_bb(sq) & _blockers_for_king[side])
+            {
+                moves &= FULL_LINES[sq][ownKing];
+            }
             // cannot move into square with our piece
             moves &= ~position.pieces(side);
             // attacked by opponents pawns
@@ -337,12 +344,13 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
 
             Bitboard snipers = (pseudoattacks<BISHOP>(sq) & position.pieces(!side, BISHOP))
                              | (pseudoattacks<ROOK>(sq) & position.pieces(!side, ROOK));
-            Bitboard rest = position.pieces() ^ snipers;
+            Bitboard rest = position.pieces() & ~(snipers | square_bb(sq));
 
             while (snipers)
             {
                 Square sniper_sq = Square(pop_lsb(&snipers));
-                Bitboard blockers = LINES[sq][sniper_sq] & rest;
+                Bitboard blockers = LINES[sq][sniper_sq] & rest;// & ~square_bb(sq) & ~square_bb(sniper_sq);
+                // check if there is only one blocker between the queen and the sniper
                 if (blockers && !popcount_more_than_one(blockers))
                 {
                     value += VULNERABLE_QUEEN_PENALTY;
@@ -352,6 +360,10 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
 
             Bitboard attacking = slider_attack<QUEEN>(sq, position.pieces());
             Bitboard moves = attacking;
+            if (square_bb(sq) & _blockers_for_king[side])
+            {
+                moves &= FULL_LINES[sq][ownKing];
+            }
             // cannot move into square with our piece
             moves &= ~position.pieces(side);
             // attacked by opponents pawns
@@ -362,17 +374,49 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
         }
     }
 
-    constexpr Rank first_rank  = side == WHITE ? RANK_1 : RANK_8;
-    constexpr Rank second_rank = side == WHITE ? RANK_2 : RANK_7;
-    Square kingSq = position.piece_position(make_piece(side, KING), 0);
-    if (rank(kingSq) == first_rank)
-    {
-        Bitboard safetyPawns = (NEIGHBOUR_FILES_BB[file(kingSq)] | FILES_BB[file(kingSq)]) & RANKS_BB[second_rank] & position.pieces(side, PAWN);
-        value += popcount(safetyPawns) * KING_SAFETY_BONUS;
-    }
+    value += score_king_safety<side>(position);
 
     return value;
 }
+
+template <Color side>
+Score PositionScorer::score_king_safety(const Position& position)
+{
+    const Square ownKing = position.piece_position(make_piece(side, KING), 0);
+    const Square opponentsKing = position.piece_position(make_piece(!side, KING), 0);
+
+    const Rank first_rank = side == WHITE ? RANK_1 : RANK_8;
+    const Rank second_rank = side == WHITE ? RANK_2 : RANK_7;
+
+    Score value;
+
+    Bitboard king_area = KING_MASK[ownKing] | square_bb(ownKing);
+
+    Bitboard pawns_in_king_area = king_area & position.pieces(side, PAWN);
+
+    value += Value(popcount(pawns_in_king_area)) * KING_SAFETY_BONUS;
+
+    if (rank(ownKing) == first_rank)
+    {
+        // check for backrank weakness
+        Bitboard backrank_area = king_area & RANKS_BB[second_rank];
+        Bitboard blocked = position.pieces(side) | _attacked_by_piece[!side] | _attacked_by_bb[!side][PAWN] | KING_MASK[opponentsKing];
+        if (backrank_area & blocked == backrank_area)
+            value += WEAK_BACKRANK_PENALTY;
+    }
+
+    Bitboard bb = _snipers_for_king[side];
+    int no_real_snipers = 0;
+    while (bb)
+    {
+        Square sq = Square(pop_lsb(&bb));
+        if (!(LINES[sq][ownKing] & position.pieces(side, PAWN)))
+            no_real_snipers++;
+    }
+    value += REAL_SNIPER_PENALTY * Value(no_real_snipers);
+
+    return value;
+};
 
 Score PositionScorer::score_pawns(const Position& position)
 {
@@ -465,6 +509,32 @@ Value PositionScorer::game_phase_weight(const Position& position)
     weight += position.number_of_pieces(B_QUEEN) * PIECE_WEIGHTS[QUEEN];
 
     return std::min(weight, MAX_PIECE_WEIGTHS);
+}
+
+template <Color side>
+Bitboard PositionScorer::blockers_for_square(const Position& position, Square sq, Bitboard& snipers)
+{
+    snipers = no_squares_bb;
+    Bitboard blockers = no_squares_bb;
+
+    Bitboard possible_snipers = (pseudoattacks<BISHOP>(sq) & position.pieces(!side, BISHOP, QUEEN))
+                              | (pseudoattacks<ROOK>(sq) & position.pieces(!side, ROOK, QUEEN));
+
+    Bitboard rest = position.pieces() & ~(possible_snipers | square_bb(sq));
+
+    while (possible_snipers)
+    {
+        Square sniper_sq = Square(pop_lsb(&possible_snipers));
+
+        Bitboard b = LINES[sq][sniper_sq] & rest;
+        if (b && !popcount_more_than_one(b))
+        {
+            snipers |= square_bb(sq);
+            blockers |= b;
+        }
+    }
+
+    return blockers;
 }
 
 }
