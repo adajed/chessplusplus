@@ -17,8 +17,14 @@ EXPORTS_MAP=exports.map
 
 all: release debug
 
-release: $(BINARY_RELEASE) $(LIB_RELEASE)
-debug: $(BINARY_DEBUG) $(LIB_DEBUG)
+release: lib_release engine_release
+debug: lib_debug engine_debug
+
+lib_release: $(LIB_RELEASE)
+lib_debug: $(LIB_DEBUG)
+
+engine_release: lib_release $(BINARY_RELEASE)
+engine_debug: lib_debug $(BINARY_DEBUG)
 
 # linking
 $(BINARY_RELEASE): $(OBJS_RELEASE) | $(OUTDIR_RELEASE)
