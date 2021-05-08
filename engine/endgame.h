@@ -41,6 +41,8 @@ public:
 
     virtual Value score(const Position& position) const = 0;
 
+    virtual ~EndgameBase() = default;
+
 protected:
     Color strongSide, weakSide;
 };
@@ -54,6 +56,8 @@ public:
     virtual bool applies(const Position& position) const;
 
     virtual Value score(const Position& position) const;
+
+    virtual ~Endgame() = default;
 };
 
 using EndgameBasePtr = std::unique_ptr<EndgameBase>;
