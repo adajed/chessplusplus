@@ -10,7 +10,9 @@ matrix:
                   packages:
                       - g++-7
           env:
-              - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7 && AR=ar"
+              - CC=gcc-7
+              - CXX=g++-7
+              - AR=ar
 
         - os: linux
           addons:
@@ -19,14 +21,15 @@ matrix:
                       - clang-7
                       - llvm-7-dev
           env:
-              - MATRIX_EVAL="CC=clang-7 && CXX=clang++-7 && AR=llvm-ar-7"
+              - CC=clang-7
+              - CXX=clang++-7
+              - AR=llvm-ar
 
 branches:
     only:
         - master
 
 before_install:
-    - eval "${MATRIX_EVAL}"
     - sudo sed -i '/^Defaults\tsecure_path.*$/ d' /etc/sudoers
     - sudo apt-get update -y
     - sudo apt-get install -y libgtest-dev valgrind cmake clang-tidy-8 expect
@@ -43,7 +46,7 @@ before_install:
 before_script:
     - export LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
     - compiledb -n make
-    - make GTEST_LIB_PATH=/usr/local/lib GTEST_INCLUDE_PATH=/usr/local/include
+    - make GTEST_LIB_PATH=/usr/local/lib GTEST_INCLUDE_PATH=/usr/local/include CC=${CC} CXX=${CXX} AR=${AR}
 
 script:
     - ./build/tests
