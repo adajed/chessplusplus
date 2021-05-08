@@ -35,11 +35,11 @@ $(BINARY_DEBUG): $(OUTDIR_DEBUG)/main.o $(LIB_DEBUG) | $(OUTDIR_DEBUG)
 
 $(LIB_RELEASE): $(filter-out $(OUTDIR_RELEASE)/main.o,$(OBJS_RELEASE)) | $(OUTDIR_RELEASE)
 	@echo "Linking $@"
-	@$(AR) -rs $@ $^
+	@$(AR) $(AR_FLAGS) $@ $^
 
 $(LIB_DEBUG): $(filter-out $(OUTDIR_DEBUG)/main.o,$(OBJS_DEBUG)) | $(OUTDIR_DEBUG)
 	@echo "Linking $@"
-	@$(AR) -rs $@ $^
+	@$(AR) $(AR_FLAGS) $@ $^
 
 # compilation
 $(OUTDIR_RELEASE)/%.o : %.cpp | $(OUTDIR_RELEASE)

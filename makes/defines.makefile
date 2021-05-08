@@ -14,12 +14,14 @@ CXX ?= g++
 
 AR ?= ar
 
+AR_FLAGS = -rsv
+
 $(info Using CC=${CC})
 $(info Using CXX=${CXX})
 $(info Using AR=${AR})
 
 # compliation flags
-CFLAGS = -Wall -std=c++17 -flto
+CFLAGS = -Wall -m64 -std=c++17 -flto
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
 CFLAGS_DEBUG = $(CFLAGS) -g -DDEBUG
 
