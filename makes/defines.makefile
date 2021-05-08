@@ -23,5 +23,3 @@ LFLAGS_DEBUG = $(LFLAGS) -g
 
 LCOV_CFLAGS = -fprofile-arcs -ftest-coverage
 LCOV_LFLAGS = --coverage
-
-
