@@ -3,9 +3,6 @@ include ../makes/defines.makefile
 BINARY_RELEASE=$(BUILD_DIR)/chessplusplus
 BINARY_DEBUG=$(BUILD_DIR)/chessplusplus_debug
 
-LIB_RELEASE=$(BUILD_DIR)/libchess_static.a
-LIB_DEBUG=$(BUILD_DIR)/libchess_static_debug.a
-
 OUTDIR_RELEASE=$(OBJS_DIR_RELEASE)/engine
 OUTDIR_DEBUG=$(OBJS_DIR_DEBUG)/engine
 

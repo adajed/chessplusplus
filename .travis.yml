@@ -42,7 +42,10 @@ before_install:
 before_script:
     - export LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
     - compiledb -n make
-    - make GTEST_LIB_PATH=/usr/local/lib GTEST_INCLUDE_PATH=/usr/local/include CC=${CC} CXX=${CXX}
+    - make engine GTEST_LIB_PATH=/usr/local/lib GTEST_INCLUDE_PATH=/usr/local/include CC=${CC} CXX=${CXX}
+    - make engine_debug GTEST_LIB_PATH=/usr/local/lib GTEST_INCLUDE_PATH=/usr/local/include CC=${CC} CXX=${CXX}
+    - make test GTEST_LIB_PATH=/usr/local/lib GTEST_INCLUDE_PATH=/usr/local/include CC=${CC} CXX=${CXX}
+    - make test_debug GTEST_LIB_PATH=/usr/local/lib GTEST_INCLUDE_PATH=/usr/local/include CC=${CC} CXX=${CXX}
 
 script:
     - ./build/tests
