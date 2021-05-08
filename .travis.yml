@@ -10,9 +10,7 @@ matrix:
                   packages:
                       - g++-7
           env:
-              - CC=gcc-7
-              - CXX=g++-7
-              - AR=ar
+              - CC=gcc-7 CXX=g++-7 AR=ar
 
         - os: linux
           addons:
@@ -21,9 +19,7 @@ matrix:
                       - clang-7
                       - llvm-7-dev
           env:
-              - CC=clang-7
-              - CXX=clang++-7
-              - AR=llvm-ar
+              - CC=clang-7 CXX=clang++-7 AR=llvm-ar
 
 branches:
     only:

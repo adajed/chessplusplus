@@ -14,6 +14,10 @@ CXX ?= g++
 
 AR ?= ar
 
+$(info Using CC=${CC})
+$(info Using CXX=${CXX})
+$(info Using AR=${AR})
+
 # compliation flags
 CFLAGS = -Wall -std=c++17 -flto
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
