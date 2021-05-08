@@ -20,21 +20,21 @@ debug: $(DEBUG)
 # linking
 $(RELEASE): $(OBJS_RELEASE) | $(OUTDIR_RELEASE)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LIB_OBJS_RELESE) $(LFLAGS_RELEASE)
+	$(CXX) -o $@ $^ $(LIB_OBJS_RELESE) $(LFLAGS_RELEASE)
 
 $(DEBUG): $(OBJS_DEBUG) | $(OUTDIR_DEBUG)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LIB_OBJS_DEBUG) $(LFLAGS_DEBUG)
+	$(CXX) -o $@ $^ $(LIB_OBJS_DEBUG) $(LFLAGS_DEBUG)
 
 
 # compilation
 $(OUTDIR_RELEASE)/%.o : %.cpp | $(OUTDIR_RELEASE)
 	@echo "Compiling release $<"
-	@$(CXX) -c -o $@ $< $(CFLAGS_RELEASE) -I$(ROOTDIR)/engine
+	$(CXX) -c -o $@ $< $(CFLAGS_RELEASE) -I$(ROOTDIR)/engine
 
 $(OUTDIR_DEBUG)/%.o : %.cpp | $(OUTDIR_DEBUG)
 	@echo "Compiling debug $<"
-	@$(CXX) -c -o $@ $< $(CFLAGS_DEBUG) -I$(ROOTDIR)/engine
+	$(CXX) -c -o $@ $< $(CFLAGS_DEBUG) -I$(ROOTDIR)/engine
 
 # dir
 $(OUTDIR_RELEASE):

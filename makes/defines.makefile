@@ -17,7 +17,7 @@ CFLAGS = -Wall -std=c++17 -flto
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
 CFLAGS_DEBUG = $(CFLAGS) -g -DDEBUG
 
-LFLAGS = -pthread -flto -pthread -lpthread
+LFLAGS = -pthread -flto
 LFLAGS_RELEASE = $(LFLAGS) -Ofast
 LFLAGS_DEBUG = $(LFLAGS) -g
 
