@@ -12,7 +12,7 @@ GTEST_LIB_PATH     ?= /usr/local/lib
 CC  ?= gcc
 CXX ?= g++
 
-AR = ar
+AR ?= ar
 
 # compliation flags
 CFLAGS = -Wall -std=c++17 -flto
