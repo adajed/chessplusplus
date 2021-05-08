@@ -7,6 +7,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <pthread.h>
 
 #include "fdstream.h"
 
