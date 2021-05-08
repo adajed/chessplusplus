@@ -12,16 +12,8 @@ GTEST_LIB_PATH     ?= /usr/local/lib
 CC  ?= gcc
 CXX ?= g++
 
-AR ?= ar
-
-AR_FLAGS = -rsv
-
-$(info Using CC=${CC})
-$(info Using CXX=${CXX})
-$(info Using AR=${AR})
-
 # compliation flags
-CFLAGS = -Wall -m64 -std=c++17 -flto
+CFLAGS = -Wall -std=c++17 -flto
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
 CFLAGS_DEBUG = $(CFLAGS) -g -DDEBUG
 
@@ -31,5 +23,3 @@ LFLAGS_DEBUG = $(LFLAGS) -g
 
 LCOV_CFLAGS = -fprofile-arcs -ftest-coverage
 LCOV_LFLAGS = --coverage
-
-

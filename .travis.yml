@@ -10,7 +10,7 @@ matrix:
                   packages:
                       - g++-7
           env:
-              - CC=gcc-7 CXX=g++-7 AR=ar
+              - CC=gcc-7 CXX=g++-7
 
         - os: linux
           addons:
@@ -19,7 +19,7 @@ matrix:
                       - clang-7
                       - llvm-7-dev
           env:
-              - CC=clang-7 CXX=clang++-7 AR=llvm-ar-7
+              - CC=clang-7 CXX=clang++-7
 
 branches:
     only:
@@ -42,7 +42,7 @@ before_install:
 before_script:
     - export LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
     - compiledb -n make
-    - make GTEST_LIB_PATH=/usr/local/lib GTEST_INCLUDE_PATH=/usr/local/include CC=${CC} CXX=${CXX} AR=${AR}
+    - make GTEST_LIB_PATH=/usr/local/lib GTEST_INCLUDE_PATH=/usr/local/include CC=${CC} CXX=${CXX}
 
 script:
     - ./build/tests
