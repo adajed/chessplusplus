@@ -401,7 +401,7 @@ Score PositionScorer::score_king_safety(const Position& position)
         // check for backrank weakness
         Bitboard backrank_area = king_area & RANKS_BB[second_rank];
         Bitboard blocked = position.pieces(side) | _attacked_by_piece[!side] | _attacked_by_bb[!side][PAWN] | KING_MASK[opponentsKing];
-        if (backrank_area & blocked == backrank_area)
+        if ((backrank_area & blocked) == backrank_area)
             value += WEAK_BACKRANK_PENALTY;
     }
 
