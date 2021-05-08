@@ -17,9 +17,9 @@ CFLAGS = -Wall -std=c++17 -flto
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
 CFLAGS_DEBUG = $(CFLAGS) -g -DDEBUG
 
-LFLAGS = -pthread -flto
-LFLAGS_RELEASE = $(LFLAGS) -Ofast
-LFLAGS_DEBUG = $(LFLAGS) -g
+LFLAGS = -flto
+LFLAGS_RELEASE = $(LFLAGS) -Ofast -lpthread
+LFLAGS_DEBUG = $(LFLAGS) -g -lpthread
 
 LCOV_CFLAGS = -fprofile-arcs -ftest-coverage
 LCOV_LFLAGS = --coverage
