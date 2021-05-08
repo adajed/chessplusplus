@@ -13,29 +13,33 @@ SOURCES=$(wildcard *.cpp)
 OBJS_RELEASE=$(SOURCES:%.cpp=$(OUTDIR_RELEASE)/%.o)
 OBJS_DEBUG=$(SOURCES:%.cpp=$(OUTDIR_DEBUG)/%.o)
 
-EXPORTS_MAP=exports.map
-
 all: release debug
 
-release: $(BINARY_RELEASE) $(LIB_RELEASE)
-debug: $(BINARY_DEBUG) $(LIB_DEBUG)
+release: lib_release engine_release
+debug: lib_debug engine_debug
+
+lib_release: $(LIB_RELEASE)
+lib_debug: $(LIB_DEBUG)
+
+engine_release: $(BINARY_RELEASE)
+engine_debug: $(BINARY_DEBUG)
 
 # linking
-$(BINARY_RELEASE): $(OBJS_RELEASE) | $(OUTDIR_RELEASE)
+$(BINARY_RELEASE): $(OUTDIR_RELEASE)/main.o $(LIB_RELEASE) | $(OUTDIR_RELEASE)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS_RELEASE)
+	@$(CXX) -o $@ $< $(LFLAGS_RELEASE) -L$(BUILD_DIR) -lchess_static
 
-$(BINARY_DEBUG): $(OBJS_DEBUG) | $(OUTDIR_DEBUG)
+$(BINARY_DEBUG): $(OUTDIR_DEBUG)/main.o $(LIB_DEBUG) | $(OUTDIR_DEBUG)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS_DEBUG) $(LCOV_LFLAGS)
+	@$(CXX) -o $@ $< $(LFLAGS_DEBUG) $(LCOV_LFLAGS) -L$(BUILD_DIR) -lchess_static_debug
 
 $(LIB_RELEASE): $(filter-out $(OUTDIR_RELEASE)/main.o,$(OBJS_RELEASE)) | $(OUTDIR_RELEASE)
 	@echo "Linking $@"
-	@ar rs $@ $^
+	@$(AR) -rs $@ $^
 
 $(LIB_DEBUG): $(filter-out $(OUTDIR_DEBUG)/main.o,$(OBJS_DEBUG)) | $(OUTDIR_DEBUG)
 	@echo "Linking $@"
-	@ar rs $@ $^
+	@$(AR) -rs $@ $^
 
 # compilation
 $(OUTDIR_RELEASE)/%.o : %.cpp | $(OUTDIR_RELEASE)
