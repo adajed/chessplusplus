@@ -8,9 +8,9 @@ matrix:
           addons:
               apt:
                   packages:
-                      - g++-9
+                      - g++-7
           env:
-              - CC=gcc-9 CXX=g++-9
+              - CC=gcc-7 CXX=g++-7
 
         - os: linux
           addons:
