@@ -1,6 +1,6 @@
 include ../makes/defines.makefile
 
-.PHONY: release debug regression regression_debug
+.PHONY: release debug regression regression_debug format
 
 release: regression
 
@@ -12,3 +12,6 @@ regression:
 
 regression_debug:
 	@+make -C regression debug
+
+format:
+	@+make -C regression format

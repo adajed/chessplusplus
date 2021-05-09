@@ -1,9 +1,9 @@
 #include "types.h"
+
 #include "bitboard.h"
 
 namespace engine
 {
-
 Move create_move(Square from, Square to)
 {
     assert(from != NO_SQUARE);
@@ -44,17 +44,18 @@ PieceKind promotion(Move move)
 Castling castling(Move move)
 {
     int p = (move >> 15) & 0x3;
-    return p == 0 ? NO_CASTLING :
-           p == 1 ? KING_CASTLING :
-           QUEEN_CASTLING;
+    return p == 0 ? NO_CASTLING : p == 1 ? KING_CASTLING : QUEEN_CASTLING;
 }
 
-MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant,
-                         bool enpassant, uint8_t half_move_counter)
+MoveInfo create_moveinfo(PieceKind captured, Castling last_castling,
+                         Square last_enpassant, bool enpassant,
+                         uint8_t half_move_counter)
 {
     if (last_enpassant != NO_SQUARE)
-        return half_move_counter << 15 | (!!enpassant) << 14 | 1 << 13 | last_enpassant << 7 | last_castling << 3 | captured;
-    return half_move_counter << 15 | enpassant << 14 | last_castling << 3 | captured;
+        return half_move_counter << 15 | (!!enpassant) << 14 | 1 << 13 |
+               last_enpassant << 7 | last_castling << 3 | captured;
+    return half_move_counter << 15 | enpassant << 14 | last_castling << 3 |
+           captured;
 }
 
 PieceKind captured_piece(MoveInfo moveinfo)
@@ -69,8 +70,7 @@ Castling last_castling(MoveInfo moveinfo)
 
 Square last_enpassant_square(MoveInfo moveinfo)
 {
-    if ((moveinfo >> 13) & 0x1)
-        return Square((moveinfo >> 7) & 0x3F);
+    if ((moveinfo >> 13) & 0x1) return Square((moveinfo >> 7) & 0x3F);
     return NO_SQUARE;
 }
 
@@ -103,4 +103,4 @@ std::ostream& print_bitboard(std::ostream& stream, Bitboard bb)
     return stream;
 }
 
-}
+}  // namespace engine

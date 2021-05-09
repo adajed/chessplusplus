@@ -1,18 +1,17 @@
 #pragma once
 
-#include <iostream>
-#include <cstdlib>
-#include <unistd.h>
-#include <csignal>
-#include <string>
-#include <sstream>
-#include <vector>
-#include <pthread.h>
-
 #include "fdstream.h"
-
-#include "types.h"
 #include "position.h"
+#include "types.h"
+
+#include <csignal>
+#include <cstdlib>
+#include <iostream>
+#include <pthread.h>
+#include <sstream>
+#include <string>
+#include <unistd.h>
+#include <vector>
 
 #define CHILD_STDIN_READ pipefds_input_[0]
 #define CHILD_STDIN_WRITE pipefds_input_[1]
@@ -49,42 +48,42 @@ struct CommandGoParams
 
 class EngineWrapper
 {
+  public:
+    explicit EngineWrapper(const std::string& command, const std::string& name,
+                           bool debug);
 
-    public:
-        explicit EngineWrapper(const std::string& command, const std::string& name, bool debug);
+    std::string get_name() const { return name_; }
 
-        std::string get_name() const { return name_; }
+    void uci();
+    void ucinewgame();
 
-        void uci();
-        void ucinewgame();
+    void position(const std::string& fen, const std::vector<Move>& moves);
 
-        void position(const std::string& fen, const std::vector<Move>& moves);
+    void quit();
 
-        void quit();
+    Move go(const CommandGoParams& params);
 
-        Move go(const CommandGoParams& params);
+    void set_option(const std::string& name, const std::string& value);
+    void set_option(const std::string& name);
 
-        void set_option(const std::string& name, const std::string& value);
-        void set_option(const std::string& name);
+  private:
+    CommandInfoData parse_command_info(const std::string& command);
+    CommandBestmoveData parse_command_bestmove(const std::string& command);
 
-    private:
-        CommandInfoData parse_command_info(const std::string& command);
-        CommandBestmoveData parse_command_bestmove(const std::string& command);
+    std::string command_;
+    std::string name_;
+    bool debug_;
 
-        std::string command_;
-        std::string name_;
-        bool debug_;
+    int pipe_status_;
+    int pipefds_input_[2];
+    int pipefds_output_[2];
+    int pipefds_error_[2];
 
-        int pipe_status_;
-        int pipefds_input_[2];
-        int pipefds_output_[2];
-        int pipefds_error_[2];
+    ofdstream in_stream_;
+    ifdstream out_stream_;
+    ifdstream err_stream_;
 
-        ofdstream in_stream_;
-        ifdstream out_stream_;
-        ifdstream err_stream_;
+    bool running_;
 
-        bool running_;
-
-        Position position_;
+    Position position_;
 };

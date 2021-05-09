@@ -1,13 +1,11 @@
-#include "engine_wrapper.h"
-
+#include "argument_parser.h"
 #include "endgame.h"
+#include "engine_wrapper.h"
 #include "movegen.h"
 #include "polyglot.h"
+#include "timer.h"
 #include "uci.h"
 #include "zobrist_hash.h"
-
-#include "argument_parser.h"
-#include "timer.h"
 
 #include <fstream>
 
@@ -17,8 +15,14 @@ constexpr int DRAW = 2;
 
 struct GameParams
 {
-    GameParams(EngineWrapper* white, EngineWrapper* black, const PolyglotBook& polyglot)
-        : engine_white(white), engine_black(black), time_format(), polyglot(polyglot), book_depth(0), intial_moves()
+    GameParams(EngineWrapper* white, EngineWrapper* black,
+               const PolyglotBook& polyglot)
+        : engine_white(white),
+          engine_black(black),
+          time_format(),
+          polyglot(polyglot),
+          book_depth(0),
+          intial_moves()
     {
     }
 
@@ -32,10 +36,10 @@ struct GameParams
 
 int game(GameParams& params, std::ofstream& fd)
 {
-    Timer timers[COLOR_NUM] = {
-        Timer(params.time_format.time_initial_ms, params.time_format.time_increment_ms),
-        Timer(params.time_format.time_initial_ms, params.time_format.time_increment_ms)
-    };
+    Timer timers[COLOR_NUM] = {Timer(params.time_format.time_initial_ms,
+                                     params.time_format.time_increment_ms),
+                               Timer(params.time_format.time_initial_ms,
+                                     params.time_format.time_increment_ms)};
     EngineWrapper* engines[COLOR_NUM];
 
     engines[WHITE] = params.engine_white;
@@ -43,8 +47,8 @@ int game(GameParams& params, std::ofstream& fd)
 
     std::cout << "New game: white=" << engines[WHITE]->get_name()
               << " black=" << engines[BLACK]->get_name()
-              << " time=" << params.time_format.time_initial_ms << "+" << params.time_format.time_increment_ms
-              << std::endl;
+              << " time=" << params.time_format.time_initial_ms << "+"
+              << params.time_format.time_increment_ms << std::endl;
 
     engines[WHITE]->ucinewgame();
     engines[BLACK]->ucinewgame();
@@ -54,10 +58,9 @@ int game(GameParams& params, std::ofstream& fd)
 
     int depth = 0;
 
-    while (!position.is_checkmate() &&
-            !position.is_draw() &&
-            timers[WHITE].get_time_left_ms() > 0 &&
-            timers[BLACK].get_time_left_ms() > 0)
+    while (!position.is_checkmate() && !position.is_draw() &&
+           timers[WHITE].get_time_left_ms() > 0 &&
+           timers[BLACK].get_time_left_ms() > 0)
     {
         const Color side = position.side_to_move();
         engines[side]->position(Position::STARTPOS_FEN, moves);
@@ -86,10 +89,8 @@ int game(GameParams& params, std::ofstream& fd)
     }
 
     int result = DRAW;
-    if (timers[WHITE].get_time_left_ms() == 0)
-        result = WIN_BLACK;
-    if (timers[BLACK].get_time_left_ms() == 0)
-        result = WIN_WHITE;
+    if (timers[WHITE].get_time_left_ms() == 0) result = WIN_BLACK;
+    if (timers[BLACK].get_time_left_ms() == 0) result = WIN_WHITE;
     if (position.is_checkmate())
         result = position.side_to_move() == WHITE ? WIN_BLACK : WIN_WHITE;
 
@@ -100,7 +101,8 @@ int game(GameParams& params, std::ofstream& fd)
     fd << "[Result \"?\"]" << std::endl;
     fd << std::endl;
     Position temp_position;
-    for (int i = 0; i < moves.size(); i++) {
+    for (int i = 0; i < moves.size(); i++)
+    {
         if (i % 2 == 0)
         {
             fd << (i / 2) + 1 << ". ";
@@ -136,8 +138,10 @@ int main(int argc, char** argv)
     bitbase::init();
     endgame::init();
 
-    EngineWrapper engine1(args.engines[0].command, args.engines[0].name, args.debug);
-    EngineWrapper engine2(args.engines[1].command, args.engines[1].name, args.debug);
+    EngineWrapper engine1(args.engines[0].command, args.engines[0].name,
+                          args.debug);
+    EngineWrapper engine2(args.engines[1].command, args.engines[1].name,
+                          args.debug);
 
     engine1.uci();
     engine2.uci();
@@ -158,12 +162,14 @@ int main(int argc, char** argv)
         if (result == WIN_WHITE)
         {
             points[params.engine_white->get_name()] += 1.;
-            std::cout << params.engine_white->get_name() << "(white) won" << std::endl;
+            std::cout << params.engine_white->get_name() << "(white) won"
+                      << std::endl;
         }
         else if (result == WIN_BLACK)
         {
             points[params.engine_black->get_name()] += 1.;
-            std::cout << params.engine_black->get_name() << "(black) won" << std::endl;
+            std::cout << params.engine_black->get_name() << "(black) won"
+                      << std::endl;
         }
         else
         {
@@ -172,9 +178,9 @@ int main(int argc, char** argv)
             std::cout << "draw" << std::endl;
         }
 
-        std::cout << "Current score: "
-                  << engine1.get_name() << "=" << points[engine1.get_name()] << " "
-                  << engine2.get_name() << "=" << points[engine2.get_name()] << std::endl;
+        std::cout << "Current score: " << engine1.get_name() << "="
+                  << points[engine1.get_name()] << " " << engine2.get_name()
+                  << "=" << points[engine2.get_name()] << std::endl;
 
         std::swap(params.engine_white, params.engine_black);
     }
@@ -183,8 +189,10 @@ int main(int argc, char** argv)
     engine2.quit();
 
     std::cout << "Final score:" << std::endl;
-    std::cout << engine1.get_name() << " : " << points[engine1.get_name()] << std::endl;
-    std::cout << engine2.get_name() << " : " << points[engine2.get_name()] << std::endl;
+    std::cout << engine1.get_name() << " : " << points[engine1.get_name()]
+              << std::endl;
+    std::cout << engine2.get_name() << " : " << points[engine2.get_name()]
+              << std::endl;
 
     return 0;
 }

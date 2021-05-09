@@ -1,4 +1,5 @@
 #include "uci.h"
+
 #include "logger.h"
 #include "transposition_table.h"
 
@@ -7,34 +8,26 @@
 
 namespace engine
 {
-
-Uci::Uci()
-    : search(nullptr)
-    , position()
-    , quit(false)
-    , options()
-    , polyglot()
+Uci::Uci() : search(nullptr), position(), quit(false), options(), polyglot()
 {
-    options["Polyglot Book"] = UciOption("",
-            [this](std::string path) {
-                if (path == "")
-                    this->polyglot = PolyglotBook();
-                else
-                    this->polyglot = PolyglotBook(path);
-            });
-    options["Logfile"] = UciOption("",
-            [](std::string path) {
-                /* if (path == "") */
-                /*     logger.close_file(); */
-                /* else */
-                /*     logger.open_file(path); */
-            });
+    options["Polyglot Book"] = UciOption("", [this](std::string path) {
+        if (path == "")
+            this->polyglot = PolyglotBook();
+        else
+            this->polyglot = PolyglotBook(path);
+    });
+    options["Logfile"] = UciOption("", [](std::string path) {
+        /* if (path == "") */
+        /*     logger.close_file(); */
+        /* else */
+        /*     logger.open_file(path); */
+    });
 }
 
 void Uci::loop()
 {
     std::cout << "Chess engine by Adam Jedrych"
-           << " (build " << __DATE__ << " " << __TIME__ << ")" << std::endl;
+              << " (build " << __DATE__ << " " << __TIME__ << ")" << std::endl;
 
     position = Position();
     quit = false;
@@ -50,11 +43,12 @@ void Uci::loop()
 
         bool b = false;
 
-#define COMMAND(name)                       \
-        if (token == #name)                 \
-        {                                   \
-            b = name##_command(istream);    \
-        } else                              \
+#define COMMAND(name)                \
+    if (token == #name)              \
+    {                                \
+        b = name##_command(istream); \
+    }                                \
+    else
 
         COMMAND(uci)
         COMMAND(ucinewgame)
@@ -68,10 +62,7 @@ void Uci::loop()
         COMMAND(printboard)
         COMMAND(hash)
         COMMAND(perft)
-        COMMAND(moves)
-        {
-            std::cout << "Unknown command" << std::endl;
-        }
+        COMMAND(moves) { std::cout << "Unknown command" << std::endl; }
 
 #undef COMMAND
 
@@ -98,7 +89,8 @@ bool Uci::uci_command(std::istringstream& istream)
         std::cout << "name " << name << " ";
         std::cout << "type " << optiontype_to_string(optiontype) << " ";
         if (optiontype == kCHECK)
-            std::cout << "default " << (option.get_check() ? "true" : "false") << " ";
+            std::cout << "default " << (option.get_check() ? "true" : "false")
+                      << " ";
         else if (optiontype == kSPIN)
         {
             std::cout << "default " << option.get_spin_initial() << " ";
@@ -138,18 +130,14 @@ bool Uci::setoption_command(std::istringstream& istream)
     std::string token;
     istream >> token;
 
-    if (token != "name")
-        return false;
+    if (token != "name") return false;
 
     std::string name = "";
 
-    while (istream >> token && token != "value")
-        name += token + " ";
-    name.pop_back(); // remove last space
+    while (istream >> token && token != "value") name += token + " ";
+    name.pop_back();  // remove last space
 
-    if (options.find(name) == options.end())
-        return false;
-
+    if (options.find(name) == options.end()) return false;
 
     OptionType optiontype = options[name].get_type();
 
@@ -194,8 +182,7 @@ bool Uci::position_command(std::istringstream& istream)
     else if (token == "fen")
     {
         std::string fen = "";
-        while (istream >> token && token != "moves")
-            fen += token + " ";
+        while (istream >> token && token != "moves") fen += token + " ";
 
         position = Position(fen);
     }
@@ -204,8 +191,7 @@ bool Uci::position_command(std::istringstream& istream)
 
     while (istream >> token)
     {
-        if (token == "moves")
-            continue;
+        if (token == "moves") continue;
 
         position.do_move(position.parse_uci(token));
     }
@@ -268,7 +254,8 @@ bool Uci::go_command(std::istringstream& istream)
         else if (token == "searchmoves")
         {
             while (istream >> token)
-                limits.searchmoves[limits.searchmovesnum++] = position.parse_uci(token);
+                limits.searchmoves[limits.searchmovesnum++] =
+                    position.parse_uci(token);
         }
     }
 
@@ -282,8 +269,7 @@ bool Uci::go_command(std::istringstream& istream)
 
 bool Uci::stop_command(std::istringstream& istream)
 {
-    if (search)
-        search->stop();
+    if (search) search->stop();
     return true;
 }
 
@@ -294,8 +280,7 @@ bool Uci::ponderhit_command(std::istringstream& istream)
 
 bool Uci::quit_command(std::istringstream& istream)
 {
-    if (search)
-        search->stop();
+    if (search) search->stop();
     quit = true;
     return true;
 }
@@ -308,7 +293,8 @@ bool Uci::printboard_command(std::istringstream& istream)
 
 bool Uci::hash_command(std::istringstream& istream)
 {
-    std::cout << "Hex: " << std::hex << position.hash() << std::dec << std::endl;
+    std::cout << "Hex: " << std::hex << position.hash() << std::dec
+              << std::endl;
     return true;
 }
 
@@ -340,15 +326,16 @@ bool Uci::perft_command(std::istringstream& istream)
     }
 
     TimePoint end_time = std::chrono::steady_clock::now();
-    uint64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    uint64_t duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                            end_time - start_time)
+                            .count();
 
     std::cout << std::endl;
     std::cout << "Number of nodes: " << sum << std::endl;
     std::cout << "Time: " << duration << "ms" << std::endl;
     std::cout << "Speed: " << sum * 1000LL / duration << "nps" << std::endl;
 
-
     return true;
 }
 
-}
+}  // namespace engine

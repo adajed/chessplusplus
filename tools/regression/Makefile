@@ -6,6 +6,7 @@ DEBUG=$(BUILD_DIR)/regression_debug
 OUTDIR_RELEASE=$(OBJS_DIR_RELEASE)/regression
 OUTDIR_DEBUG=$(OBJS_DIR_DEBUG)/regression
 
+HEADERS=$(wildcard *.h)
 SOURCES=$(wildcard *.cpp)
 OBJS_RELEASE=$(SOURCES:%.cpp=$(OUTDIR_RELEASE)/%.o)
 OBJS_DEBUG=$(SOURCES:%.cpp=$(OUTDIR_DEBUG)/%.o)
@@ -43,3 +44,7 @@ $(OUTDIR_RELEASE):
 $(OUTDIR_DEBUG):
 	mkdir -p $@
 
+format:
+	$(CLANG_FORMAT) $(CLANG_FORMAT_ARGS) $(SOURCES) $(HEADERS)
+
+.PHONY: release debug format

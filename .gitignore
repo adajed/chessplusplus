@@ -7,6 +7,9 @@ compile_commands.json
 Logfile.log
 examples.txt
 
+*.log
+*.pgn
+
 # list of things to fix
 fix-me.log
 

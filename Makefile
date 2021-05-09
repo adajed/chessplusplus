@@ -37,8 +37,9 @@ clean:
 ctags:
 	ctags -R --tag-relative=yes --exclude=.git $(ROOTDIR)
 
-tidy:
-	clang-tidy-8 $(ENGINE_SOURCES) -header-filter=src/*.h -checks='*' -warnings-as-errors='*'
+format:
+	@+make -C engine format
+	@+make -C tools format
 
 coverage: test_debug
 	$(TEST_DEBUG)
@@ -55,9 +56,10 @@ help:
 	@echo "\tall      - release + debug"
 	@echo "\tclean    - remove all files created by make"
 	@echo "\tctags    - create tags for all files"
+	@echo "\tformat   - run clang-format on all files"
 	@echo "\compiledb - create compile_commands.json
 
 
 .PHONY: release engine test tools
 .PHONY: debug engine_debug test_debug tools_debug
-.PHONY: clean compiledb ctags tidy coverage ehelp
+.PHONY: clean compiledb ctags format coverage ehelp

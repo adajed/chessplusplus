@@ -1,12 +1,12 @@
+#include "zobrist_hash.h"
+
 #include "position.h"
 #include "types.h"
-#include "zobrist_hash.h"
 
 #include <random>
 
 namespace engine
 {
-
 uint64_t PIECE_HASH[PIECE_NUM][SQUARE_NUM];
 uint64_t CASTLING_HASH[1 << 4];
 uint64_t SIDE_HASH;
@@ -14,7 +14,6 @@ uint64_t ENPASSANT_HASH[FILE_NUM];
 
 namespace
 {
-
 uint64_t random_uint64()
 {
     static std::random_device rd;
@@ -32,8 +31,7 @@ void init_zobrist()
         for (Square square = SQ_A1; square <= SQ_H8; ++square)
             PIECE_HASH[piece][square] = random_uint64();
 
-    for (int i = 0; i < 1 << 4; ++i)
-        CASTLING_HASH[i] = random_uint64();
+    for (int i = 0; i < 1 << 4; ++i) CASTLING_HASH[i] = random_uint64();
 
     SIDE_HASH = random_uint64();
 
@@ -42,14 +40,17 @@ void init_zobrist()
 }
 
 HashKey::HashKey()
-    : _piece_key(0ULL), _pawn_key(0ULL), _enpassant_key(0ULL), _castling_key(0ULL), _color_key(0ULL)
+    : _piece_key(0ULL),
+      _pawn_key(0ULL),
+      _enpassant_key(0ULL),
+      _castling_key(0ULL),
+      _color_key(0ULL)
 {
 }
 
 void HashKey::init(const Position& position)
 {
-    if (position.side_to_move() == BLACK)
-        _color_key ^= SIDE_HASH;
+    if (position.side_to_move() == BLACK) _color_key ^= SIDE_HASH;
 
     for (Color color : {WHITE, BLACK})
     {
@@ -128,6 +129,5 @@ void HashKey::set_castling(Castling castling)
 {
     _castling_key = CASTLING_HASH[castling];
 }
-
 
 }  // namespace engine

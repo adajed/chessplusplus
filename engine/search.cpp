@@ -1,18 +1,18 @@
-#include "endgame.h"
-#include "move_picker.h"
-#include "logger.h"
 #include "search.h"
+
+#include "endgame.h"
+#include "logger.h"
+#include "move_picker.h"
 #include "time_manager.h"
 #include "transposition_table.h"
 
 #include <algorithm>
 #include <chrono>
-#include <cstring>
 #include <cmath>
+#include <cstring>
 
 namespace engine
 {
-
 Move PV_LIST[2 * MAX_DEPTH][2 * MAX_DEPTH];
 int PV_LIST_LENGTH[2 * MAX_DEPTH];
 
@@ -43,24 +43,23 @@ const bool is_mate(Value score)
 const Duration INFINITE = 1LL << 32;
 
 Search::Search(const Position& position, const Limits& limits)
-    : _position(position)
-    , _scorer()
-    , limits(limits)
-    , check_limits_counter(4096)
-    , stop_search(false)
-    , _search_time(0)
-    , _search_depth(0)
-    , _max_nodes_searched(limits.nodes)
-    , _current_depth(0)
-    , _best_move(NO_MOVE)
-    , _start_time()
-    , _nodes_searched(0)
-    , _root_moves()
-    , _ply_counter(0)
-    , _ttable()
-    , _info(_ttable)
+    : _position(position),
+      _scorer(),
+      limits(limits),
+      check_limits_counter(4096),
+      stop_search(false),
+      _search_time(0),
+      _search_depth(0),
+      _max_nodes_searched(limits.nodes),
+      _current_depth(0),
+      _best_move(NO_MOVE),
+      _start_time(),
+      _nodes_searched(0),
+      _root_moves(),
+      _ply_counter(0),
+      _ttable(),
+      _info(_ttable)
 {
-
     if (limits.searchmovesnum > 0)
     {
         const Move* begin = limits.searchmoves;
@@ -73,7 +72,6 @@ Search::Search(const Position& position, const Limits& limits)
         Move* end = generate_moves(_position, _position.side_to_move(), begin);
         _root_moves.insert(_root_moves.end(), begin, end);
     }
-
 
     if (limits.infinite)
     {
@@ -92,7 +90,8 @@ Search::Search(const Position& position, const Limits& limits)
     }
     else if (limits.timeleft[position.side_to_move()] != 0)
     {
-        _search_time = TimeManager::calculateTime(limits, position.side_to_move(), position.ply_count());
+        _search_time = TimeManager::calculateTime(
+            limits, position.side_to_move(), position.ply_count());
         _search_depth = MAX_DEPTH;
     }
     else
@@ -101,8 +100,7 @@ Search::Search(const Position& position, const Limits& limits)
         _search_time = INFINITE;
     }
 
-    if (_max_nodes_searched == 0)
-        _max_nodes_searched = INFINITE;
+    if (_max_nodes_searched == 0) _max_nodes_searched = INFINITE;
 }
 
 void Search::stop()
@@ -140,21 +138,25 @@ MoveList Search::get_pv(int length)
     const tt::TTEntry* entryPtr = _ttable.get(curr_position.hash());
 
     Move* begin = MOVE_LIST[0];
-    Move* end = generate_moves(curr_position, curr_position.side_to_move(), begin);
+    Move* end =
+        generate_moves(curr_position, curr_position.side_to_move(), begin);
 
-    while (curr_length < length && entryPtr && std::find(begin, end, entryPtr->move) != end)
+    while (curr_length < length && entryPtr &&
+           std::find(begin, end, entryPtr->move) != end)
     {
         pv.push_back(entryPtr->move);
         curr_position.do_move(entryPtr->move);
         curr_length++;
         entryPtr = _ttable.get(curr_position.hash());
-        end = generate_moves(curr_position, curr_position.side_to_move(), begin);
+        end =
+            generate_moves(curr_position, curr_position.side_to_move(), begin);
     }
 
     return pv;
 }
 
-void Search::print_info(Value result, int depth, int64_t nodes_searched, int64_t elapsed)
+void Search::print_info(Value result, int depth, int64_t nodes_searched,
+                        int64_t elapsed)
 {
     logger << "info "
            << "depth " << depth << " "
@@ -205,7 +207,8 @@ void Search::iter_search()
         {
             assert(_ply_counter == 0);
             assert(min_bound < max_bound);
-            result = root_search(_position, _current_depth, min_bound, max_bound);
+            result =
+                root_search(_position, _current_depth, min_bound, max_bound);
 
             if (result <= min_bound)
                 min_bound = std::max(min_bound - delta, -INFINITY_SCORE);
@@ -214,8 +217,7 @@ void Search::iter_search()
             else
                 break;
 
-            if (stop_search || check_limits())
-                break;
+            if (stop_search || check_limits()) break;
 
             delta = static_cast<Value>(static_cast<float>(delta) * 1.25f);
         }
@@ -223,7 +225,9 @@ void Search::iter_search()
         previous_score = result;
 
         end_time = std::chrono::steady_clock::now();
-        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - _start_time).count();
+        elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      end_time - _start_time)
+                      .count();
 
         if (!stop_search)
         {
@@ -232,19 +236,16 @@ void Search::iter_search()
             _best_move = PV_LIST[0][0];
         }
 
-        if (result < lost_in(MAX_DEPTH) || result > win_in(MAX_DEPTH))
-            break;
+        if (result < lost_in(MAX_DEPTH) || result > win_in(MAX_DEPTH)) break;
 
-        if (_current_depth >= _search_depth)
-            break;
+        if (_current_depth >= _search_depth) break;
 
-        if (elapsed >= (_search_time / 2))
-            break;
+        if (elapsed >= (_search_time / 2)) break;
     }
-
 }
 
-Value Search::root_search(Position& position, int depth, Value alpha, Value beta)
+Value Search::root_search(Position& position, int depth, Value alpha,
+                          Value beta)
 {
     assert(depth > 0);
     assert(alpha <= beta);
@@ -260,8 +261,7 @@ Value Search::root_search(Position& position, int depth, Value alpha, Value beta
         return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
 
     // check extension
-    if (is_in_check)
-        depth++;
+    if (is_in_check) depth++;
 
     Move* begin = _root_moves.data();
     Move* end = _root_moves.data() + _root_moves.size();
@@ -322,7 +322,6 @@ Value Search::root_search(Position& position, int depth, Value alpha, Value beta
             {
                 break;
             }
-
         }
     }
 
@@ -333,7 +332,6 @@ Value Search::root_search(Position& position, int depth, Value alpha, Value beta
         PV_LIST_LENGTH[_ply_counter] = 1;
         PV_LIST[_ply_counter][0] = curr_best_move;
     }
-
 
     if (!stop_search)
     {
@@ -355,8 +353,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta)
         return Value(0);
     }
 
-    if (position.is_draw())
-        return DRAW_SCORE;
+    if (position.is_draw()) return DRAW_SCORE;
 
     /* std::vector<Move> moves(MAX_MOVES, NO_MOVE); */
     /* Move* begin = moves.data(); */
@@ -365,20 +362,21 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta)
 
     Value alphaOriginal = alpha;
     const tt::TTEntry* entryPtr = _ttable.get(position.hash());
-    if (entryPtr && (entryPtr->depth >= depth) && (std::find(begin, end, entryPtr->move) != end))
+    if (entryPtr && (entryPtr->depth >= depth) &&
+        (std::find(begin, end, entryPtr->move) != end))
     {
         switch (entryPtr->flag)
         {
-            case tt::Flag::kEXACT:
-                PV_LIST_LENGTH[_ply_counter] = 1;
-                PV_LIST[_ply_counter][0] = entryPtr->move;
-                return Value(entryPtr->score);
-            case tt::Flag::kLOWER_BOUND:
-                alpha = std::max(alpha, entryPtr->score);
-                break;
-            case tt::Flag::kUPPER_BOUND:
-                beta = std::min(beta, entryPtr->score);
-                break;
+        case tt::Flag::kEXACT:
+            PV_LIST_LENGTH[_ply_counter] = 1;
+            PV_LIST[_ply_counter][0] = entryPtr->move;
+            return Value(entryPtr->score);
+        case tt::Flag::kLOWER_BOUND:
+            alpha = std::max(alpha, entryPtr->score);
+            break;
+        case tt::Flag::kUPPER_BOUND:
+            beta = std::min(beta, entryPtr->score);
+            break;
         }
 
         if (alpha >= beta)
@@ -389,11 +387,9 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta)
 
     bool is_in_check = position.is_in_check(position.side_to_move());
 
-    if (begin == end)
-        return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
+    if (begin == end) return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
 
-    if (is_in_check)
-        depth++;
+    if (is_in_check) depth++;
 
     if (depth == 0)
         return quiescence_search(position, MAX_DEPTH - 1, alpha, beta);
@@ -401,10 +397,11 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta)
     if constexpr (allow_null_move)
     {
         Color side = position.side_to_move();
-        int num_of_pieces = position.number_of_pieces(make_piece(side, KNIGHT))
-              + position.number_of_pieces(make_piece(side, BISHOP))
-              + position.number_of_pieces(make_piece(side, ROOK))
-              + position.number_of_pieces(make_piece(side, QUEEN));
+        int num_of_pieces =
+            position.number_of_pieces(make_piece(side, KNIGHT)) +
+            position.number_of_pieces(make_piece(side, BISHOP)) +
+            position.number_of_pieces(make_piece(side, ROOK)) +
+            position.number_of_pieces(make_piece(side, QUEEN));
         if (!is_in_check && num_of_pieces > 0 && depth > 4)
         {
             _ply_counter++;
@@ -425,7 +422,6 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta)
 
     Move best_move = NO_MOVE;
     MovePicker movepicker(position, begin, end, _info, true);
-
 
     bool search_full_window = true;
     while (movepicker.has_next())
@@ -458,7 +454,8 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta)
             if (position.piece_at(to(move)) == NO_PIECE)
             {
                 _info.update_killers(_info.ply, move);
-                _info.update_history(position.side_to_move(), from(move), to(move), _info.ply);
+                _info.update_history(position.side_to_move(), from(move),
+                                     to(move), _info.ply);
             }
 
             assert(move != NO_MOVE);
@@ -477,7 +474,6 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta)
             best_move = move;
             set_new_pv(_ply_counter, move);
         }
-
     }
 
     if (best_move == NO_MOVE)
@@ -487,16 +483,16 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta)
         PV_LIST[_ply_counter][0] = best_move;
     }
 
-    tt::Flag flag = alpha <= alphaOriginal
-                  ? tt::Flag::kUPPER_BOUND
-                  : tt::Flag::kEXACT;
+    tt::Flag flag =
+        alpha <= alphaOriginal ? tt::Flag::kUPPER_BOUND : tt::Flag::kEXACT;
     tt::TTEntry entry(alpha, depth, flag, best_move);
     _ttable.update(position.hash(), entry);
 
     return alpha;
 }
 
-Value Search::quiescence_search(Position& position, int depth, Value alpha, Value beta)
+Value Search::quiescence_search(Position& position, int depth, Value alpha,
+                                Value beta)
 {
     if (stop_search || check_limits())
     {
@@ -504,8 +500,7 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha, Valu
         return 0;
     }
 
-    if (position.is_draw())
-        return DRAW_SCORE;
+    if (position.is_draw()) return DRAW_SCORE;
 
     bool is_in_check = position.is_in_check(position.side_to_move());
 
@@ -514,21 +509,16 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha, Valu
     Move* begin = QUIESCENCE_MOVE_LIST[depth];
     Move* end = generate_moves(position, position.side_to_move(), begin);
 
-    if (begin == end)
-        return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
+    if (begin == end) return is_in_check ? lost_in(_ply_counter) : DRAW_SCORE;
 
     end = generate_quiescence_moves(position, position.side_to_move(), begin);
 
     Value standpat = _scorer.score(position);
 
-    if (depth <= 0)
-        return standpat;
+    if (depth <= 0) return standpat;
 
-    if (standpat >= beta)
-        return beta;
-    if (standpat > alpha)
-        alpha = standpat;
-
+    if (standpat >= beta) return beta;
+    if (standpat > alpha) alpha = standpat;
 
     MovePicker movepicker(position, begin, end, _info, false);
 
@@ -545,15 +535,15 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha, Valu
             result = -quiescence_search(position, depth - 1, -beta, -alpha);
         else
         {
-            result = -quiescence_search(position, depth - 1, -alpha - 1, -alpha);
+            result =
+                -quiescence_search(position, depth - 1, -alpha - 1, -alpha);
             if (alpha < result && result < beta)
                 result = -quiescence_search(position, depth - 1, -beta, -alpha);
         }
         position.undo_move(move, moveinfo);
         _ply_counter--;
 
-        if (result >= beta)
-            return beta;
+        if (result >= beta) return beta;
         if (result > alpha)
         {
             alpha = result;
@@ -567,8 +557,7 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha, Valu
 bool Search::check_limits()
 {
     check_limits_counter--;
-    if (check_limits_counter > 0)
-        return false;
+    if (check_limits_counter > 0) return false;
 
     check_limits_counter = 40960;
 
@@ -579,7 +568,9 @@ bool Search::check_limits()
     }
 
     TimePoint end_time = std::chrono::steady_clock::now();
-    int64_t elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - _start_time).count();
+    int64_t elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          end_time - _start_time)
+                          .count();
 
     if (elapsed >= _search_time)
     {
@@ -590,4 +581,4 @@ bool Search::check_limits()
     return false;
 }
 
-}
+}  // namespace engine

@@ -7,7 +7,6 @@
 
 namespace engine
 {
-
 struct Score
 {
     Value mg, eg;
@@ -18,13 +17,19 @@ struct Score
     Score(const Score& other) = default;
     Score(Score&& other) = default;
 
-    Score& operator= (const Score& other) = default;
-    Score& operator= (Score&& other) = default;
+    Score& operator=(const Score& other) = default;
+    Score& operator=(Score&& other) = default;
 
-    Score operator+ (const Score& other) const { return Score(mg + other.mg, eg + other.eg); }
-    Score operator- (const Score& other) const { return Score(mg - other.mg, eg - other.mg); }
+    Score operator+(const Score& other) const
+    {
+        return Score(mg + other.mg, eg + other.eg);
+    }
+    Score operator-(const Score& other) const
+    {
+        return Score(mg - other.mg, eg - other.mg);
+    }
 
-    Score& operator+= (const Score& other)
+    Score& operator+=(const Score& other)
     {
         mg += other.mg;
         eg += other.eg;
@@ -33,62 +38,61 @@ struct Score
     }
 };
 
-inline Score operator* (const Score& score, const Value& value)
+inline Score operator*(const Score& score, const Value& value)
 {
     return Score(score.mg * value, score.eg * value);
 }
 
-inline Score operator* (const Value& value, const Score& score)
+inline Score operator*(const Value& value, const Score& score)
 {
     return Score(score.mg * value, score.eg * value);
 }
-
 
 class PositionScorer
 {
-    public:
-        PositionScorer();
+  public:
+    PositionScorer();
 
-        Value score(const Position& position);
+    Value score(const Position& position);
 
-        void clear();
+    void clear();
 
-    private:
+  private:
+    template <Color side>
+    void setup(const Position& position);
 
-        template <Color side>
-        void setup(const Position& position);
+    Score score_pieces(const Position& position);
 
-        Score score_pieces(const Position& position);
+    template <Color side>
+    Score score_pieces_for_side(const Position& position);
 
-        template <Color side>
-        Score score_pieces_for_side(const Position& position);
+    Score score_pawns(const Position& position);
 
-        Score score_pawns(const Position& position);
+    template <Color side>
+    Score score_pawns_for_side(const Position& position);
 
-        template <Color side>
-        Score score_pawns_for_side(const Position& position);
+    template <Color side>
+    Score score_king_safety(const Position& position);
 
-        template <Color side>
-        Score score_king_safety(const Position& position);
+    Value combine(const Score& score);
 
-        Value combine(const Score& score);
+    Value game_phase_weight(const Position& position);
 
-        Value game_phase_weight(const Position& position);
+    template <Color side>
+    Bitboard blockers_for_square(const Position& position, Square sq,
+                                 Bitboard& snipers);
 
-        template <Color side>
-        Bitboard blockers_for_square(const Position& position, Square sq, Bitboard& snipers);
+    PawnHashTable _pawn_hash_table;
+    Value _weight;
 
-        PawnHashTable _pawn_hash_table;
-        Value _weight;
+    Bitboard _attacked_by_bb[COLOR_NUM][PIECE_KIND_NUM];
+    Bitboard _attacked_by_piece[COLOR_NUM];
+    Bitboard _outposts_bb[COLOR_NUM];
 
-        Bitboard _attacked_by_bb[COLOR_NUM][PIECE_KIND_NUM];
-        Bitboard _attacked_by_piece[COLOR_NUM];
-        Bitboard _outposts_bb[COLOR_NUM];
-
-        Bitboard _blockers_for_king[COLOR_NUM];
-        Bitboard _snipers_for_king[COLOR_NUM];
+    Bitboard _blockers_for_king[COLOR_NUM];
+    Bitboard _snipers_for_king[COLOR_NUM];
 };
 
-}
+}  // namespace engine
 
 #endif  // CHESS_ENGINE_SCORE_H_
