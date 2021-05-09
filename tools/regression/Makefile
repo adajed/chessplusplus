@@ -47,7 +47,4 @@ $(OUTDIR_DEBUG):
 format:
 	$(CLANG_FORMAT) $(CLANG_FORMAT_ARGS) $(SOURCES) $(HEADERS)
 
-tidy:
-	$(CLANG_FORMAT) $(CLANG_FORMAT_ARGS) $(SOURCES) $(HEADERS)
-
-.PHONY: release debug format tidy
+.PHONY: release debug format
