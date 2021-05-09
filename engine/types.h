@@ -141,6 +141,12 @@ constexpr File file(Square sq)
     return File(sq & 7);
 }
 
+constexpr Color sq_color(Square sq)
+{
+    assert(sq != NO_SQUARE);
+    return (rank(sq) + file(sq)) % 2 ? WHITE : BLACK;
+}
+
 constexpr Square make_square(Rank rank, File file)
 {
     assert(RANK_1 <= rank && rank <= RANK_8);

@@ -71,8 +71,7 @@ const Score BACKWARD_PAWN_PENALTY = S(-30, -100);
 
 const Score ISOLATED_PAWN_PENALTY = S(-20, -80);
 
-const Score KING_SAFETY_BONUS = S(50, 0);
-
+const Score KING_SAFETY_BONUS = S(30, 0);
 const Score SAFE_KNIGHT = S(10, 2);
 const Score CONTROL_CENTER_KNIGHT = S(10, 10);
 
@@ -92,9 +91,12 @@ const Score PAWN_ISLAND_PENALTY = S(-10, -20);
 
 const Score VULNERABLE_QUEEN_PENALTY = S(-30, -15);
 
-const Score WEAK_BACKRANK_PENALTY = S(-30, -20);
+const Score WEAK_BACKRANK_PENALTY = S(-50, -50);
 
-const Score REAL_SNIPER_PENALTY = S(-15, -20);
+const Score WEAK_KING_RAYS_PENALTY = S(-15, -20);
+
+const Score WEAK_KING_DIAGONALS = S(-5, 0);
+const Score WEAK_KING_LINES = S(-7, 0);
 
 Square flip(Square square)
 {
@@ -396,7 +398,7 @@ Score PositionScorer::score_king_safety(const Position& position)
 
     value += Value(popcount(pawns_in_king_area)) * KING_SAFETY_BONUS;
 
-    if (rank(ownKing) == first_rank)
+    if (rank(ownKing) == first_rank && position.pieces(!side, ROOK, QUEEN))
     {
         // check for backrank weakness
         Bitboard backrank_area = king_area & RANKS_BB[second_rank];
@@ -405,15 +407,14 @@ Score PositionScorer::score_king_safety(const Position& position)
             value += WEAK_BACKRANK_PENALTY;
     }
 
-    Bitboard bb = _snipers_for_king[side];
-    int no_real_snipers = 0;
-    while (bb)
-    {
-        Square sq = Square(pop_lsb(&bb));
-        if (!(LINES[sq][ownKing] & position.pieces(side, PAWN)))
-            no_real_snipers++;
-    }
-    value += REAL_SNIPER_PENALTY * Value(no_real_snipers);
+    value += WEAK_KING_RAYS_PENALTY * Value(popcount(_blockers_for_king[side] & ~(position.pieces(side, PAWN))));
+
+    Bitboard possible_bishop_check = slider_attack<BISHOP>(ownKing, position.pieces());
+    if (position.pieces(!side, QUEEN) || (position.pieces(!side, BISHOP) & color_squares[sq_color(ownKing)]))
+        value += WEAK_KING_DIAGONALS * Value(popcount(possible_bishop_check));
+    Bitboard possible_rook_check = slider_attack<ROOK>(ownKing, position.pieces());
+    if (position.pieces(!side, QUEEN) || position.pieces(!side, ROOK))
+        value += WEAK_KING_LINES * Value(popcount(possible_rook_check));
 
     return value;
 };
@@ -442,9 +443,8 @@ Score PositionScorer::score_pawns_for_side(const Position& position)
 {
     constexpr Piece pawn = make_piece(side, PAWN);
     constexpr Direction up_dir = side == WHITE ? NORTH : SOUTH;
-    constexpr Direction down_dir = side == WHITE ? SOUTH : NORTH;
-    constexpr int up   = side == WHITE ? 1 : -1;
-    constexpr int down = side == WHITE ? -1 : 1;
+    constexpr Direction down_dir = static_cast<Direction>(-up_dir);
+    constexpr int up = side == WHITE ? 1 : -1;
 
     Score value;
     int num_pawns = position.number_of_pieces(pawn);
@@ -473,7 +473,8 @@ Score PositionScorer::score_pawns_for_side(const Position& position)
         bool doubled = static_cast<bool>(ourPawns & shift<down_dir>(square_bb(sq)));
         bool backward = static_cast<bool>(neighbours & passed_pawn_bb<!side>(Square(sq + 8 * up))) && (blocked || leverPush);
 
-        bool passed = !opposed || !(opposed ^ lever)
+        bool passed =  !opposed
+                    || !(opposed ^ lever)
                     || (!(opposed ^ leverPush) && popcount(phalanx) >= popcount(leverPush));
 
         if (doubled)
@@ -490,7 +491,7 @@ Score PositionScorer::score_pawns_for_side(const Position& position)
             value += BACKWARD_PAWN_PENALTY;
 
         if (passed)
-            value += PASSED_PAWN_BONUS * Value(relative_rank * relative_rank);
+            value += PASSED_PAWN_BONUS * Value(relative_rank);
     }
 
     return value;

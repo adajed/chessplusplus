@@ -13,6 +13,10 @@ constexpr Bitboard all_squares_bb = ~no_squares_bb;
 constexpr Bitboard white_squares_bb = 0x55aa55aa55aa55aaULL;
 constexpr Bitboard black_squares_bb = ~white_squares_bb;
 
+const Bitboard color_squares[COLOR_NUM] = {
+    white_squares_bb, black_squares_bb
+};
+
 constexpr Bitboard rank1_bb = 0x00000000000000ffULL;
 constexpr Bitboard rank2_bb = rank1_bb << (8 * 1);
 constexpr Bitboard rank3_bb = rank1_bb << (8 * 2);
