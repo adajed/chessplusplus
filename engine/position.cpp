@@ -8,11 +8,35 @@
 namespace engine
 {
 
+const std::regex Position::SAN_REGEX = std::regex("([NBRQK]?)([a-h]?)([1-8]?)x?([a-h][1-8])=?([nbrqkNBRQK]?)[\\+#]?");
+
 Square notationToSquare(std::string notation)
 {
     File file = File(notation[0] - 'a');
     Rank rank = Rank(notation[1] - '1');
     return make_square(rank, file);
+}
+
+std::string squareToNotation(Square sq)
+{
+    const std::string file_str = "abcdefgh";
+    const std::string rank_str = "12345678";
+    std::string s = "";
+    s += file_str[file(sq)];
+    s += rank_str[rank(sq)];
+    return s;
+}
+
+template <typename T>
+std::vector<T> filter(std::vector<T> xs, std::function<bool(T)> pred)
+{
+    std::vector<T> ys;
+    for (const T& x : xs)
+    {
+        if (pred(x))
+            ys.push_back(x);
+    }
+    return ys;
 }
 
 const std::string Position::STARTPOS_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -237,6 +261,11 @@ Bitboard Position::pieces(Piece p) const
 Bitboard Position::pieces(Piece p1, Piece p2) const
 {
     return pieces(p1) | pieces(p2);
+}
+
+Bitboard Position::pieces(Color c, PieceKind p1, PieceKind p2) const
+{
+    return pieces(c, p1) | pieces(c, p2);
 }
 
 void Position::add_piece(Piece piece, Square square)
@@ -561,6 +590,87 @@ Move Position::parse_uci(const std::string& str)
         move = create_castling(QUEEN_CASTLING);
 
     return move;
+}
+
+std::string Position::san(Move move) const
+{
+    std::string basic_san = san_without_check(move);
+    Position temp = *this;
+    temp.do_move(move);
+
+    if (temp.is_checkmate())
+        return basic_san + "#";
+    if (temp.is_in_check(temp.side_to_move()))
+        return basic_san + "+";
+    return basic_san;
+}
+
+std::string Position::san_without_check(Move move) const
+{
+    /* assert(is_legal(move)); */
+    const std::string piece_str = "  NBRQK";
+    const std::string rank_str = "12345678";
+    const std::string file_str = "abcdefgh";
+    const std::string promotion_str = "  NBRQ ";
+
+    if (castling(move) == KING_CASTLING)
+        return "O-O";
+    if (castling(move) == QUEEN_CASTLING)
+        return "O-O-O";
+
+    PieceKind moved_piece = make_piece_kind(piece_at(from(move)));
+
+    std::array<Move, 128> moves;
+    Move* begin = moves.data();
+    Move* end = generate_moves(*this, _current_side, begin);
+    std::vector<Move> matching_moves(begin, end);
+
+    matching_moves = filter<Move>(matching_moves,
+            [this, move, moved_piece](Move m) {
+                if (castling(m) == NO_CASTLING)
+                {
+                    PieceKind p = make_piece_kind(piece_at(from(m)));
+                    return (moved_piece == p && to(move) == to(m)
+                            && promotion(move) == promotion(m));
+                }
+                return false;
+            });
+
+    std::string s = "";
+    if (moved_piece != PAWN)
+    {
+        s += piece_str[moved_piece];
+    }
+
+    if (matching_moves.size() > 1)
+    {
+        s += file_str[file(from(move))];
+        matching_moves = filter<Move>(matching_moves, [move](Move m) { return file(from(m)) == file(from(move)); });
+        if (matching_moves.size() > 1)
+        {
+            s += rank_str[rank(from(move))];
+        }
+    }
+
+    Bitboard capturing_bb = pieces(!_current_side);
+    capturing_bb |= moved_piece == PAWN ? square_bb(_enpassant_square) : no_squares_bb;
+    if (square_bb(to(move)) & capturing_bb)
+    {
+        if (moved_piece == PAWN && s == "")
+        {
+            s += file_str[file(from(move))];
+        }
+        s += "x";
+    }
+
+    s += squareToNotation(to(move));
+    if (promotion(move) != NO_PIECE_KIND)
+    {
+        s += "=";
+        s += promotion_str[promotion(move)];
+    }
+
+    return s;
 }
 
 

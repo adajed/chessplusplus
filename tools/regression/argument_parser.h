@@ -14,7 +14,7 @@ struct EngineParams
 
 struct Args
 {
-    Args() : engines(), time_format{300000, 3000}, num_games(1), debug(false), repeat(false), polyglot(""), book_depth(0) {}
+    Args() : engines(), time_format{300000, 3000}, num_games(1), debug(false), repeat(false), polyglot(""), book_depth(0), pgn_file("games.pgn") {}
 
     std::vector<EngineParams> engines;
     TimeFormat time_format;
@@ -23,6 +23,7 @@ struct Args
     bool repeat;
     std::string polyglot;
     int book_depth;
+    std::string pgn_file;
 };
 
 Args parse_args(int argc, char** argv)
@@ -100,6 +101,11 @@ Args parse_args(int argc, char** argv)
         {
             pos++;
             args.book_depth = std::stoi(tokens[pos++]);
+        }
+        else if (tokens[pos] == "--pgn")
+        {
+            pos++;
+            args.pgn_file = tokens[pos++];
         }
         else
         {

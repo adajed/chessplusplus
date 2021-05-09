@@ -8,9 +8,14 @@
 namespace engine
 {
 
-constexpr Bitboard all_squares_bb = ~Bitboard(0);
+constexpr Bitboard no_squares_bb = 0ULL;
+constexpr Bitboard all_squares_bb = ~no_squares_bb;
 constexpr Bitboard white_squares_bb = 0x55aa55aa55aa55aaULL;
 constexpr Bitboard black_squares_bb = ~white_squares_bb;
+
+const Bitboard color_squares[COLOR_NUM] = {
+    white_squares_bb, black_squares_bb
+};
 
 constexpr Bitboard rank1_bb = 0x00000000000000ffULL;
 constexpr Bitboard rank2_bb = rank1_bb << (8 * 1);
@@ -22,6 +27,14 @@ constexpr Bitboard rank7_bb = rank1_bb << (8 * 6);
 constexpr Bitboard rank8_bb = rank1_bb << (8 * 7);
 const Bitboard RANKS_BB[RANK_NUM] = {
     rank1_bb, rank2_bb, rank3_bb, rank4_bb, rank5_bb, rank6_bb, rank7_bb, rank8_bb
+};
+
+/*
+ * Bitboard containing ranks of opponent
+ */
+const Bitboard OPPONENT_RANKS[COLOR_NUM] = {
+    rank5_bb | rank6_bb | rank7_bb | rank8_bb,
+    rank1_bb | rank2_bb | rank3_bb | rank4_bb
 };
 
 constexpr Bitboard middle_ranks = rank2_bb | rank3_bb | rank4_bb | rank5_bb | rank6_bb | rank7_bb;
@@ -49,6 +62,12 @@ const Bitboard NEIGHBOUR_FILES_BB[FILE_NUM] = {
     fileG_bb
 };
 
+constexpr Bitboard center_bb = (fileD_bb | fileE_bb) & (rank4_bb & rank5_bb);
+
+/*
+ * Returns bb with ranks in front of the given square
+ * (from the persepctive of side).
+ */
 template<Color side>
 inline Bitboard forward_ranks_bb(Square square)
 {
@@ -123,6 +142,17 @@ Bitboard pawn_attacks(Bitboard bb)
 {
     return side == WHITE ? (shift<NORTHWEST>(bb) | shift<NORTHEAST>(bb))
                          : (shift<SOUTHWEST>(bb) | shift<SOUTHEAST>(bb));
+}
+
+/*
+ * Returns bb with squares that are attacked by at least two pawns.
+ * \input bb Bitboard with position of pawns.
+ */
+template <Color side>
+Bitboard pawn_doubled_attacks(Bitboard bb)
+{
+    return side == WHITE ? (shift<NORTHWEST>(bb) & shift<NORTHEAST>(bb))
+                         : (shift<SOUTHWEST>(bb) & shift<SOUTHEAST>(bb));
 }
 
 inline Bitboard king_attacks(Bitboard bb)

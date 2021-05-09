@@ -1,6 +1,6 @@
 #include "polyglot.h"
 
-#include <bits/stdint-uintn.h>
+#include <chrono>
 #include <fstream>
 
 namespace engine
@@ -240,7 +240,7 @@ const uint64_t POLYGLOT_ENPASSANT[FILE_NUM] = {
 const uint64_t POLYGLOT_TURN = 0xF8D626AAAF278509ULL;
 
 PolyglotBook::PolyglotBook(std::string path)
-    : _hashmap()
+    : _hashmap(), _gen(std::chrono::system_clock::now().time_since_epoch().count()), _dist()
 {
     std::ifstream stream(path, std::ios::binary);
     stream.seekg(0);
@@ -338,7 +338,7 @@ Move PolyglotBook::sample_move(uint64_t key, const Position& position) const
 
     assert(sum_of_weights > 0);
 
-    int sample = rand() % sum_of_weights;
+    int sample = _dist(_gen) % sum_of_weights;
     int w = 0;
     int i = 0;
     for (; i < static_cast<int>(moves.size()) && w + moves[i].second < sample; ++i)

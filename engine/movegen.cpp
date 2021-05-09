@@ -4,8 +4,8 @@
 namespace engine
 {
 
-Move MOVE_LIST[MAX_DEPTH][MAX_MOVES];
-Move QUIESCENCE_MOVE_LIST[MAX_DEPTH][MAX_MOVES];
+Move MOVE_LIST[2 * MAX_DEPTH][MAX_MOVES];
+Move QUIESCENCE_MOVE_LIST[2 * MAX_DEPTH][MAX_MOVES];
 Move TEMP_MOVE_LIST[MAX_MOVES];
 
 Bitboard attack_in_ray(Square sq, Ray ray, Bitboard blockers)
@@ -25,36 +25,6 @@ Bitboard attack_in_ray(Square sq, Ray ray, Bitboard blockers)
 Bitboard attack_in_line(Square sq, Ray ray, Bitboard blockers)
 {
     return attack_in_ray(sq, ray, blockers) | attack_in_ray(sq, opposite_ray(ray), blockers);
-}
-
-template <PieceKind piece>
-Bitboard slider_attack(Square sq, Bitboard blockers)
-{
-    assert(false);
-    return 0ULL;
-}
-
-template <>
-Bitboard slider_attack<BISHOP>(Square sq, Bitboard blockers)
-{
-    blockers &= BISHOP_MASK[sq];
-    uint64_t key = (blockers * BISHOP_MAGICS[sq]) >> (64 - BISHOP_INDEX_BITS[sq]);
-    return BISHOP_TABLE[sq][key];
-}
-
-template <>
-Bitboard slider_attack<ROOK>(Square sq, Bitboard blockers)
-{
-    blockers &= ROOK_MASK[sq];
-    uint64_t key = (blockers * ROOK_MAGICS[sq]) >> (64 - ROOK_INDEX_BITS[sq]);
-    return ROOK_TABLE[sq][key];
-}
-
-template <>
-Bitboard slider_attack<QUEEN>(Square sq, Bitboard blockers)
-{
-    return slider_attack<BISHOP>(sq, blockers)
-            | slider_attack<ROOK>(sq, blockers);
 }
 
 

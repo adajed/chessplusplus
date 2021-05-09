@@ -2,6 +2,7 @@
 #define CHESS_ENGINE_POLYGLOT_H_
 
 #include <map>
+#include <random>
 
 #include "position.h"
 #include "types.h"
@@ -29,6 +30,9 @@ class PolyglotBook
         Move decode_move(Move move, const Position& position) const;
 
         std::map<uint64_t, std::vector<WeightedMove>> _hashmap;
+        mutable std::mt19937 _gen;
+        mutable std::uniform_int_distribution<std::mt19937::result_type> _dist;
+
 };
 
 

@@ -5,13 +5,11 @@ all: release debug
 release: engine test tools
 debug: engine_debug test_debug tools_debug
 
-#### engine
-
 engine:
-	@+make -C engine release
+	@+make -C engine engine_release
 
 engine_debug:
-	@+make -C engine debug
+	@+make -C engine engine_debug
 
 
 #### test

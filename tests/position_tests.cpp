@@ -3,6 +3,7 @@
 
 #include "bitboard.h"
 #include "position.h"
+#include "score.h"
 
 using namespace engine;
 
@@ -271,5 +272,12 @@ TEST(PositionTest, hash)
         EXPECT_EQ(pawn_hash, position.pawn_hash());
     }
 }
+
+/* TEST(ScoreTest, knight) */
+/* { */
+/*     Position position("rnbqkb1r/pp2pppp/2p5/3pP3/4n3/2N2N2/PPPP1PPP/R1BQKB1R w - -"); */
+/*     PositionScorer scorer; */
+/*     std::cout << scorer.score(position) << std::endl; */
+/* } */
 
 }

@@ -81,16 +81,13 @@ enum GamePhase : uint32_t
 };
 constexpr uint32_t GAME_PHASE_NUM = 2;
 
-enum Value : int64_t
-{
-    VALUE_DRAW = 0LL,
-    VALUE_KNOWN_WIN = 12000LL,
+using Value = int64_t;
 
-    VALUE_MATE = 64000LL,
-    VALUE_INFINITE = 64001LL,
-    VALUE_NONE = 64002LL
-
-};
+constexpr Value VALUE_DRAW = 0LL;
+constexpr Value VALUE_KNOWN_WIN = 12000LL;
+constexpr Value VALUE_MATE = 64000LL;
+constexpr Value VALUE_INFINITE = 64001LL;
+constexpr Value VALUE_NONE = 64002L;
 
 // encoded move
 // 0-5 - from
@@ -144,6 +141,12 @@ constexpr File file(Square sq)
     return File(sq & 7);
 }
 
+constexpr Color sq_color(Square sq)
+{
+    assert(sq != NO_SQUARE);
+    return (rank(sq) + file(sq)) % 2 ? WHITE : BLACK;
+}
+
 constexpr Square make_square(Rank rank, File file)
 {
     assert(RANK_1 <= rank && rank <= RANK_8);
@@ -180,16 +183,12 @@ ENABLE_BASIC_OPERATIONS(Rank)
 ENABLE_BASIC_OPERATIONS(File)
 ENABLE_BASIC_OPERATIONS(Piece)
 ENABLE_BASIC_OPERATIONS(PieceKind)
-ENABLE_BASIC_OPERATIONS(Value)
 
 ENABLE_INCREMENT_OPERATIONS(Square)
 ENABLE_INCREMENT_OPERATIONS(Rank)
 ENABLE_INCREMENT_OPERATIONS(File)
 ENABLE_INCREMENT_OPERATIONS(PieceKind)
 ENABLE_INCREMENT_OPERATIONS(Piece)
-ENABLE_INCREMENT_OPERATIONS(Value)
-
-constexpr Value operator- (Value v) { return Value(-int64_t(v)); }
 
 constexpr Castling operator& (Castling c1, Castling c2) { return Castling(uint32_t(c1) & uint32_t(c2)); }
 inline Castling& operator|= (Castling& c1, Castling c2) { return c1 = Castling(c1 | c2); }
@@ -244,7 +243,7 @@ inline int distance(Square from, Square to)
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb);
 
 constexpr int MAX_DEPTH = 40;
-constexpr int MAX_MOVES = 256;
+constexpr int MAX_MOVES = 512;
 constexpr int MAX_PINS = 16;
 
 struct Limits

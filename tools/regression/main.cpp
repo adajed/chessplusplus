@@ -9,6 +9,8 @@
 #include "argument_parser.h"
 #include "timer.h"
 
+#include <fstream>
+
 constexpr int WIN_WHITE = 0;
 constexpr int WIN_BLACK = 1;
 constexpr int DRAW = 2;
@@ -28,7 +30,7 @@ struct GameParams
     std::vector<Move> intial_moves;
 };
 
-int game(GameParams& params)
+int game(GameParams& params, std::ofstream& fd)
 {
     Timer timers[COLOR_NUM] = {
         Timer(params.time_format.time_initial_ms, params.time_format.time_increment_ms),
@@ -83,26 +85,38 @@ int game(GameParams& params)
         depth++;
     }
 
+    int result = DRAW;
+    if (timers[WHITE].get_time_left_ms() == 0)
+        result = WIN_BLACK;
+    if (timers[BLACK].get_time_left_ms() == 0)
+        result = WIN_WHITE;
+    if (position.is_checkmate())
+        result = position.side_to_move() == WHITE ? WIN_BLACK : WIN_WHITE;
+
+    fd << "[Event \"?\"]" << std::endl;
+    fd << "[Site \"?\"]" << std::endl;
+    fd << "[White \"" << engines[WHITE]->get_name() << "\"]" << std::endl;
+    fd << "[Black \"" << engines[BLACK]->get_name() << "\"]" << std::endl;
+    fd << "[Result \"?\"]" << std::endl;
+    fd << std::endl;
     Position temp_position;
-    std::cout << "Moves: ";
     for (int i = 0; i < moves.size(); i++) {
         if (i % 2 == 0)
         {
-            std::cout << (i / 2) + 1 << ". ";
+            fd << (i / 2) + 1 << ". ";
         }
-        std::cout << temp_position.uci(moves[i]) << " ";
+        fd << temp_position.san(moves[i]) << " ";
         temp_position.do_move(moves[i]);
     }
-    std::cout << std::endl;
+    if (result == DRAW)
+        fd << "1/2-1/2" << std::endl;
+    else if (result == WIN_WHITE)
+        fd << "1-0" << std::endl;
+    else if (result == WIN_BLACK)
+        fd << "0-1" << std::endl;
+    fd << std::endl;
 
-
-    if (timers[WHITE].get_time_left_ms() == 0)
-        return WIN_BLACK;
-    if (timers[BLACK].get_time_left_ms() == 0)
-        return WIN_WHITE;
-    if (position.is_checkmate())
-        return position.side_to_move() == WHITE ? WIN_BLACK : WIN_WHITE;
-    return DRAW;
+    return result;
 }
 
 int main(int argc, char** argv)
@@ -114,6 +128,8 @@ int main(int argc, char** argv)
         std::cerr << "At least 2 engines necessary" << std::endl;
         return 1;
     }
+
+    std::ofstream fd(args.pgn_file);
 
     init_move_bitboards();
     init_zobrist();
@@ -137,7 +153,7 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < args.num_games; ++i)
     {
-        int result = game(params);
+        int result = game(params, fd);
 
         if (result == WIN_WHITE)
         {

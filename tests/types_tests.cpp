@@ -75,4 +75,23 @@ TEST(TypesTest, create_moveinfo)
     }
 }
 
+TEST(TypesTest, square)
+{
+    for (Rank r = RANK_1; r <= RANK_8; ++r)
+    {
+        for (File f = FILE_A; f <= FILE_H; ++f)
+        {
+            Square sq = make_square(r, f);
+
+            EXPECT_EQ(rank(sq), r);
+            EXPECT_EQ(file(sq), f);
+
+            if ((r % 2 == 0 && f % 2 == 1) || (r % 2 == 1 && f % 2 == 0))
+                EXPECT_EQ(sq_color(sq), WHITE);
+            else
+                EXPECT_EQ(sq_color(sq), BLACK);
+        }
+    }
+}
+
 }
