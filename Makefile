@@ -37,8 +37,13 @@ clean:
 ctags:
 	ctags -R --tag-relative=yes --exclude=.git $(ROOTDIR)
 
+format:
+	@+make -C engine format
+	@+make -C tools format
+
 tidy:
-	clang-tidy-8 $(ENGINE_SOURCES) -header-filter=src/*.h -checks='*' -warnings-as-errors='*'
+	@+make -C engine tidy
+	@+make -C tools tidy
 
 coverage: test_debug
 	$(TEST_DEBUG)
@@ -60,4 +65,4 @@ help:
 
 .PHONY: release engine test tools
 .PHONY: debug engine_debug test_debug tools_debug
-.PHONY: clean compiledb ctags tidy coverage ehelp
+.PHONY: clean compiledb ctags tidy format coverage ehelp

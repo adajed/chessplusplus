@@ -8,19 +8,20 @@
 
 namespace engine
 {
-
 const int32_t MAX_PLIES = 400;
 
 using Bitboard = uint64_t;
 
 enum Color : uint32_t
 {
-    WHITE, BLACK,
+    WHITE,
+    BLACK,
 };
 constexpr uint32_t COLOR_NUM = 2;
 
 enum Square : uint32_t
 {
+    // clang-format off
     SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_E1, SQ_F1, SQ_G1, SQ_H1,
     SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
     SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3,
@@ -30,42 +31,72 @@ enum Square : uint32_t
     SQ_A7, SQ_B7, SQ_C7, SQ_D7, SQ_E7, SQ_F7, SQ_G7, SQ_H7,
     SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8,
     NO_SQUARE
+    // clang-format on
 };
 constexpr uint32_t SQUARE_NUM = 64;
 
 enum PieceKind : uint32_t
 {
     NO_PIECE_KIND,
-    PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING
+    PAWN,
+    KNIGHT,
+    BISHOP,
+    ROOK,
+    QUEEN,
+    KING
 };
 constexpr uint32_t PIECE_KIND_NUM = 7;
 
 enum Piece : uint32_t
 {
     NO_PIECE,
-    W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
-    B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING,
+    W_PAWN,
+    W_KNIGHT,
+    W_BISHOP,
+    W_ROOK,
+    W_QUEEN,
+    W_KING,
+    B_PAWN,
+    B_KNIGHT,
+    B_BISHOP,
+    B_ROOK,
+    B_QUEEN,
+    B_KING,
 };
 constexpr uint32_t PIECE_NUM = 13;
 
 enum Rank : int32_t
 {
-    RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8,
+    RANK_1,
+    RANK_2,
+    RANK_3,
+    RANK_4,
+    RANK_5,
+    RANK_6,
+    RANK_7,
+    RANK_8,
 };
 constexpr uint32_t RANK_NUM = 8;
 
 enum File : int32_t
 {
-    FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H,
+    FILE_A,
+    FILE_B,
+    FILE_C,
+    FILE_D,
+    FILE_E,
+    FILE_F,
+    FILE_G,
+    FILE_H,
 };
 constexpr uint32_t FILE_NUM = 8;
 
 enum Castling : uint32_t
 {
     NO_CASTLING = 0,
-    W_OO  = 1 << 0,
+    W_OO = 1 << 0,
     W_OOO = 1 << 1,
-    B_OO  = 1 << 2,
+    B_OO = 1 << 2,
     B_OOO = 1 << 3,
     W_CASTLING = W_OO | W_OOO,
     B_CASTLING = B_OO | B_OOO,
@@ -116,8 +147,9 @@ Move create_castling(Castling castling);
 // 15-22 - half move counter
 using MoveInfo = uint32_t;
 
-MoveInfo create_moveinfo(PieceKind captured, Castling last_castling, Square last_enpassant,
-                         bool enpassant, uint8_t half_move_counter);
+MoveInfo create_moveinfo(PieceKind captured, Castling last_castling,
+                         Square last_enpassant, bool enpassant,
+                         uint8_t half_move_counter);
 
 PieceKind captured_piece(MoveInfo moveinfo);
 Castling last_castling(MoveInfo moveinfo);
@@ -125,8 +157,8 @@ Square last_enpassant_square(MoveInfo moveinfo);
 bool enpassant(MoveInfo moveinfo);
 uint8_t half_move_counter(MoveInfo moveinfo);
 
-const Castling CASTLING_RIGHTS[COLOR_NUM]      = {W_CASTLING, B_CASTLING};
-const Square KING_SIDE_ROOK_SQUARE[COLOR_NUM]  = {SQ_H1, SQ_H8};
+const Castling CASTLING_RIGHTS[COLOR_NUM] = {W_CASTLING, B_CASTLING};
+const Square KING_SIDE_ROOK_SQUARE[COLOR_NUM] = {SQ_H1, SQ_H8};
 const Square QUEEN_SIDE_ROOK_SQUARE[COLOR_NUM] = {SQ_A1, SQ_A8};
 
 constexpr Rank rank(Square sq)
@@ -164,19 +196,25 @@ constexpr Square flip_horizontally(Square sq)
     return make_square(rank(sq), File(FILE_H - file(sq)));
 }
 
-#define ENABLE_BASIC_OPERATIONS(T)                                            \
-constexpr T operator+ (T v1, T v2) { return T(uint32_t(v1) + uint32_t(v2)); } \
-constexpr T operator- (T v1, T v2) { return T(uint32_t(v1) - uint32_t(v2)); } \
-inline T& operator+= (T& v1, T v2) { return v1 = v1 + v2; }                   \
-inline T& operator-= (T& v1, T v2) { return v1 = v1 - v2; }                   \
-inline T& operator+= (T& v1, uint32_t v2) { return v1 = v1 + T(v2); }         \
-inline T& operator-= (T& v1, uint32_t v2) { return v1 = v1 - T(v2); }         \
-inline T& operator+= (T& v1, int v2) { return v1 = v1 + T(v2); }              \
-inline T& operator-= (T& v1, int v2) { return v1 = v1 - T(v2); }
+#define ENABLE_BASIC_OPERATIONS(T)                                       \
+    constexpr T operator+(T v1, T v2)                                    \
+    {                                                                    \
+        return T(uint32_t(v1) + uint32_t(v2));                           \
+    }                                                                    \
+    constexpr T operator-(T v1, T v2)                                    \
+    {                                                                    \
+        return T(uint32_t(v1) - uint32_t(v2));                           \
+    }                                                                    \
+    inline T& operator+=(T& v1, T v2) { return v1 = v1 + v2; }           \
+    inline T& operator-=(T& v1, T v2) { return v1 = v1 - v2; }           \
+    inline T& operator+=(T& v1, uint32_t v2) { return v1 = v1 + T(v2); } \
+    inline T& operator-=(T& v1, uint32_t v2) { return v1 = v1 - T(v2); } \
+    inline T& operator+=(T& v1, int v2) { return v1 = v1 + T(v2); }      \
+    inline T& operator-=(T& v1, int v2) { return v1 = v1 - T(v2); }
 
-#define ENABLE_INCREMENT_OPERATIONS(T)                         \
-inline T& operator++ (T& v) { return v = T(uint32_t(v) + 1); } \
-inline T& operator-- (T& v) { return v = T(uint32_t(v) - 1); }
+#define ENABLE_INCREMENT_OPERATIONS(T)                            \
+    inline T& operator++(T& v) { return v = T(uint32_t(v) + 1); } \
+    inline T& operator--(T& v) { return v = T(uint32_t(v) - 1); }
 
 ENABLE_BASIC_OPERATIONS(Square)
 ENABLE_BASIC_OPERATIONS(Rank)
@@ -190,29 +228,42 @@ ENABLE_INCREMENT_OPERATIONS(File)
 ENABLE_INCREMENT_OPERATIONS(PieceKind)
 ENABLE_INCREMENT_OPERATIONS(Piece)
 
-constexpr Castling operator& (Castling c1, Castling c2) { return Castling(uint32_t(c1) & uint32_t(c2)); }
-inline Castling& operator|= (Castling& c1, Castling c2) { return c1 = Castling(c1 | c2); }
-inline Castling& operator&= (Castling& c1, Castling c2) { return c1 = Castling(c1 & c2); }
+constexpr Castling operator&(Castling c1, Castling c2)
+{
+    return Castling(uint32_t(c1) & uint32_t(c2));
+}
+inline Castling& operator|=(Castling& c1, Castling c2)
+{
+    return c1 = Castling(c1 | c2);
+}
+inline Castling& operator&=(Castling& c1, Castling c2)
+{
+    return c1 = Castling(c1 & c2);
+}
 
-constexpr Castling operator! (Castling castling) { return Castling(~castling); }
+constexpr Castling operator!(Castling castling)
+{
+    return Castling(~castling);
+}
 
-constexpr Bitboard square_bb(Square sq) { return 1ULL << sq; }
+constexpr Bitboard square_bb(Square sq)
+{
+    return 1ULL << sq;
+}
 
 constexpr PieceKind make_piece_kind(Piece piece)
 {
-    if (piece == NO_PIECE)
-        return NO_PIECE_KIND;
+    if (piece == NO_PIECE) return NO_PIECE_KIND;
     return PieceKind((piece - 1) % 6 + 1);
 }
 
 constexpr Piece make_piece(Color side, PieceKind piece_kind)
 {
-    if (piece_kind == NO_PIECE_KIND)
-        return NO_PIECE;
+    if (piece_kind == NO_PIECE_KIND) return NO_PIECE;
     return Piece(piece_kind + 6 * side);
 }
 
-constexpr Color operator! (Color color)
+constexpr Color operator!(Color color)
 {
     return Color(1 - color);
 }
@@ -237,7 +288,8 @@ constexpr bool is_piece_slider(Piece piece)
 
 inline int distance(Square from, Square to)
 {
-    return std::max(abs(int(rank(from)) - int(rank(to))), abs(int(file(from)) - int(file(to))));
+    return std::max(abs(int(rank(from)) - int(rank(to))),
+                    abs(int(file(from)) - int(file(to))));
 }
 
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb);
@@ -249,13 +301,13 @@ constexpr int MAX_PINS = 16;
 struct Limits
 {
     Limits()
-        : searchmovesnum(0)
-        , ponder(false)
-        , movestogo(0)
-        , depth(0)
-        , nodes(0)
-        , movetime(0)
-        , infinite(false)
+        : searchmovesnum(0),
+          ponder(false),
+          movestogo(0),
+          depth(0),
+          nodes(0),
+          movetime(0),
+          infinite(false)
     {
         timeleft[WHITE] = timeleft[BLACK] = 0;
         timeinc[WHITE] = timeinc[BLACK] = 0;

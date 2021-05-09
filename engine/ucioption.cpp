@@ -5,7 +5,6 @@
 
 namespace engine
 {
-
 UciOption::UciOption(bool check, Callback<bool> callback)
     : _type(kCHECK), _check(check), _check_callback(callback)
 {
@@ -13,7 +12,11 @@ UciOption::UciOption(bool check, Callback<bool> callback)
 }
 
 UciOption::UciOption(int initial, int min, int max, Callback<int> callback)
-    : _type(kSPIN), _spin(initial), _spin_min(min), _spin_max(max), _spin_callback(callback)
+    : _type(kSPIN),
+      _spin(initial),
+      _spin_min(min),
+      _spin_max(max),
+      _spin_callback(callback)
 {
     _spin_callback(_spin);
 }
@@ -23,8 +26,12 @@ UciOption::UciOption(CallbackVoid callback)
 {
 }
 
-UciOption::UciOption(std::string initial, std::vector<std::string> options, Callback<std::string> callback)
-    : _type(kCOMBO), _combo_options(options), _string(initial), _string_callback(callback)
+UciOption::UciOption(std::string initial, std::vector<std::string> options,
+                     Callback<std::string> callback)
+    : _type(kCOMBO),
+      _combo_options(options),
+      _string(initial),
+      _string_callback(callback)
 {
     _string_callback(_string);
 }
@@ -60,7 +67,8 @@ void UciOption::set(std::string value)
 {
     assert(_type == kCOMBO || _type == kSTRING);
     if (_type == kCOMBO)
-        assert(std::find(_combo_options.begin(), _combo_options.end(), value) != _combo_options.end());
+        assert(std::find(_combo_options.begin(), _combo_options.end(), value) !=
+               _combo_options.end());
     _string = value;
     _string_callback(_string);
 }
@@ -70,4 +78,4 @@ OptionType UciOption::get_type() const
     return _type;
 }
 
-}
+}  // namespace engine

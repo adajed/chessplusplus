@@ -5,14 +5,13 @@
 
 namespace engine
 {
-
 class Position;
 
 void init_zobrist();
 
 class HashKey
 {
-public:
+  public:
     HashKey();
 
     void init(const Position& position);
@@ -35,7 +34,7 @@ public:
 
     void set_castling(Castling castling);
 
-private:
+  private:
     uint64_t _piece_key;
     uint64_t _pawn_key;
     uint64_t _enpassant_key;

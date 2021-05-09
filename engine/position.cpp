@@ -1,4 +1,5 @@
 #include "position.h"
+
 #include "movegen.h"
 #include "types.h"
 #include "zobrist_hash.h"
@@ -7,8 +8,8 @@
 
 namespace engine
 {
-
-const std::regex Position::SAN_REGEX = std::regex("([NBRQK]?)([a-h]?)([1-8]?)x?([a-h][1-8])=?([nbrqkNBRQK]?)[\\+#]?");
+const std::regex Position::SAN_REGEX = std::regex(
+    "([NBRQK]?)([a-h]?)([1-8]?)x?([a-h][1-8])=?([nbrqkNBRQK]?)[\\+#]?");
 
 Square notationToSquare(std::string notation)
 {
@@ -33,20 +34,17 @@ std::vector<T> filter(std::vector<T> xs, std::function<bool(T)> pred)
     std::vector<T> ys;
     for (const T& x : xs)
     {
-        if (pred(x))
-            ys.push_back(x);
+        if (pred(x)) ys.push_back(x);
     }
     return ys;
 }
 
-const std::string Position::STARTPOS_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const std::string Position::STARTPOS_FEN =
+    "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-Position::Position() : Position(STARTPOS_FEN)
-{
-}
+Position::Position() : Position(STARTPOS_FEN) {}
 
-Position::Position(std::string fen)
-    : _zobrist_hash()
+Position::Position(std::string fen) : _zobrist_hash()
 {
     _current_side = WHITE;
     std::fill_n(_board, SQUARE_NUM, NO_PIECE);
@@ -60,8 +58,9 @@ Position::Position(std::string fen)
     std::string token;
 
     std::map<char, Piece> char_to_piece = {
-        {'P', W_PAWN}, {'N', W_KNIGHT}, {'B', W_BISHOP}, {'R', W_ROOK}, {'Q', W_QUEEN}, {'K', W_KING},
-        {'p', B_PAWN}, {'n', B_KNIGHT}, {'b', B_BISHOP}, {'r', B_ROOK}, {'q', B_QUEEN}, {'k', B_KING},
+        {'P', W_PAWN},   {'N', W_KNIGHT}, {'B', W_BISHOP}, {'R', W_ROOK},
+        {'Q', W_QUEEN},  {'K', W_KING},   {'p', B_PAWN},   {'n', B_KNIGHT},
+        {'b', B_BISHOP}, {'r', B_ROOK},   {'q', B_QUEEN},  {'k', B_KING},
     };
 
     stream >> token;
@@ -92,10 +91,10 @@ Position::Position(std::string fen)
     {
         switch (c)
         {
-            case 'K': _castling_rights |= W_OO;  break;
-            case 'Q': _castling_rights |= W_OOO; break;
-            case 'k': _castling_rights |= B_OO;  break;
-            case 'q': _castling_rights |= B_OOO; break;
+        case 'K': _castling_rights |= W_OO; break;
+        case 'Q': _castling_rights |= W_OOO; break;
+        case 'k': _castling_rights |= B_OO; break;
+        case 'q': _castling_rights |= B_OOO; break;
         }
     }
 
@@ -114,21 +113,16 @@ Position::Position(std::string fen)
     _history_counter = 1;
 }
 
-bool Position::operator== (const Position& other) const
+bool Position::operator==(const Position& other) const
 {
     // first check hashes
-    if (_zobrist_hash.get_key() != other._zobrist_hash.get_key())
-        return false;
+    if (_zobrist_hash.get_key() != other._zobrist_hash.get_key()) return false;
 
-    if (_current_side != other._current_side)
-        return false;
-    if (_castling_rights != other._castling_rights)
-        return false;
-    if (_enpassant_square != other._enpassant_square)
-        return false;
+    if (_current_side != other._current_side) return false;
+    if (_castling_rights != other._castling_rights) return false;
+    if (_enpassant_square != other._enpassant_square) return false;
     for (Square square = SQ_A1; square <= SQ_H8; ++square)
-        if (_board[square] != other._board[square])
-            return false;
+        if (_board[square] != other._board[square]) return false;
     return true;
 }
 
@@ -161,15 +155,14 @@ std::string Position::fen() const
             stream << static_cast<char>('0' + counter);
             counter = 0;
         }
-        if (rank > 0)
-            stream << "/";
+        if (rank > 0) stream << "/";
     }
     stream << " " << (_current_side == WHITE ? "w" : "b") << " ";
     if (_castling_rights != NO_CASTLING)
     {
-        if (_castling_rights & W_OO)  stream << "K";
+        if (_castling_rights & W_OO) stream << "K";
         if (_castling_rights & W_OOO) stream << "Q";
-        if (_castling_rights & B_OO)  stream << "k";
+        if (_castling_rights & B_OO) stream << "k";
         if (_castling_rights & B_OOO) stream << "q";
     }
     else
@@ -183,25 +176,22 @@ std::string Position::fen() const
     else
         stream << "-";
 
-    stream << " " << uint32_t(_half_move_counter) << " " << (_ply_counter - 1) / 2 + 1;
+    stream << " " << uint32_t(_half_move_counter) << " "
+           << (_ply_counter - 1) / 2 + 1;
 
     return stream.str();
 }
 
 bool Position::is_draw() const
 {
-    if (rule50()
-            || threefold_repetition()
-            || !enough_material())
-        return true;
+    if (rule50() || threefold_repetition() || !enough_material()) return true;
     return false;
 }
 
 bool Position::threefold_repetition() const
 {
     for (int i = _history_counter - 2; i >= 0; --i)
-        if (_history[i] == _zobrist_hash.get_key())
-            return true;
+        if (_history[i] == _zobrist_hash.get_key()) return true;
     return false;
 }
 
@@ -212,21 +202,24 @@ bool Position::rule50() const
 
 bool Position::enough_material() const
 {
-    if (popcount(pieces()) > 4)
-        return true;
+    if (popcount(pieces()) > 4) return true;
 
     if (popcount(pieces(WHITE)) == 1)
     {
-        if (pieces(BLACK) == pieces(B_KING, B_KNIGHT) && _piece_count[B_KNIGHT] <= 2)
+        if (pieces(BLACK) == pieces(B_KING, B_KNIGHT) &&
+            _piece_count[B_KNIGHT] <= 2)
             return false;
-        if (pieces(BLACK) == pieces(B_KING, B_BISHOP) && _piece_count[B_BISHOP] <= 1)
+        if (pieces(BLACK) == pieces(B_KING, B_BISHOP) &&
+            _piece_count[B_BISHOP] <= 1)
             return false;
     }
     else if (popcount(pieces(BLACK)) == 1)
     {
-        if (pieces(WHITE) == pieces(W_KING, W_KNIGHT) && _piece_count[W_KNIGHT] <= 2)
+        if (pieces(WHITE) == pieces(W_KING, W_KNIGHT) &&
+            _piece_count[W_KNIGHT] <= 2)
             return false;
-        if (pieces(WHITE) == pieces(W_KING, W_BISHOP) && _piece_count[W_BISHOP] <= 1)
+        if (pieces(WHITE) == pieces(W_KING, W_BISHOP) &&
+            _piece_count[W_BISHOP] <= 1)
             return false;
     }
 
@@ -378,23 +371,24 @@ MoveInfo Position::do_move(Move move)
         assert(moved_piece != NO_PIECE);
 
         if (get_piece_kind(moved_piece) != PAWN &&
-                make_piece_kind(captured_piece) == NO_PIECE_KIND)
+            make_piece_kind(captured_piece) == NO_PIECE_KIND)
             _half_move_counter++;
         else
             _half_move_counter = 0;
 
         // enpassant
-        if (get_piece_kind(moved_piece) == PAWN && to(move) == _enpassant_square)
+        if (get_piece_kind(moved_piece) == PAWN &&
+            to(move) == _enpassant_square)
         {
             move_piece(from(move), to(move));
-            Square captured_square = Square(to(move) + (side == WHITE ? -8 : 8));
+            Square captured_square =
+                Square(to(move) + (side == WHITE ? -8 : 8));
             remove_piece(captured_square);
             enpassant = true;
         }
         else
         {
-            if (captured_piece != NO_PIECE)
-                remove_piece(to(move));
+            if (captured_piece != NO_PIECE) remove_piece(to(move));
 
             if (promotion(move) != NO_PIECE_KIND)
             {
@@ -406,21 +400,25 @@ MoveInfo Position::do_move(Move move)
 
             if (get_piece_kind(moved_piece) == KING)
                 _castling_rights &= !CASTLING_RIGHTS[side];
-            if (get_piece_kind(moved_piece) == ROOK && from(move) == KING_SIDE_ROOK_SQUARE[side])
+            if (get_piece_kind(moved_piece) == ROOK &&
+                from(move) == KING_SIDE_ROOK_SQUARE[side])
                 _castling_rights &= !(CASTLING_RIGHTS[side] & KING_CASTLING);
-            if (get_piece_kind(moved_piece) == ROOK && from(move) == QUEEN_SIDE_ROOK_SQUARE[side])
+            if (get_piece_kind(moved_piece) == ROOK &&
+                from(move) == QUEEN_SIDE_ROOK_SQUARE[side])
                 _castling_rights &= !(CASTLING_RIGHTS[side] & QUEEN_CASTLING);
-            if (make_piece_kind(captured_piece) == ROOK && to(move) == KING_SIDE_ROOK_SQUARE[!side])
+            if (make_piece_kind(captured_piece) == ROOK &&
+                to(move) == KING_SIDE_ROOK_SQUARE[!side])
                 _castling_rights &= !(CASTLING_RIGHTS[!side] & KING_CASTLING);
-            if (make_piece_kind(captured_piece) == ROOK && to(move) == QUEEN_SIDE_ROOK_SQUARE[!side])
+            if (make_piece_kind(captured_piece) == ROOK &&
+                to(move) == QUEEN_SIDE_ROOK_SQUARE[!side])
                 _castling_rights &= !(CASTLING_RIGHTS[!side] & QUEEN_CASTLING);
             _zobrist_hash.set_castling(_castling_rights);
         }
 
-
         Rank enpassant_rank = (side == WHITE) ? RANK_4 : RANK_5;
         Rank rank2 = (side == WHITE) ? RANK_2 : RANK_7;
-        if (get_piece_kind(moved_piece) == PAWN && rank(from(move)) == rank2 && rank(to(move)) == enpassant_rank)
+        if (get_piece_kind(moved_piece) == PAWN && rank(from(move)) == rank2 &&
+            rank(to(move)) == enpassant_rank)
         {
             set_enpassant_square(Square(to(move) + (side == WHITE ? -8 : 8)));
             _zobrist_hash.set_enpassant(file(_enpassant_square));
@@ -431,7 +429,8 @@ MoveInfo Position::do_move(Move move)
 
     _history[_history_counter++] = _zobrist_hash.get_key();
 
-    return create_moveinfo(captured, prev_castling, prev_enpassant_sq, enpassant, hm_counter);
+    return create_moveinfo(captured, prev_castling, prev_enpassant_sq,
+                           enpassant, hm_counter);
 }
 
 void Position::undo_move(Move move, MoveInfo moveinfo)
@@ -472,7 +471,8 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
 
         if (enpassant(moveinfo))
         {
-            Square captured_square = Square(to(move) + (side == WHITE ? -8 : 8));
+            Square captured_square =
+                Square(to(move) + (side == WHITE ? -8 : 8));
             add_piece(make_piece(!side, PAWN), captured_square);
         }
 
@@ -484,8 +484,7 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
         else
             move_piece(to(move), from(move));
 
-        if (captured != NO_PIECE)
-            add_piece(captured, to(move));
+        if (captured != NO_PIECE) add_piece(captured, to(move));
     }
 
     _history_counter--;
@@ -521,8 +520,6 @@ void Position::undo_null_move(MoveInfo moveinfo)
         _zobrist_hash.set_enpassant(file(_enpassant_square));
 }
 
-
-
 bool Position::is_in_check(Color side) const
 {
     Bitboard attacked = attacked_squares(*this, side);
@@ -554,8 +551,7 @@ std::string Position::uci(Move move) const
     str += files[file(to(move))];
     str += ranks[rank(to(move))];
 
-    if (promotion(move) != NO_PIECE_KIND)
-        str += promotions[promotion(move)];
+    if (promotion(move) != NO_PIECE_KIND) str += promotions[promotion(move)];
 
     return str;
 }
@@ -598,10 +594,8 @@ std::string Position::san(Move move) const
     Position temp = *this;
     temp.do_move(move);
 
-    if (temp.is_checkmate())
-        return basic_san + "#";
-    if (temp.is_in_check(temp.side_to_move()))
-        return basic_san + "+";
+    if (temp.is_checkmate()) return basic_san + "#";
+    if (temp.is_in_check(temp.side_to_move())) return basic_san + "+";
     return basic_san;
 }
 
@@ -613,10 +607,8 @@ std::string Position::san_without_check(Move move) const
     const std::string file_str = "abcdefgh";
     const std::string promotion_str = "  NBRQ ";
 
-    if (castling(move) == KING_CASTLING)
-        return "O-O";
-    if (castling(move) == QUEEN_CASTLING)
-        return "O-O-O";
+    if (castling(move) == KING_CASTLING) return "O-O";
+    if (castling(move) == QUEEN_CASTLING) return "O-O-O";
 
     PieceKind moved_piece = make_piece_kind(piece_at(from(move)));
 
@@ -625,16 +617,16 @@ std::string Position::san_without_check(Move move) const
     Move* end = generate_moves(*this, _current_side, begin);
     std::vector<Move> matching_moves(begin, end);
 
-    matching_moves = filter<Move>(matching_moves,
-            [this, move, moved_piece](Move m) {
-                if (castling(m) == NO_CASTLING)
-                {
-                    PieceKind p = make_piece_kind(piece_at(from(m)));
-                    return (moved_piece == p && to(move) == to(m)
-                            && promotion(move) == promotion(m));
-                }
-                return false;
-            });
+    matching_moves =
+        filter<Move>(matching_moves, [this, move, moved_piece](Move m) {
+            if (castling(m) == NO_CASTLING)
+            {
+                PieceKind p = make_piece_kind(piece_at(from(m)));
+                return (moved_piece == p && to(move) == to(m) &&
+                        promotion(move) == promotion(m));
+            }
+            return false;
+        });
 
     std::string s = "";
     if (moved_piece != PAWN)
@@ -645,7 +637,9 @@ std::string Position::san_without_check(Move move) const
     if (matching_moves.size() > 1)
     {
         s += file_str[file(from(move))];
-        matching_moves = filter<Move>(matching_moves, [move](Move m) { return file(from(m)) == file(from(move)); });
+        matching_moves = filter<Move>(matching_moves, [move](Move m) {
+            return file(from(m)) == file(from(move));
+        });
         if (matching_moves.size() > 1)
         {
             s += rank_str[rank(from(move))];
@@ -653,7 +647,8 @@ std::string Position::san_without_check(Move move) const
     }
 
     Bitboard capturing_bb = pieces(!_current_side);
-    capturing_bb |= moved_piece == PAWN ? square_bb(_enpassant_square) : no_squares_bb;
+    capturing_bb |=
+        moved_piece == PAWN ? square_bb(_enpassant_square) : no_squares_bb;
     if (square_bb(to(move)) & capturing_bb)
     {
         if (moved_piece == PAWN && s == "")
@@ -673,8 +668,7 @@ std::string Position::san_without_check(Move move) const
     return s;
 }
 
-
-std::ostream& operator<< (std::ostream& stream, const Position& position)
+std::ostream& operator<<(std::ostream& stream, const Position& position)
 {
     const std::string piece_to_char = ".PNBRQKpnbrqk";
 
@@ -701,5 +695,4 @@ std::ostream& operator<< (std::ostream& stream, const Position& position)
     return stream;
 }
 
-
-}
+}  // namespace engine

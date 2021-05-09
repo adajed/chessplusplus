@@ -5,7 +5,6 @@
 
 namespace engine
 {
-
 int lsb(Bitboard bb);
 
 int msb(Bitboard bb);
@@ -16,6 +15,6 @@ uint32_t pop_lsb(Bitboard* bb);
 
 bool popcount_more_than_one(Bitboard bb);
 
-}
+}  // namespace engine
 
 #endif  // CHESS_ENGINE_BITHACKS_H_

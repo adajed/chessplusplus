@@ -3,12 +3,12 @@
 
 #include "position.h"
 #include "types.h"
+
 #include <memory>
 #include <unordered_map>
 
 namespace engine
 {
-
 enum EndgameType : uint32_t
 {
     kKPK = 0,
@@ -20,21 +20,20 @@ enum EndgameType : uint32_t
 
 namespace bitbase
 {
-
 void init();
 
 bool check(Color side, Square wKing, Square wPawn, Square bKing);
 
-void normalize(Color strongSide, Color& side, Square& strongKing, Square& strongPawn, Square& weakKing);
+void normalize(Color strongSide, Color& side, Square& strongKing,
+               Square& strongPawn, Square& weakKing);
 
 }  // namespace bitbase
 
 namespace endgame
 {
-
 class EndgameBase
 {
-public:
+  public:
     EndgameBase(Color strong) : strongSide(strong), weakSide(!strong) {}
 
     virtual bool applies(const Position& position) const = 0;
@@ -43,14 +42,14 @@ public:
 
     virtual ~EndgameBase() = default;
 
-protected:
+  protected:
     Color strongSide, weakSide;
 };
 
 template <EndgameType endgameType>
 class Endgame : public EndgameBase
 {
-public:
+  public:
     Endgame(Color strong) : EndgameBase(strong) {}
 
     virtual bool applies(const Position& position) const;
@@ -76,11 +75,11 @@ Value score_endgame(const Position& position)
     {
         const EndgameBasePtr& e = strongSide == WHITE ? p.first : p.second;
 
-        if (e->applies(position))
-            return e->score(position);
+        if (e->applies(position)) return e->score(position);
     }
 
-    const EndgameBasePtr& e = strongSide == WHITE ? default_endgame.first : default_endgame.second;
+    const EndgameBasePtr& e =
+        strongSide == WHITE ? default_endgame.first : default_endgame.second;
     return e->score(position);
 }
 

@@ -23,3 +23,11 @@ LFLAGS_DEBUG = $(LFLAGS) -g
 
 LCOV_CFLAGS = -fprofile-arcs -ftest-coverage
 LCOV_LFLAGS = --coverage
+
+# clang format
+CLANG_FORMAT ?= clang-format
+CLANG_FORMAT_ARGS = -style=file -i
+
+# clang tidy
+CLANG_TIDY ?= clang-tidy
+CLANG_TIDY_ARGS = -std=c++17

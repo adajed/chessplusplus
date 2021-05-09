@@ -1,5 +1,9 @@
 #pragma once
 
+#include <iostream>
+#include <string>
+#include <vector>
+
 struct TimeFormat
 {
     int time_initial_ms;
@@ -14,7 +18,17 @@ struct EngineParams
 
 struct Args
 {
-    Args() : engines(), time_format{300000, 3000}, num_games(1), debug(false), repeat(false), polyglot(""), book_depth(0), pgn_file("games.pgn") {}
+    Args()
+        : engines(),
+          time_format{300000, 3000},
+          num_games(1),
+          debug(false),
+          repeat(false),
+          polyglot(""),
+          book_depth(0),
+          pgn_file("games.pgn")
+    {
+    }
 
     std::vector<EngineParams> engines;
     TimeFormat time_format;
@@ -41,7 +55,6 @@ Args parse_args(int argc, char** argv)
     {
         if (tokens[pos] == "--engine" || tokens[pos] == "-e")
         {
-
             EngineParams params;
             pos++;
             while (pos < argc && tokens[pos].find("-") != 0)
@@ -72,8 +85,10 @@ Args parse_args(int argc, char** argv)
             pos++;
             size_t idx = tokens[pos].find("+");
             TimeFormat time_format;
-            time_format.time_initial_ms = std::stoi(tokens[pos].substr(0, idx)) * 60000;
-            time_format.time_increment_ms = std::stoi(tokens[pos].substr(idx + 1)) * 1000;
+            time_format.time_initial_ms =
+                std::stoi(tokens[pos].substr(0, idx)) * 60000;
+            time_format.time_increment_ms =
+                std::stoi(tokens[pos].substr(idx + 1)) * 1000;
             args.time_format = time_format;
             pos++;
         }

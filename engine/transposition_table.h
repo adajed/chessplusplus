@@ -1,16 +1,15 @@
 #ifndef CHESS_ENGINE_TRANSPOSITION_TABLE_H_
 #define CHESS_ENGINE_TRANSPOSITION_TABLE_H_
 
-#include <unordered_map>
-
-#include "types.h"
 #include "position.h"
+#include "types.h"
+
+#include <unordered_map>
 
 namespace engine
 {
 namespace tt
 {
-
 enum class Flag
 {
     kEXACT = 0,
@@ -29,23 +28,21 @@ struct TTEntry
     int32_t depth;
     Flag flag;
     Move move;
-
 };
 
 class TTable
 {
-    public:
-        TTable();
+  public:
+    TTable();
 
-        void update(uint64_t key, TTEntry entry);
+    void update(uint64_t key, TTEntry entry);
 
-        const TTEntry* get(uint64_t key) const;
+    const TTEntry* get(uint64_t key) const;
 
-        void clear();
+    void clear();
 
-
-    private:
-        std::unordered_map<uint64_t, TTEntry> _hashmap;
+  private:
+    std::unordered_map<uint64_t, TTEntry> _hashmap;
 };
 
 }  // namespace tt

@@ -1,17 +1,23 @@
 #ifndef CHESS_ENGINE_MOVE_BITBOARDS_H_
 #define CHESS_ENGINE_MOVE_BITBOARDS_H_
 
-#include <cassert>
-
 #include "bitboard.h"
 #include "types.h"
 
+#include <cassert>
+
 namespace engine
 {
-
 enum Ray : uint32_t
 {
-    RAY_NW = 0, RAY_N = 1, RAY_NE = 2, RAY_E = 3, RAY_SE = 4, RAY_S = 5, RAY_SW = 6, RAY_W = 7
+    RAY_NW = 0,
+    RAY_N = 1,
+    RAY_NE = 2,
+    RAY_E = 3,
+    RAY_SE = 4,
+    RAY_S = 5,
+    RAY_SW = 6,
+    RAY_W = 7
 };
 constexpr uint32_t RAYS_NUM = 8;
 
@@ -23,9 +29,7 @@ constexpr Ray opposite_ray(Ray ray)
 constexpr bool allowed_ray(PieceKind piece, Ray ray)
 {
     assert(piece == BISHOP || piece == ROOK || piece == QUEEN);
-    return piece == BISHOP ? !(ray & 1) :
-           piece == ROOK   ? ray & 1 :
-           true;
+    return piece == BISHOP ? !(ray & 1) : piece == ROOK ? ray & 1 : true;
 }
 
 ENABLE_INCREMENT_OPERATIONS(Ray)
@@ -45,11 +49,13 @@ inline Bitboard pseudoattacks(Square sq)
     Bitboard bb = 0ULL;
     if (piecekind == BISHOP || piecekind == QUEEN)
     {
-        bb |= (RAYS[RAY_NW][sq] | RAYS[RAY_NE][sq] | RAYS[RAY_SE][sq] | RAYS[RAY_SW][sq]);
+        bb |= (RAYS[RAY_NW][sq] | RAYS[RAY_NE][sq] | RAYS[RAY_SE][sq] |
+               RAYS[RAY_SW][sq]);
     }
     if (piecekind == ROOK || piecekind == QUEEN)
     {
-        bb |= (RAYS[RAY_N][sq] | RAYS[RAY_S][sq] | RAYS[RAY_W][sq] | RAYS[RAY_E][sq]);
+        bb |= (RAYS[RAY_N][sq] | RAYS[RAY_S][sq] | RAYS[RAY_W][sq] |
+               RAYS[RAY_E][sq]);
     }
 
     return bb;
@@ -95,7 +101,8 @@ template <>
 inline Bitboard slider_attack<BISHOP>(Square sq, Bitboard blockers)
 {
     blockers &= BISHOP_MASK[sq];
-    uint64_t key = (blockers * BISHOP_MAGICS[sq]) >> (64 - BISHOP_INDEX_BITS[sq]);
+    uint64_t key =
+        (blockers * BISHOP_MAGICS[sq]) >> (64 - BISHOP_INDEX_BITS[sq]);
     return BISHOP_TABLE[sq][key];
 }
 
@@ -110,9 +117,9 @@ inline Bitboard slider_attack<ROOK>(Square sq, Bitboard blockers)
 template <>
 inline Bitboard slider_attack<QUEEN>(Square sq, Bitboard blockers)
 {
-    return slider_attack<BISHOP>(sq, blockers)
-            | slider_attack<ROOK>(sq, blockers);
+    return slider_attack<BISHOP>(sq, blockers) |
+           slider_attack<ROOK>(sq, blockers);
 }
-}
+}  // namespace engine
 
 #endif  // CHESS_ENGINE_MOVE_BITBOARDS_H_

@@ -2,7 +2,6 @@
 
 namespace engine
 {
-
 int lsb(Bitboard bb)
 {
     return __builtin_ffsll(bb) - 1;
@@ -21,7 +20,7 @@ int popcount(Bitboard bb)
 uint32_t pop_lsb(Bitboard* bb)
 {
     int bit = lsb(*bb);
-    *bb &= *bb - 1; // pop lsb
+    *bb &= *bb - 1;  // pop lsb
     return bit;
 }
 
@@ -30,5 +29,4 @@ bool popcount_more_than_one(Bitboard bb)
     return bb && (bb & (bb - 1));
 }
 
-
-} // namespace engine
+}  // namespace engine

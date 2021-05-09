@@ -2,12 +2,13 @@
 
 #include "position.h"
 
-#define SEND(msg)                                       \
-    {                                                   \
-        if (debug_) {                                   \
+#define SEND(msg)                                      \
+    {                                                  \
+        if (debug_)                                    \
+        {                                              \
             std::cout << name_ << "< " << msg << "\n"; \
-        }                                               \
-        in_stream_ << msg << "\n";                    \
+        }                                              \
+        in_stream_ << msg << "\n";                     \
     }
 
 #define READ(msg)                                           \
@@ -19,11 +20,9 @@
         }                                                   \
     }
 
-EngineWrapper::EngineWrapper(const std::string& command, const std::string& name, bool debug)
-    : command_(command)
-    , name_(name)
-    , debug_(debug)
-    , running_(false)
+EngineWrapper::EngineWrapper(const std::string& command,
+                             const std::string& name, bool debug)
+    : command_(command), name_(name), debug_(debug), running_(false)
 {
     pipe_status_ = pipe(pipefds_input_);
     if (pipe_status_ == -1)
@@ -52,9 +51,9 @@ EngineWrapper::EngineWrapper(const std::string& command, const std::string& name
     if (pid == pid_t(0))
     {
         // child process
-        dup2 (CHILD_STDIN_READ,0);
-        dup2 (CHILD_STDOUT_WRITE,1);
-        dup2 (CHILD_STDERR_WRITE,2);
+        dup2(CHILD_STDIN_READ, 0);
+        dup2(CHILD_STDOUT_WRITE, 1);
+        dup2(CHILD_STDERR_WRITE, 2);
         // Close in the child the unused ends of the pipes
         close(CHILD_STDIN_WRITE);
         close(CHILD_STDOUT_READ);
@@ -62,7 +61,6 @@ EngineWrapper::EngineWrapper(const std::string& command, const std::string& name
 
         // Execute the program
         execl(command_.c_str(), "engine", (char*)NULL);
-
     }
     else if (pid > pid_t(0))
     {
@@ -76,7 +74,6 @@ EngineWrapper::EngineWrapper(const std::string& command, const std::string& name
         in_stream_.set_fd(CHILD_STDIN_WRITE);
         out_stream_.set_fd(CHILD_STDOUT_READ);
         err_stream_.set_fd(CHILD_STDERR_READ);
-
     }
     else
     {
@@ -102,7 +99,8 @@ void EngineWrapper::ucinewgame()
     SEND("ucinewgame");
 }
 
-void EngineWrapper::position(const std::string& fen, const std::vector<Move>& moves)
+void EngineWrapper::position(const std::string& fen,
+                             const std::vector<Move>& moves)
 {
     position_ = Position(fen);
 
@@ -138,11 +136,9 @@ void EngineWrapper::quit()
     close(CHILD_STDERR_READ);
 }
 
-
 Move EngineWrapper::go(const CommandGoParams& params)
 {
-    if (running_)
-        return NO_MOVE;
+    if (running_) return NO_MOVE;
 
     std::string command = "go";
     if (params.depth > 0)
@@ -164,7 +160,6 @@ Move EngineWrapper::go(const CommandGoParams& params)
         }
     }
 
-
     SEND(command);
 
     running_ = true;
@@ -179,7 +174,8 @@ Move EngineWrapper::go(const CommandGoParams& params)
     return position_.parse_uci(data.move);
 }
 
-void EngineWrapper::set_option(const std::string& name, const std::string& value)
+void EngineWrapper::set_option(const std::string& name,
+                               const std::string& value)
 {
     SEND("set_option name " << name << " value " << value);
     SEND("isready");
@@ -222,7 +218,7 @@ CommandInfoData EngineWrapper::parse_command_info(const std::string& command)
             ss >> token;
             s += token;
             ss >> token;
-            s += " " +  token;
+            s += " " + token;
             data.score = s;
         }
         else if (token == "nodes")
@@ -242,15 +238,15 @@ CommandInfoData EngineWrapper::parse_command_info(const std::string& command)
         }
         else if (token == "pv")
         {
-            while (ss >> token)
-                data.pv.push_back(token.c_str());
+            while (ss >> token) data.pv.push_back(token.c_str());
         }
     }
 
     return data;
 }
 
-CommandBestmoveData EngineWrapper::parse_command_bestmove(const std::string& command)
+CommandBestmoveData EngineWrapper::parse_command_bestmove(
+    const std::string& command)
 {
     std::istringstream ss(command);
     std::string token;
