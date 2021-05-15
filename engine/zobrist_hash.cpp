@@ -50,7 +50,7 @@ HashKey::HashKey()
 
 void HashKey::init(const Position& position)
 {
-    if (position.side_to_move() == BLACK) _color_key ^= SIDE_HASH;
+    if (position.color() == BLACK) _color_key ^= SIDE_HASH;
 
     for (Color color : {WHITE, BLACK})
     {

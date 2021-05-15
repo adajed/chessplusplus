@@ -309,7 +309,7 @@ bool Uci::perft_command(std::istringstream& istream)
     if (depth > 0)
     {
         Move* begin = MOVE_LIST[depth];
-        Move* end = generate_moves(position, position.side_to_move(), begin);
+        Move* end = generate_moves(position, position.color(), begin);
 
         for (Move* it = begin; it != end; ++it)
         {

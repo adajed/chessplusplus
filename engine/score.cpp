@@ -9,6 +9,18 @@
 
 namespace engine
 {
+template <Color side>
+Rank relative_rank(Rank r)
+{
+    return side == WHITE ? r : RANK_8 - r;
+}
+
+template <Color side>
+Square relative_square(Square sq)
+{
+    return make_square(relative_rank<side>(rank(sq)), file(sq));
+}
+
 #define S(mg, eg) (Score((mg), (eg)))
 
 const Value PIECE_WEIGHTS[PIECE_KIND_NUM] = {0, 0, 1, 1, 2, 4, 0};
@@ -37,7 +49,7 @@ const Score ROOK_OPEN_FILE_BONUS = S(20, 40);
 const Score BISHOP_PAIR_BONUS = S(50, 60);
 
 // bonus for passed pawn
-const Score PASSED_PAWN_BONUS = S(15, 30);
+const Score PASSED_PAWN_BONUS = S(20, 40);
 
 // bonus for connecting rooks
 const Score CONNECTED_ROOKS_BONUS = S(20, 10);
@@ -58,9 +70,9 @@ const Score PAWN_CHAIN_BONUS[FILE_NUM] = {S(0, 0),  S(0, 0),  S(2, 4),
                                           S(4, 10), S(5, 15), S(5, 20),
                                           S(6, 20), S(7, 20)};
 
-const Score CONNECTED_PAWNS_BONUS[FILE_NUM + 1] = {
-    S(0, 0),   S(-40, -80), S(5, 10),  S(8, 18), S(10, 25),
-    S(12, 30), S(12, 30),   S(12, 30), S(12, 30)};
+const Value CONNECTED_PAWNS_BONUS[FILE_NUM] = {Value(0),  Value(0),  Value(2),
+                                               Value(5),  Value(20), Value(40),
+                                               Value(80), Value(0)};
 
 const Score BACKWARD_PAWN_PENALTY = S(-30, -100);
 
@@ -90,10 +102,7 @@ const Score WEAK_KING_RAYS_PENALTY = S(-15, -20);
 const Score WEAK_KING_DIAGONALS = S(-5, 0);
 const Score WEAK_KING_LINES = S(-7, 0);
 
-Square flip(Square square)
-{
-    return make_square(RANK_8 - rank(square), file(square));
-}
+const Score PAWNS_ON_SAME_COLOR_AS_BISHOP_PENALTY = S(-3, -5);
 
 PositionScorer::PositionScorer() : _pawn_hash_table(), _weight(-1) {}
 
@@ -125,7 +134,7 @@ Value PositionScorer::score(const Position& position)
     Score pawns = score_pawns(position);
     Value value = combine(pawns + pieces);
 
-    return position.side_to_move() == WHITE ? value : -value;
+    return position.color() == WHITE ? value : -value;
 }
 
 template <Color side>
@@ -242,7 +251,7 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             }
             // cannot move into square with our piece
             moves &= ~position.pieces(side);
-            // attacked by opponents pawns
+            // squares attacked by opponents pawns with nothing valueable there
             moves &= ~(_attacked_by_bb[!side][PAWN] & ~opponent_pieces);
             // attacked by opponents piece and not defended by our pawns
             moves &=
@@ -290,6 +299,10 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
                 KING_PROTECTOR_PENALTY[BISHOP] * Value(distance(ownKing, sq));
             value += KING_ATTACKER_PENALTY[BISHOP] *
                      Value(distance(opponentsKing, sq));
+
+            value += PAWNS_ON_SAME_COLOR_AS_BISHOP_PENALTY *
+                     Value(popcount(position.pieces(side, PAWN) &
+                                    color_squares[sq_color(sq)]));
 
             if (_outposts_bb[side] & square_bb(sq))
             {
@@ -485,10 +498,8 @@ Score PositionScorer::score_pawns_for_side(const Position& position)
         Square sq = position.piece_position(pawn, i);
 
         Rank r = rank(sq);
-        Rank prev_r = Rank(r - up);
         File f = file(sq);
-
-        int relative_rank = side == WHITE ? r : 7 - r;
+        Rank rel_rank = relative_rank<side>(r);
 
         Bitboard neighbours = ourPawns & NEIGHBOUR_FILES_BB[f];
         Bitboard phalanx = neighbours & RANKS_BB[r];
@@ -514,7 +525,7 @@ Score PositionScorer::score_pawns_for_side(const Position& position)
 
         if (support | phalanx)
         {
-            value += Score(5 * relative_rank *
+            value += Score(CONNECTED_PAWNS_BONUS[rel_rank] *
                            (1 + static_cast<int>(bool(phalanx)) -
                             static_cast<int>(bool(opposed))));
             value += Score(10 * popcount(support));
@@ -524,7 +535,7 @@ Score PositionScorer::score_pawns_for_side(const Position& position)
         else if (backward)
             value += BACKWARD_PAWN_PENALTY;
 
-        if (passed) value += PASSED_PAWN_BONUS * Value(relative_rank);
+        if (passed) value += PASSED_PAWN_BONUS * Value(rel_rank);
     }
 
     return value;
