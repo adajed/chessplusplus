@@ -182,8 +182,10 @@ std::vector<EndgameBasePtr> endgames;
 template <EndgameType endgameType>
 void add()
 {
-    endgames.push_back(std::unique_ptr<EndgameBase>(new Endgame<endgameType>(WHITE)));
-    endgames.push_back(std::unique_ptr<EndgameBase>(new Endgame<endgameType>(BLACK)));
+    endgames.push_back(
+        std::unique_ptr<EndgameBase>(new Endgame<endgameType>(WHITE)));
+    endgames.push_back(
+        std::unique_ptr<EndgameBase>(new Endgame<endgameType>(BLACK)));
 }
 
 void init()
