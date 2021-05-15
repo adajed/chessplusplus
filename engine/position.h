@@ -71,6 +71,8 @@ class Position
     Bitboard pieces(Piece p1, Piece p2) const;
     Bitboard pieces(Color c, PieceKind p1, PieceKind p2) const;
 
+    PieceCountVector get_pcv() const;
+
     /*
      * Return number of non-pawn pieces for given side.
      */

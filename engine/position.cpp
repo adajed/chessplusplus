@@ -534,6 +534,15 @@ bool Position::is_checkmate() const
     return (begin == end) && is_in_check(_current_side);
 }
 
+PieceCountVector Position::get_pcv() const
+{
+    return create_pcv(_piece_count[W_PAWN], _piece_count[W_KNIGHT],
+                      _piece_count[W_BISHOP], _piece_count[W_ROOK],
+                      _piece_count[W_QUEEN], _piece_count[B_PAWN],
+                      _piece_count[B_KNIGHT], _piece_count[B_BISHOP],
+                      _piece_count[B_ROOK], _piece_count[B_QUEEN]);
+}
+
 int Position::no_nonpawns(Color c) const
 {
     return _piece_count[make_piece(c, KNIGHT)] +

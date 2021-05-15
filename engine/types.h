@@ -341,6 +341,40 @@ struct Limits
     bool infinite;
 };
 
+/* PCV
+ * Each 4 bits represent single Piece count.
+ * In total 10 * 4 = 40 bits are used.
+ * Order (from least singnifcant bits to most)
+ * is the same as order in Piece enum.
+ * First 4 bits are not used (represent NO_PIECE).
+ */
+using PieceCountVector = uint64_t;
+
+#define C(x) static_cast<uint64_t>((x))
+
+constexpr PieceCountVector create_pcv(int wp, int wn, int wb, int wr, int wq,
+                                      int bp, int bn, int bb, int br, int bq)
+{
+    return (C(wp) << 4LL) | (C(wn) << 8LL) | (C(wb) << 12LL) | (C(wr) << 16LL) |
+           (C(wq) << 20LL) | (C(bp) << 28LL) | (C(bn) << 32LL) |
+           (C(bb) << 36LL) | (C(br) << 40LL) | (C(bq) << 44LL);
+}
+
+template <Piece piece>
+constexpr int get_count_pcv(PieceCountVector pcv)
+{
+    assert(piece != NO_PIECE);
+    return static_cast<int>((pcv >> C(4 * piece)) & 0xF);
+}
+
+template <Piece piece>
+constexpr PieceCountVector modify_pcv(PieceCountVector pcv, int c)
+{
+    return (pcv & ~(C(0xF) << C(4 * piece))) | (C(c) << C(4 * piece));
+}
+
+#undef C
+
 // using PieceHistory = std::array<std::array<int, SQUARE_NUM>, PIECE_KIND_NUM>;
 
 using HistoryScore =
