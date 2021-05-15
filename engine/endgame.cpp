@@ -48,19 +48,35 @@ int PUSH_TO_COLOR_CORNER_BONUS[SQUARE_NUM] = {
  */
 int PUSH_CLOSE[RANK_NUM] = {0, 7, 6, 5, 4, 3, 2, 1};
 
+template <EndgameType endgameType>
+struct SandboxPCV
+{
+};
+
+template <>
+struct SandboxPCV<kKPK> {
+    static constexpr PieceCountVector pcv[COLOR_NUM] = {
+        [WHITE] = create_pcv(1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        [BLACK] = create_pcv(0, 0, 0, 0, 0, 1, 0, 0, 0, 0)
+    };
+};
+
+template <>
+struct SandboxPCV<kKNBK> {
+    static constexpr PieceCountVector pcv[COLOR_NUM] = {
+        [WHITE] = create_pcv(0, 1, 1, 0, 0, 0, 0, 0, 0, 0),
+        [BLACK] = create_pcv(0, 0, 0, 0, 0, 0, 1, 1, 0, 0)
+    };
+};
+
+
 // clang-format on
 }  // namespace
 
 template <>
 bool Endgame<kKPK>::applies(const Position& position) const
 {
-    if (position.number_of_pieces(make_piece(strongSide, PAWN)) != 1 ||
-        position.number_of_pieces(make_piece(weakSide, PAWN)) != 0 ||
-        position.pieces(KNIGHT) || position.pieces(BISHOP) ||
-        position.pieces(ROOK) || position.pieces(QUEEN))
-        return false;
-
-    return true;
+    return position.get_pcv() == SandboxPCV<kKPK>::pcv[strongSide];
 }
 
 template <>
@@ -86,15 +102,7 @@ Value Endgame<kKPK>::score(const Position& position) const
 template <>
 bool Endgame<kKNBK>::applies(const Position& position) const
 {
-    if (position.number_of_pieces(make_piece(strongSide, KNIGHT)) != 1 ||
-        position.number_of_pieces(make_piece(strongSide, BISHOP)) != 1 ||
-        position.number_of_pieces(make_piece(weakSide, KNIGHT)) != 0 ||
-        position.number_of_pieces(make_piece(weakSide, BISHOP)) != 0 ||
-        position.pieces(PAWN) || position.pieces(ROOK) ||
-        position.pieces(QUEEN))
-        return false;
-
-    return true;
+    return position.get_pcv() == SandboxPCV<kKNBK>::pcv[strongSide];
 }
 
 template <>
