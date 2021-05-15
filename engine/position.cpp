@@ -536,185 +536,185 @@ bool Position::is_checkmate() const
 
 PieceCountVector Position::get_pcv() const
 {
-    return create_pcv(
-            _piece_count[W_PAWN],
-            _piece_count[W_KNIGHT],
-            _piece_count[W_BISHOP],
-            _piece_count[W_ROOK],
-            _piece_count[W_QUEEN],
-            _piece_count[B_PAWN],
-            _piece_count[B_KNIGHT],
-            _piece_count[B_BISHOP],
-            _piece_count[B_ROOK],
-            _piece_count[B_QUEEN]);
+    return create_pcv(_piece_count[W_PAWN], _piece_count[W_KNIGHT],
+                      _piece_count[W_BISHOP], _piece_count[W_ROOK],
+                      _piece_count[W_QUEEN], _piece_count[B_PAWN],
+                      _piece_count[B_KNIGHT], _piece_count[B_BISHOP],
+                      _piece_count[B_ROOK], _piece_count[B_QUEEN]);
 
-int Position::no_nonpawns(Color c) const
-{
-    return _piece_count[make_piece(c, KNIGHT)] +
-           _piece_count[make_piece(c, BISHOP)] +
-           _piece_count[make_piece(c, ROOK)] +
-           _piece_count[make_piece(c, QUEEN)];
-}
-
-std::string Position::uci(Move move) const
-{
-    const std::string files = "abcdefgh";
-    const std::string ranks = "12345678";
-    const std::string promotions = "  nbrq ";
-
-    if (castling(move) & KING_CASTLING)
-        return _current_side == WHITE ? "e1g1" : "e8g8";
-    if (castling(move) & QUEEN_CASTLING)
-        return _current_side == WHITE ? "e1c1" : "e8c8";
-
-    std::string str = "";
-    str += files[file(from(move))];
-    str += ranks[rank(from(move))];
-    str += files[file(to(move))];
-    str += ranks[rank(to(move))];
-
-    if (promotion(move) != NO_PIECE_KIND) str += promotions[promotion(move)];
-
-    return str;
-}
-
-Move Position::parse_uci(const std::string& str)
-{
-    Move move = NO_MOVE;
-    Square from = make_square(Rank(str[1] - '1'), File(str[0] - 'a'));
-    Square to = make_square(Rank(str[3] - '1'), File(str[2] - 'a'));
-    PieceKind promotion = NO_PIECE_KIND;
-
-    if (str.size() > 4)
+    int Position::no_nonpawns(Color c) const
     {
-        switch (str[4])
+        return _piece_count[make_piece(c, KNIGHT)] +
+               _piece_count[make_piece(c, BISHOP)] +
+               _piece_count[make_piece(c, ROOK)] +
+               _piece_count[make_piece(c, QUEEN)];
+    }
+
+    std::string Position::uci(Move move) const
+    {
+        const std::string files = "abcdefgh";
+        const std::string ranks = "12345678";
+        const std::string promotions = "  nbrq ";
+
+        if (castling(move) & KING_CASTLING)
+            return _current_side == WHITE ? "e1g1" : "e8g8";
+        if (castling(move) & QUEEN_CASTLING)
+            return _current_side == WHITE ? "e1c1" : "e8c8";
+
+        std::string str = "";
+        str += files[file(from(move))];
+        str += ranks[rank(from(move))];
+        str += files[file(to(move))];
+        str += ranks[rank(to(move))];
+
+        if (promotion(move) != NO_PIECE_KIND)
+            str += promotions[promotion(move)];
+
+        return str;
+    }
+
+    Move Position::parse_uci(const std::string& str)
+    {
+        Move move = NO_MOVE;
+        Square from = make_square(Rank(str[1] - '1'), File(str[0] - 'a'));
+        Square to = make_square(Rank(str[3] - '1'), File(str[2] - 'a'));
+        PieceKind promotion = NO_PIECE_KIND;
+
+        if (str.size() > 4)
         {
-        case 'n': promotion = KNIGHT; break;
-        case 'b': promotion = BISHOP; break;
-        case 'r': promotion = ROOK; break;
-        case 'q': promotion = QUEEN; break;
-        }
-    }
-
-    move = create_promotion(from, to, promotion);
-
-    if (make_piece_kind(_board[from]) == KING && from == SQ_E1 && to == SQ_G1)
-        move = create_castling(KING_CASTLING);
-    if (make_piece_kind(_board[from]) == KING && from == SQ_E1 && to == SQ_C1)
-        move = create_castling(QUEEN_CASTLING);
-    if (make_piece_kind(_board[from]) == KING && from == SQ_E8 && to == SQ_G8)
-        move = create_castling(KING_CASTLING);
-    if (make_piece_kind(_board[from]) == KING && from == SQ_E8 && to == SQ_C8)
-        move = create_castling(QUEEN_CASTLING);
-
-    return move;
-}
-
-std::string Position::san(Move move) const
-{
-    std::string basic_san = san_without_check(move);
-    Position temp = *this;
-    temp.do_move(move);
-
-    if (temp.is_checkmate()) return basic_san + "#";
-    if (temp.is_in_check(temp.color())) return basic_san + "+";
-    return basic_san;
-}
-
-std::string Position::san_without_check(Move move) const
-{
-    /* assert(is_legal(move)); */
-    const std::string piece_str = "  NBRQK";
-    const std::string rank_str = "12345678";
-    const std::string file_str = "abcdefgh";
-    const std::string promotion_str = "  NBRQ ";
-
-    if (castling(move) == KING_CASTLING) return "O-O";
-    if (castling(move) == QUEEN_CASTLING) return "O-O-O";
-
-    PieceKind moved_piece = make_piece_kind(piece_at(from(move)));
-
-    std::array<Move, 128> moves;
-    Move* begin = moves.data();
-    Move* end = generate_moves(*this, _current_side, begin);
-    std::vector<Move> matching_moves(begin, end);
-
-    matching_moves =
-        filter<Move>(matching_moves, [this, move, moved_piece](Move m) {
-            if (castling(m) == NO_CASTLING)
+            switch (str[4])
             {
-                PieceKind p = make_piece_kind(piece_at(from(m)));
-                return (moved_piece == p && to(move) == to(m) &&
-                        promotion(move) == promotion(m));
+            case 'n': promotion = KNIGHT; break;
+            case 'b': promotion = BISHOP; break;
+            case 'r': promotion = ROOK; break;
+            case 'q': promotion = QUEEN; break;
             }
-            return false;
-        });
+        }
 
-    std::string s = "";
-    if (moved_piece != PAWN)
-    {
-        s += piece_str[moved_piece];
+        move = create_promotion(from, to, promotion);
+
+        if (make_piece_kind(_board[from]) == KING && from == SQ_E1 &&
+            to == SQ_G1)
+            move = create_castling(KING_CASTLING);
+        if (make_piece_kind(_board[from]) == KING && from == SQ_E1 &&
+            to == SQ_C1)
+            move = create_castling(QUEEN_CASTLING);
+        if (make_piece_kind(_board[from]) == KING && from == SQ_E8 &&
+            to == SQ_G8)
+            move = create_castling(KING_CASTLING);
+        if (make_piece_kind(_board[from]) == KING && from == SQ_E8 &&
+            to == SQ_C8)
+            move = create_castling(QUEEN_CASTLING);
+
+        return move;
     }
 
-    if (matching_moves.size() > 1)
+    std::string Position::san(Move move) const
     {
-        s += file_str[file(from(move))];
-        matching_moves = filter<Move>(matching_moves, [move](Move m) {
-            return file(from(m)) == file(from(move));
-        });
+        std::string basic_san = san_without_check(move);
+        Position temp = *this;
+        temp.do_move(move);
+
+        if (temp.is_checkmate()) return basic_san + "#";
+        if (temp.is_in_check(temp.color())) return basic_san + "+";
+        return basic_san;
+    }
+
+    std::string Position::san_without_check(Move move) const
+    {
+        /* assert(is_legal(move)); */
+        const std::string piece_str = "  NBRQK";
+        const std::string rank_str = "12345678";
+        const std::string file_str = "abcdefgh";
+        const std::string promotion_str = "  NBRQ ";
+
+        if (castling(move) == KING_CASTLING) return "O-O";
+        if (castling(move) == QUEEN_CASTLING) return "O-O-O";
+
+        PieceKind moved_piece = make_piece_kind(piece_at(from(move)));
+
+        std::array<Move, 128> moves;
+        Move* begin = moves.data();
+        Move* end = generate_moves(*this, _current_side, begin);
+        std::vector<Move> matching_moves(begin, end);
+
+        matching_moves =
+            filter<Move>(matching_moves, [this, move, moved_piece](Move m) {
+                if (castling(m) == NO_CASTLING)
+                {
+                    PieceKind p = make_piece_kind(piece_at(from(m)));
+                    return (moved_piece == p && to(move) == to(m) &&
+                            promotion(move) == promotion(m));
+                }
+                return false;
+            });
+
+        std::string s = "";
+        if (moved_piece != PAWN)
+        {
+            s += piece_str[moved_piece];
+        }
+
         if (matching_moves.size() > 1)
         {
-            s += rank_str[rank(from(move))];
-        }
-    }
-
-    Bitboard capturing_bb = pieces(!_current_side);
-    capturing_bb |=
-        moved_piece == PAWN ? square_bb(_enpassant_square) : no_squares_bb;
-    if (square_bb(to(move)) & capturing_bb)
-    {
-        if (moved_piece == PAWN && s == "")
-        {
             s += file_str[file(from(move))];
+            matching_moves = filter<Move>(matching_moves, [move](Move m) {
+                return file(from(m)) == file(from(move));
+            });
+            if (matching_moves.size() > 1)
+            {
+                s += rank_str[rank(from(move))];
+            }
         }
-        s += "x";
-    }
 
-    s += squareToNotation(to(move));
-    if (promotion(move) != NO_PIECE_KIND)
-    {
-        s += "=";
-        s += promotion_str[promotion(move)];
-    }
-
-    return s;
-}
-
-std::ostream& operator<<(std::ostream& stream, const Position& position)
-{
-    const std::string piece_to_char = ".PNBRQKpnbrqk";
-
-    for (Rank rank = RANK_8; rank >= RANK_1; --rank)
-    {
-        stream << (rank + 1) << "  ";
-        for (File file = FILE_A; file <= FILE_H; ++file)
+        Bitboard capturing_bb = pieces(!_current_side);
+        capturing_bb |=
+            moved_piece == PAWN ? square_bb(_enpassant_square) : no_squares_bb;
+        if (square_bb(to(move)) & capturing_bb)
         {
-            Piece piece = position.piece_at(make_square(rank, file));
-            stream << piece_to_char[piece] << " ";
+            if (moved_piece == PAWN && s == "")
+            {
+                s += file_str[file(from(move))];
+            }
+            s += "x";
+        }
+
+        s += squareToNotation(to(move));
+        if (promotion(move) != NO_PIECE_KIND)
+        {
+            s += "=";
+            s += promotion_str[promotion(move)];
+        }
+
+        return s;
+    }
+
+    std::ostream& operator<<(std::ostream& stream, const Position& position)
+    {
+        const std::string piece_to_char = ".PNBRQKpnbrqk";
+
+        for (Rank rank = RANK_8; rank >= RANK_1; --rank)
+        {
+            stream << (rank + 1) << "  ";
+            for (File file = FILE_A; file <= FILE_H; ++file)
+            {
+                Piece piece = position.piece_at(make_square(rank, file));
+                stream << piece_to_char[piece] << " ";
+            }
+            stream << std::endl;
         }
         stream << std::endl;
-    }
-    stream << std::endl;
-    stream << "   A B C D E F G H" << std::endl;
-    stream << std::endl;
-    stream << "Fen: \"" << position.fen() << "\"" << std::endl;
-    stream << "Hash: " << std::hex << position.hash() << std::dec << std::endl;
-    if (position.color() == WHITE)
-        stream << "White to move" << std::endl;
-    else
-        stream << "Black to move" << std::endl;
+        stream << "   A B C D E F G H" << std::endl;
+        stream << std::endl;
+        stream << "Fen: \"" << position.fen() << "\"" << std::endl;
+        stream << "Hash: " << std::hex << position.hash() << std::dec
+               << std::endl;
+        if (position.color() == WHITE)
+            stream << "White to move" << std::endl;
+        else
+            stream << "Black to move" << std::endl;
 
-    return stream;
-}
+        return stream;
+    }
 
 }  // namespace engine

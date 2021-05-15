@@ -352,19 +352,22 @@ using PieceCountVector = uint64_t;
 
 #define C(x) static_cast<uint64_t>((x))
 
-constexpr PieceCountVector create_pcv(int wp, int wn, int wb, int wr, int wq, int bp, int bn, int bb, int br, int bq)
+constexpr PieceCountVector create_pcv(int wp, int wn, int wb, int wr, int wq,
+                                      int bp, int bn, int bb, int br, int bq)
 {
-    return (C(wp) << 4LL) | (C(wn) << 8LL) | (C(wb) << 12LL) | (C(wr) << 16LL) | (C(wq) << 20LL) | (C(bp) << 28LL) | (C(bn) << 32LL) | (C(bb) << 36LL) | (C(br) << 40LL) | (C(bq) << 44LL);
+    return (C(wp) << 4LL) | (C(wn) << 8LL) | (C(wb) << 12LL) | (C(wr) << 16LL) |
+           (C(wq) << 20LL) | (C(bp) << 28LL) | (C(bn) << 32LL) |
+           (C(bb) << 36LL) | (C(br) << 40LL) | (C(bq) << 44LL);
 }
 
-template<Piece piece>
+template <Piece piece>
 constexpr int get_count_pcv(PieceCountVector pcv)
 {
     assert(piece != NO_PIECE);
     return static_cast<int>((pcv >> C(4 * piece)) & 0xF);
 }
 
-template<Piece piece>
+template <Piece piece>
 constexpr PieceCountVector modify_pcv(PieceCountVector pcv, int c)
 {
     return (pcv & ~(C(0xF) << C(4 * piece))) | (C(c) << C(4 * piece));

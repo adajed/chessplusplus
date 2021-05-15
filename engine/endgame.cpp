@@ -69,7 +69,6 @@ struct SandboxPCV<kKNBK> {
     };
 };
 
-
 // clang-format on
 }  // namespace
 
