@@ -5,8 +5,7 @@ namespace engine
 {
 #ifdef DEBUG
 
-#define LOG_DEBUG(msg, ...) \
-    fprintf(stderr, msg "\n" __VA_OPT__(, ) __VA_ARGS__);
+#define LOG_DEBUG(msg, ...) fprintf(stderr, msg "\n", ##__VA_ARGS__);
 #define RETURN_DEBUG(val)                \
     {                                    \
         Value ret = (val);               \
