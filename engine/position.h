@@ -71,6 +71,8 @@ class Position
     Bitboard pieces(Piece p1, Piece p2) const;
     Bitboard pieces(Color c, PieceKind p1, PieceKind p2) const;
 
+    PieceCountVector get_pcv() const;
+
     Move parse_uci(const std::string& str);
     std::string uci(Move move) const;
 

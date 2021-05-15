@@ -94,4 +94,24 @@ TEST(TypesTest, square)
     }
 }
 
+TEST(TypesTest, PieceCountVector)
+{
+    PieceCountVector pcv = create_pcv(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    EXPECT_EQ(get_count_pcv<W_PAWN>(pcv), 1);
+    EXPECT_EQ(get_count_pcv<W_KNIGHT>(pcv), 2);
+    EXPECT_EQ(get_count_pcv<W_BISHOP>(pcv), 3);
+    EXPECT_EQ(get_count_pcv<W_ROOK>(pcv), 4);
+    EXPECT_EQ(get_count_pcv<W_QUEEN>(pcv), 5);
+    EXPECT_EQ(get_count_pcv<B_PAWN>(pcv), 6);
+    EXPECT_EQ(get_count_pcv<B_KNIGHT>(pcv), 7);
+    EXPECT_EQ(get_count_pcv<B_BISHOP>(pcv), 8);
+    EXPECT_EQ(get_count_pcv<B_ROOK>(pcv), 9);
+    EXPECT_EQ(get_count_pcv<B_QUEEN>(pcv), 10);
+
+    pcv = modify_pcv<W_ROOK>(pcv, 11);
+    EXPECT_EQ(get_count_pcv<W_ROOK>(pcv), 11);
+    pcv = modify_pcv<B_ROOK>(pcv, 12);
+    EXPECT_EQ(get_count_pcv<B_ROOK>(pcv), 12);
+}
+
 }
