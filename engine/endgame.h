@@ -60,27 +60,19 @@ class Endgame : public EndgameBase
 };
 
 using EndgameBasePtr = std::unique_ptr<EndgameBase>;
-using EndgamePair = std::pair<EndgameBasePtr, EndgameBasePtr>;
 
-extern std::vector<EndgamePair> endgames;
-
-extern EndgamePair default_endgame;
+extern std::vector<EndgameBasePtr> endgames;
 
 void init();
 
-template <Color strongSide>
-Value score_endgame(const Position& position)
+inline Value score_endgame(const Position& position)
 {
-    for (const EndgamePair& p : endgames)
+    for (const EndgameBasePtr& e : endgames)
     {
-        const EndgameBasePtr& e = strongSide == WHITE ? p.first : p.second;
-
         if (e->applies(position)) return e->score(position);
     }
 
-    const EndgameBasePtr& e =
-        strongSide == WHITE ? default_endgame.first : default_endgame.second;
-    return e->score(position);
+    return VALUE_NONE;
 }
 
 }  // namespace endgame

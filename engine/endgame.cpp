@@ -1,5 +1,6 @@
 #include "endgame.h"
 
+#include "bithacks.h"
 #include "types.h"
 
 #include <cassert>
@@ -124,7 +125,7 @@ Value Endgame<kKNBK>::score(const Position& position) const
 template <>
 bool Endgame<kKXK>::applies(const Position& position) const
 {
-    return true;
+    return popcount(position.pieces(weakSide)) == 1;
 }
 
 template <>
@@ -147,23 +148,20 @@ Value Endgame<kKXK>::score(const Position& position) const
     return (position.color() == strongSide) ? v : (-v);
 }
 
-std::vector<EndgamePair> endgames;
-EndgamePair default_endgame =
-    std::make_pair(std::make_unique<Endgame<kKXK>>(WHITE),
-                   std::make_unique<Endgame<kKXK>>(BLACK));
+std::vector<EndgameBasePtr> endgames;
 
 template <EndgameType endgameType>
 void add()
 {
-    endgames.push_back(std::make_pair(
-        std::unique_ptr<EndgameBase>(new Endgame<endgameType>(WHITE)),
-        std::unique_ptr<EndgameBase>(new Endgame<endgameType>(BLACK))));
+    endgames.push_back(std::unique_ptr<EndgameBase>(new Endgame<endgameType>(WHITE)));
+    endgames.push_back(std::unique_ptr<EndgameBase>(new Endgame<endgameType>(BLACK)));
 }
 
 void init()
 {
     add<kKPK>();
     add<kKNBK>();
+    add<kKXK>();
 }
 
 }  // namespace endgame
