@@ -71,7 +71,7 @@ TEST(PositionTest, constructor_startpos)
 {
     Position position;
 
-    ASSERT_EQ(position.side_to_move(), WHITE);
+    ASSERT_EQ(position.color(), WHITE);
     ASSERT_EQ(position.castling_rights(), ALL_CASTLING);
     ASSERT_EQ(position.enpassant_square(), NO_SQUARE);
 

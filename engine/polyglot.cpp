@@ -388,18 +388,18 @@ uint64_t PolyglotBook::hash(const Position& position)
         Bitboard enpassant_bb = square_bb(position.enpassant_square());
         Bitboard possible_attackers = 0ULL;
 
-        if (position.side_to_move() == WHITE)
+        if (position.color() == WHITE)
             possible_attackers =
                 shift<SOUTHEAST>(enpassant_bb) | shift<SOUTHWEST>(enpassant_bb);
         else
             possible_attackers =
                 shift<NORTHEAST>(enpassant_bb) | shift<NORTHWEST>(enpassant_bb);
 
-        if (possible_attackers & position.pieces(position.side_to_move(), PAWN))
+        if (possible_attackers & position.pieces(position.color(), PAWN))
             key ^= POLYGLOT_ENPASSANT[file(position.enpassant_square())];
     }
 
-    if (position.side_to_move() == WHITE) key ^= POLYGLOT_TURN;
+    if (position.color() == WHITE) key ^= POLYGLOT_TURN;
 
     return key;
 }

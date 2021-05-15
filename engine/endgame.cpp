@@ -68,7 +68,7 @@ Value Endgame<kKPK>::score(const Position& position) const
 {
     assert(applies(position));
 
-    Color side = position.side_to_move();
+    Color side = position.color();
     Square strongKing =
         position.piece_position(make_piece(strongSide, KING), 0);
     Square strongPawn =
@@ -80,7 +80,7 @@ Value Endgame<kKPK>::score(const Position& position) const
         return VALUE_DRAW;
 
     Value v = VALUE_KNOWN_WIN + Value(rank(strongPawn));
-    return (position.side_to_move() == strongSide) ? v : (-v);
+    return (position.color() == strongSide) ? v : (-v);
 }
 
 template <>
@@ -111,7 +111,7 @@ Value Endgame<kKNBK>::score(const Position& position) const
     Value v = Value(PUSH_TO_COLOR_CORNER_BONUS[kingSquare]);
 
     v = Value(std::min(int64_t(VALUE_KNOWN_WIN + v), int64_t(VALUE_MATE - 1)));
-    return (position.side_to_move() == strongSide) ? v : (-v);
+    return (position.color() == strongSide) ? v : (-v);
 }
 
 template <>
@@ -137,7 +137,7 @@ Value Endgame<kKXK>::score(const Position& position) const
          PUSH_CLOSE[distance(strongKing, weakKing)];
 
     v = Value(std::min(int64_t(v + VALUE_KNOWN_WIN), int64_t(VALUE_MATE - 1)));
-    return (position.side_to_move() == strongSide) ? v : (-v);
+    return (position.color() == strongSide) ? v : (-v);
 }
 
 std::vector<EndgamePair> endgames;

@@ -1,4 +1,4 @@
-set timeout 5
+set timeout 6
 lassign $argv program pos move
 spawn $program
 expect -re "Chess engine by Adam Jedrych .*" {} timeout {exit 1}
@@ -10,7 +10,7 @@ expect "uciok" {} timeout {exit 1}
 send "isready\n"
 expect "readyok" {} timeout {exit 1}
 send "position fen $pos\n"
-send "go movetime 4000\n"
+send "go movetime 5000\n"
 expect -re {(info \W*\n)*} {} timeout {exit 1}
 expect "bestmove $move" {} timeout {exit 1}
 send "quit\n"
