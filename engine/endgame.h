@@ -12,10 +12,9 @@ namespace engine
 enum EndgameType : uint32_t
 {
     kKPK = 0,
-    kKRK = 1,
-    kKNBK = 2,
-    kKQK = 3,
-    kKXK = 4
+    kKNBK = 1,
+    kKXK = 2,
+    kKQKR = 3
 };
 
 namespace bitbase

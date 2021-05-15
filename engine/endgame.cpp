@@ -70,6 +70,14 @@ struct SandboxPCV<kKNBK> {
     };
 };
 
+template <>
+struct SandboxPCV<kKQKR> {
+    static constexpr PieceCountVector pcv[COLOR_NUM] = {
+        [WHITE] = create_pcv(0, 0, 0, 0, 1, 0, 0, 0, 1, 0),
+        [BLACK] = create_pcv(0, 0, 0, 1, 0, 0, 0, 0, 0, 1)
+    };
+};
+
 // clang-format on
 }  // namespace
 
@@ -123,6 +131,27 @@ Value Endgame<kKNBK>::score(const Position& position) const
 }
 
 template <>
+bool Endgame<kKQKR>::applies(const Position& position) const
+{
+    return position.get_pcv() == SandboxPCV<kKQKR>::pcv[strongSide];
+}
+
+template <>
+Value Endgame<kKQKR>::score(const Position& position) const
+{
+    Square strongKing =
+        position.piece_position(make_piece(strongSide, KING), 0);
+    Square weakKing = position.piece_position(make_piece(weakSide, KING), 0);
+
+    Value v = (900 - 500);
+    v += PUSH_TO_EDGE_BONUS[weakKing] +
+         PUSH_CLOSE[distance(strongKing, weakKing)];
+
+    v = Value(std::min(int64_t(VALUE_KNOWN_WIN + v), int64_t(VALUE_MATE - 1)));
+    return (position.color() == strongSide) ? v : (-v);
+}
+
+template <>
 bool Endgame<kKXK>::applies(const Position& position) const
 {
     return popcount(position.pieces(weakSide)) == 1;
@@ -160,6 +189,7 @@ void add()
 void init()
 {
     add<kKPK>();
+    add<kKQKR>();
     add<kKNBK>();
     add<kKXK>();
 }
