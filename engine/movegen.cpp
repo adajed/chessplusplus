@@ -4,8 +4,7 @@
 
 namespace engine
 {
-Move MOVE_LIST[2 * MAX_DEPTH][MAX_MOVES];
-Move QUIESCENCE_MOVE_LIST[2 * MAX_DEPTH][MAX_MOVES];
+Move MOVE_LIST[4 * MAX_DEPTH][MAX_MOVES];
 Move TEMP_MOVE_LIST[MAX_MOVES];
 
 Bitboard attack_in_ray(Square sq, Ray ray, Bitboard blockers)
@@ -626,7 +625,7 @@ uint64_t perft(Position& position, int depth)
     if (depth == 0) return 1;
 
     Move* begin = MOVE_LIST[depth];
-    Move* end = generate_moves(position, position.side_to_move(), begin);
+    Move* end = generate_moves(position, position.color(), begin);
 
     if (depth == 1) return end - begin;
 
@@ -647,7 +646,7 @@ uint64_t perft(Position& position, int depth)
 bool is_move_legal(const Position& position, Move move)
 {
     Move* begin = TEMP_MOVE_LIST;
-    Move* end = generate_moves(position, position.side_to_move(), begin);
+    Move* end = generate_moves(position, position.color(), begin);
 
     for (Move* it = begin; it != end; ++it)
         if (*it == move) return true;

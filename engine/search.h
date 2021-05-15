@@ -1,7 +1,7 @@
 #ifndef CHESS_ENGINE_SEARCH_H_
 #define CHESS_ENGINE_SEARCH_H_
 
-#include "move_picker.h"
+#include "move_orderer.h"
 #include "position.h"
 #include "score.h"
 #include "time_manager.h"
@@ -15,20 +15,7 @@ namespace engine
 using MoveList = std::vector<Move>;
 using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
-constexpr Value INFINITY_SCORE = 1LL << 32;
-constexpr Value DRAW_SCORE = 0LL;
-
 std::string score2str(Value score);
-
-constexpr Value win_in(int ply)
-{
-    return INFINITY_SCORE - ply;
-}
-
-constexpr Value lost_in(int ply)
-{
-    return -win_in(ply);
-}
 
 class Search
 {
@@ -42,18 +29,14 @@ class Search
   private:
     void iter_search();
 
-    Value root_search(Position& position, int depth, Value alpha, Value beta);
-
-    template <bool allow_null_move>
-    Value search(Position& position, int depth, Value alpha, Value beta);
+    Value search(Position& position, int depth, Value alpha, Value beta,
+                 Info* info);
 
     Value quiescence_search(Position& position, int depth, Value alpha,
-                            Value beta);
-
-    MoveList get_pv(int length);
+                            Value beta, Info* info);
 
     void print_info(Value score, int depth, int64_t nodes_searched,
-                    int64_t elapsed);
+                    int64_t elapsed, Info* info);
 
     bool check_limits();
 
@@ -75,10 +58,10 @@ class Search
 
     std::vector<Move> _root_moves;
 
-    int _ply_counter;
-
     tt::TTable _ttable;
-    OrderingInfo _info;
+    StackInfo _stack_info;
+    HistoryScore _history_score;
+    MoveOrderer _move_orderer;
 };
 
 }  // namespace engine

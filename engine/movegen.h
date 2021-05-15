@@ -11,8 +11,7 @@
 
 namespace engine
 {
-extern Move MOVE_LIST[2 * MAX_DEPTH][MAX_MOVES];
-extern Move QUIESCENCE_MOVE_LIST[2 * MAX_DEPTH][MAX_MOVES];
+extern Move MOVE_LIST[4 * MAX_DEPTH][MAX_MOVES];
 
 Move* generate_moves(const Position& position, Color side, Move* list);
 

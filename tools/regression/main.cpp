@@ -62,7 +62,7 @@ int game(GameParams& params, std::ofstream& fd)
            timers[WHITE].get_time_left_ms() > 0 &&
            timers[BLACK].get_time_left_ms() > 0)
     {
-        const Color side = position.side_to_move();
+        const Color side = position.color();
         engines[side]->position(Position::STARTPOS_FEN, moves);
 
         Move move = NO_MOVE;
@@ -92,7 +92,7 @@ int game(GameParams& params, std::ofstream& fd)
     if (timers[WHITE].get_time_left_ms() == 0) result = WIN_BLACK;
     if (timers[BLACK].get_time_left_ms() == 0) result = WIN_WHITE;
     if (position.is_checkmate())
-        result = position.side_to_move() == WHITE ? WIN_BLACK : WIN_WHITE;
+        result = position.color() == WHITE ? WIN_BLACK : WIN_WHITE;
 
     fd << "[Event \"?\"]" << std::endl;
     fd << "[Site \"?\"]" << std::endl;

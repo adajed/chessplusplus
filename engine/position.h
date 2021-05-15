@@ -40,7 +40,7 @@ class Position
     bool is_in_check(Color side) const;
     bool is_checkmate() const;
 
-    Color side_to_move() const { return _current_side; }
+    Color color() const { return _current_side; }
 
     uint32_t half_moves() const { return _half_move_counter; }
     uint32_t ply_count() const { return _ply_counter; }
@@ -72,6 +72,11 @@ class Position
     Bitboard pieces(Color c, PieceKind p1, PieceKind p2) const;
 
     PieceCountVector get_pcv() const;
+
+    /*
+     * Return number of non-pawn pieces for given side.
+     */
+    int no_nonpawns(Color c) const;
 
     Move parse_uci(const std::string& str);
     std::string uci(Move move) const;

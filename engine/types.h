@@ -1,6 +1,7 @@
 #ifndef CHESS_ENGINE_TYPES_H_
 #define CHESS_ENGINE_TYPES_H_
 
+#include <array>
 #include <cassert>
 #include <cinttypes>
 #include <cstdlib>
@@ -9,6 +10,9 @@
 namespace engine
 {
 const int32_t MAX_PLIES = 400;
+constexpr int MAX_DEPTH = 40;
+constexpr int MAX_MOVES = 512;
+constexpr int MAX_PINS = 16;
 
 using Bitboard = uint64_t;
 
@@ -119,6 +123,21 @@ constexpr Value VALUE_KNOWN_WIN = 12000LL;
 constexpr Value VALUE_MATE = 64000LL;
 constexpr Value VALUE_INFINITE = 64001LL;
 constexpr Value VALUE_NONE = 64002L;
+
+constexpr Value win_in(int ply)
+{
+    return VALUE_MATE - ply;
+}
+
+constexpr Value lost_in(int ply)
+{
+    return -win_in(ply);
+}
+
+constexpr bool is_mate(Value score)
+{
+    return score <= lost_in(MAX_DEPTH) || score >= win_in(MAX_DEPTH);
+}
 
 // encoded move
 // 0-5 - from
@@ -294,10 +313,6 @@ inline int distance(Square from, Square to)
 
 std::ostream& print_bitboard(std::ostream& stream, Bitboard bb);
 
-constexpr int MAX_DEPTH = 40;
-constexpr int MAX_MOVES = 512;
-constexpr int MAX_PINS = 16;
-
 struct Limits
 {
     Limits()
@@ -356,6 +371,42 @@ constexpr PieceCountVector modify_pcv(PieceCountVector pcv, int c)
 }
 
 #undef C
+
+// using PieceHistory = std::array<std::array<int, SQUARE_NUM>, PIECE_KIND_NUM>;
+
+using HistoryScore =
+    std::array<std::array<std::array<int, SQUARE_NUM>, SQUARE_NUM>, COLOR_NUM>;
+
+struct Info
+{
+    Info()
+        : _pv_list_length(0),
+          _static_eval(VALUE_NONE),
+          _ply(0),
+          _current_move(NO_MOVE),
+          _killer_moves{NO_MOVE, NO_MOVE}
+    //_piece_history(new PieceHistory)
+    {
+        /* for (int p = 0; p < PIECE_KIND_NUM; ++p) */
+        /*     for (int to = 0; to < SQUARE_NUM; ++to) */
+        /*         _piece_history[p][to] = 1; */
+    }
+
+    /* ~Info() */
+    /* { */
+    /*     delete piece_history; */
+    /* } */
+
+    std::array<Move, MAX_DEPTH * 2> _pv_list;
+    int _pv_list_length;
+    Value _static_eval;
+    int _ply;
+    Move _current_move;
+    Move _killer_moves[2];
+    // PieceHistory* piece_history;
+};
+
+using StackInfo = std::array<Info, MAX_DEPTH * 2>;
 
 }  // namespace engine
 

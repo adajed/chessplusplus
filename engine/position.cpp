@@ -547,6 +547,13 @@ PieceCountVector Position::get_pcv() const
             _piece_count[B_BISHOP],
             _piece_count[B_ROOK],
             _piece_count[B_QUEEN]);
+
+int Position::no_nonpawns(Color c) const
+{
+    return _piece_count[make_piece(c, KNIGHT)] +
+           _piece_count[make_piece(c, BISHOP)] +
+           _piece_count[make_piece(c, ROOK)] +
+           _piece_count[make_piece(c, QUEEN)];
 }
 
 std::string Position::uci(Move move) const
@@ -610,7 +617,7 @@ std::string Position::san(Move move) const
     temp.do_move(move);
 
     if (temp.is_checkmate()) return basic_san + "#";
-    if (temp.is_in_check(temp.side_to_move())) return basic_san + "+";
+    if (temp.is_in_check(temp.color())) return basic_san + "+";
     return basic_san;
 }
 
@@ -702,7 +709,7 @@ std::ostream& operator<<(std::ostream& stream, const Position& position)
     stream << std::endl;
     stream << "Fen: \"" << position.fen() << "\"" << std::endl;
     stream << "Hash: " << std::hex << position.hash() << std::dec << std::endl;
-    if (position.side_to_move() == WHITE)
+    if (position.color() == WHITE)
         stream << "White to move" << std::endl;
     else
         stream << "Black to move" << std::endl;
