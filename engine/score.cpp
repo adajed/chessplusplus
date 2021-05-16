@@ -120,10 +120,13 @@ Value PositionScorer::combine(const Score& score)
 
 Value PositionScorer::score(const Position& position)
 {
-    if (!popcount_more_than_one(position.pieces(WHITE)))
-        return endgame::score_endgame<BLACK>(position);
-    if (!popcount_more_than_one(position.pieces(BLACK)))
-        return endgame::score_endgame<WHITE>(position);
+    Value endgameValue = endgame::score_endgame(position);
+    if (endgameValue != VALUE_NONE) return endgameValue;
+
+    /* if (!popcount_more_than_one(position.pieces(WHITE))) */
+    /*     return endgame::score_endgame<BLACK>(position); */
+    /* if (!popcount_more_than_one(position.pieces(BLACK))) */
+    /*     return endgame::score_endgame<WHITE>(position); */
 
     setup<WHITE>(position);
     setup<BLACK>(position);
