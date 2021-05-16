@@ -2,6 +2,7 @@
 
 #include "endgame.h"
 #include "logger.h"
+#include "search_utils.h"
 #include "time_manager.h"
 #include "transposition_table.h"
 #include "utils.h"
@@ -13,6 +14,13 @@
 
 namespace engine
 {
+
+int late_move_reduction(int depth, int move_number)
+{
+    move_number = std::min(move_number, 64);
+    return static_cast<int>(std::floor(1 + std::log(depth) * std::log(move_number)));
+}
+
 std::string score2str(Value score)
 {
     if (score <= lost_in(MAX_DEPTH))
@@ -319,15 +327,22 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         info->_static_eval = _scorer.score(position);
     }
 
+    const bool improving = !is_in_check && info->_ply >= 2 && (info->_static_eval > (info - 2)->_static_eval || (info - 2)->_static_eval == VALUE_NONE);
+
     // null move pruning
     if (!IS_NULL && !is_in_check &&
         position.no_nonpawns(position.color()) > 0 && depth > 4 &&
         info->_static_eval >= beta)
     {
+        int reducedDepth = 3 + depth / 4 - (info->_static_eval - beta) / 300;
+        reducedDepth = std::max(reducedDepth, 0);
+        LOG_DEBUG("nullmove reducion %d vs %d", reducedDepth, depth - 4);
+        //int reducedDepth = depth - 4;
+
         LOG_DEBUG("do nullmove");
         MoveInfo moveinfo = position.do_null_move();
         info->_current_move = NO_MOVE;  // this means that this was a null move
-        Value result = -search(position, depth - 4, -beta, -beta + 1, info + 1);
+        Value result = -search(position, reducedDepth, -beta, -beta + 1, info + 1);
         LOG_DEBUG("undo nullmove");
         position.undo_null_move(moveinfo);
 
@@ -346,6 +361,11 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         MoveInfo moveinfo = position.do_move(move);
         _nodes_searched++;
 
+        PieceKind capturedPiece = captured_piece(moveinfo);
+        PieceKind promotedPiece = promotion(move);
+
+        bool isQuiet = capturedPiece == NO_PIECE_KIND && promotedPiece == NO_PIECE_KIND;
+
         Value result;
         if (search_full_window)
         {
@@ -353,7 +373,29 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         }
         else
         {
-            result = -search(position, depth - 1, -alpha - 1, -alpha, info + 1);
+            int reduction = 0;
+            Value updated_score = info->_static_eval + BASIC_PIECE_VALUE[capturedPiece] + BASIC_PIECE_VALUE[promotedPiece];
+            if (depth > 3 && (isQuiet || updated_score <= alpha))
+            {
+                reduction = late_move_reduction(depth, move_count + 1);
+                reduction -= 2 * static_cast<int>(PV_NODE);
+
+                if (isQuiet)
+                {
+                    if (move == info->_killer_moves[0] || move == info->_killer_moves[1])
+                        reduction--;
+                }
+                else
+                {
+                    reduction += std::min(2, static_cast<int>((alpha - updated_score) / 300));
+                }
+                reduction = std::min(depth - 1, std::max(reduction, 0));
+            }
+
+            result = -search(position, depth - 1 - reduction, -alpha - 1, -alpha, info + 1);
+
+            if (reduction > 0 && result > alpha)
+                result = -search(position, depth - 1, -alpha - 1, -alpha, info + 1);
             if (PV_NODE && alpha < result && result < beta)
                 result = -search(position, depth - 1, -beta, -alpha, info + 1);
         }
@@ -364,7 +406,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         if (result >= beta)
         {
             assert(move != NO_MOVE);
-            if (position.piece_at(to(move)) == NO_PIECE)
+            if (isQuiet)
             {
                 update_move_scores(position, move, info, _history_score);
             }

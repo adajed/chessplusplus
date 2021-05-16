@@ -411,6 +411,10 @@ struct Info
 
 using StackInfo = std::array<Info, MAX_DEPTH * 2>;
 
+const Value BASIC_PIECE_VALUE[PIECE_KIND_NUM] = {
+    0, 100, 300, 300, 500, 900, 0
+};
+
 }  // namespace engine
 
 #endif  // CHESS_ENGINE_TYPES_H_
