@@ -333,7 +333,8 @@ bool Uci::perft_command(std::istringstream& istream)
     std::cout << std::endl;
     std::cout << "Number of nodes: " << sum << std::endl;
     std::cout << "Time: " << duration << "ms" << std::endl;
-    std::cout << "Speed: " << sum * 1000LL / duration << "nps" << std::endl;
+    std::cout << "Speed: " << sum * 1000LL / (duration + 1) << "nps"
+              << std::endl;
 
     return true;
 }
