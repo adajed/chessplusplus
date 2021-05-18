@@ -2,6 +2,7 @@
 
 #include "movegen.h"
 #include "types.h"
+#include "utils.h"
 #include "zobrist_hash.h"
 
 #include <sstream>
@@ -263,7 +264,7 @@ Bitboard Position::pieces(Color c, PieceKind p1, PieceKind p2) const
 
 void Position::add_piece(Piece piece, Square square)
 {
-    assert(_board[square] == NO_PIECE);
+    ASSERT(_board[square] == NO_PIECE);
 
     _board[square] = piece;
     _by_color_bb[get_color(piece)] |= square_bb(square);
@@ -276,7 +277,7 @@ void Position::add_piece(Piece piece, Square square)
 
 void Position::remove_piece(Square square)
 {
-    assert(_board[square] != NO_PIECE);
+    ASSERT(_board[square] != NO_PIECE);
 
     Piece piece = _board[square];
     _board[square] = NO_PIECE;
@@ -299,8 +300,8 @@ void Position::remove_piece(Square square)
 
 void Position::move_piece(Square from, Square to)
 {
-    assert(_board[from] != NO_PIECE);
-    assert(_board[to] == NO_PIECE);
+    ASSERT_WITH_MSG(_board[from] != NO_PIECE, "There is no piece at %d", from);
+    ASSERT_WITH_MSG(_board[to] == NO_PIECE, "Piece at %d is %d", to, _board[to]);
 
     Piece piece = _board[from];
     _board[from] = NO_PIECE;
@@ -368,7 +369,7 @@ MoveInfo Position::do_move(Move move)
         Piece captured_piece = _board[to(move)];
         captured = make_piece_kind(captured_piece);
 
-        assert(moved_piece != NO_PIECE);
+        ASSERT(moved_piece != NO_PIECE);
 
         if (get_piece_kind(moved_piece) != PAWN &&
             make_piece_kind(captured_piece) == NO_PIECE_KIND)
@@ -492,7 +493,7 @@ void Position::undo_move(Move move, MoveInfo moveinfo)
 
 void Position::set_enpassant_square(Square sq)
 {
-    assert(sq == NO_SQUARE || rank(sq) == RANK_3 || rank(sq) == RANK_6);
+    ASSERT(sq == NO_SQUARE || rank(sq) == RANK_3 || rank(sq) == RANK_6);
     _enpassant_square = sq;
 }
 
