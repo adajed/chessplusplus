@@ -2,10 +2,11 @@
 #define CHESS_ENGINE_TYPES_H_
 
 #include <array>
-#include <cassert>
 #include <cinttypes>
 #include <cstdlib>
 #include <iostream>
+
+#include "utils.h"
 
 namespace engine
 {
@@ -182,26 +183,26 @@ const Square QUEEN_SIDE_ROOK_SQUARE[COLOR_NUM] = {SQ_A1, SQ_A8};
 
 constexpr Rank rank(Square sq)
 {
-    assert(sq != NO_SQUARE);
+    ASSERT(sq != NO_SQUARE);
     return Rank(sq >> 3);
 }
 
 constexpr File file(Square sq)
 {
-    assert(sq != NO_SQUARE);
+    ASSERT(sq != NO_SQUARE);
     return File(sq & 7);
 }
 
 constexpr Color sq_color(Square sq)
 {
-    assert(sq != NO_SQUARE);
+    ASSERT(sq != NO_SQUARE);
     return (rank(sq) + file(sq)) % 2 ? WHITE : BLACK;
 }
 
 constexpr Square make_square(Rank rank, File file)
 {
-    assert(RANK_1 <= rank && rank <= RANK_8);
-    assert(FILE_A <= file && file <= FILE_H);
+    ASSERT(RANK_1 <= rank && rank <= RANK_8);
+    ASSERT(FILE_A <= file && file <= FILE_H);
     return Square((rank << 3) + file);
 }
 
@@ -289,13 +290,13 @@ constexpr Color operator!(Color color)
 
 constexpr Color get_color(Piece piece)
 {
-    assert(piece != NO_PIECE);
+    ASSERT(piece != NO_PIECE);
     return (piece < B_PAWN) ? WHITE : BLACK;
 }
 
 constexpr PieceKind get_piece_kind(Piece piece)
 {
-    assert(piece != NO_PIECE);
+    ASSERT(piece != NO_PIECE);
     return PieceKind((piece - 1) % 6 + 1);
 }
 
@@ -363,7 +364,7 @@ constexpr PieceCountVector create_pcv(int wp, int wn, int wb, int wr, int wq,
 template <Piece piece>
 constexpr int get_count_pcv(PieceCountVector pcv)
 {
-    assert(piece != NO_PIECE);
+    ASSERT(piece != NO_PIECE);
     return static_cast<int>((pcv >> C(4 * piece)) & 0xF);
 }
 
