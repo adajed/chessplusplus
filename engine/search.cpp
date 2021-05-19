@@ -56,16 +56,30 @@ void add_new_move_to_pv_list(Info* destInfo, Move move, Info* srcInfo)
                 len * sizeof(Move));
 }
 
-void update_move_scores(const Position& position, Move move, Info* info,
-                        HistoryScore& historyScore)
+void add_bonus(int* v, int b)
 {
+    int x = *v;
+    *v = std::min(x + b, 20000);
+}
+
+void update_move_scores(const Position& position, Move move, Info* info,
+                        HistoryScore& historyScore, int depth)
+{
+    Square from_sq = from(move);
+    Square to_sq = to(move);
+    Piece moved_piece = position.piece_at(from_sq);
+
     if (move != info->_killer_moves[0])
     {
         info->_killer_moves[1] = info->_killer_moves[0];
         info->_killer_moves[0] = move;
     }
 
-    historyScore[position.color()][from(move)][to(move)] += info->_ply;
+    int bonus = depth * depth;
+
+    add_bonus(&historyScore[position.color()][from_sq][to_sq], bonus);
+    if ((info-1)->_current_move != NO_MOVE)
+        add_bonus(&(*(info-1)->_counter_move)[moved_piece][to_sq], bonus);
 }
 
 const Duration INFINITE = 1LL << 32;
@@ -87,7 +101,8 @@ Search::Search(const Position& position, const Limits& limits)
       _ttable(),
       _stack_info(),
       _history_score(),
-      _move_orderer(_ttable, _history_score)
+      _move_orderer(_ttable, _history_score),
+      _counter_move_table()
 {
     if (limits.searchmovesnum > 0)
     {
@@ -141,6 +156,7 @@ void Search::go()
 {
     _ttable.clear();
     _scorer.clear();
+    init_search();
     stop_search = false;
     _start_time = std::chrono::steady_clock::now();
 
@@ -156,6 +172,24 @@ void Search::go()
 
     assert(_best_move != NO_MOVE);
     logger << "bestmove " << _position.uci(_best_move) << std::endl;
+}
+
+void Search::init_search()
+{
+    for (Color c : {WHITE, BLACK})
+        for (Square sq1 = SQ_A1; sq1 <= SQ_H8; ++sq1)
+            for (Square sq2 = SQ_A1; sq2 <= SQ_H8; ++sq2)
+                _history_score[c][sq1][sq2] = 0;
+
+    for (Piece p1 = W_PAWN; p1 <= B_KING; ++p1)
+    {
+        for (Square sq1 = SQ_A1; sq1 <= SQ_H8; ++sq1)
+        {
+            for (Piece p2 = W_PAWN; p2 <= B_KING; ++p2)
+                for (Square sq2 = SQ_A1; sq2 <= SQ_H8; ++sq2)
+                    _counter_move_table[p1][sq1][p2][sq2] = 0;
+        }
+    }
 }
 
 void Search::print_info(Value result, int depth, int64_t nodes_searched,
@@ -193,6 +227,7 @@ void Search::iter_search()
     Info* info = _stack_info.data();
     info->_ply = -1;
     info->_current_move = NO_MOVE;
+    info->_counter_move = &_counter_move_table[NO_PIECE][1];
 
     _current_depth = 0;
     while (!stop_search)
@@ -249,7 +284,7 @@ void Search::iter_search()
 
         if (_current_depth >= _search_depth) break;
 
-        if (elapsed >= (_search_time / 2)) break;
+        if (elapsed >= 3 * (_search_time / 4)) break;
     }
 }
 
@@ -273,6 +308,11 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         stop_search = true;
         return Value(0);
     }
+
+    // cannot check it in ROOT_NODE as it might return
+    // without any move
+    if (!ROOT_NODE && position.is_repeated())
+        RETURN_DEBUG(VALUE_DRAW);
 
     if (position.is_draw()) RETURN_DEBUG(VALUE_DRAW);
 
@@ -315,7 +355,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     {
         LOG_DEBUG("start quiescence_search");
         RETURN_DEBUG(
-            quiescence_search(position, MAX_DEPTH - 1, alpha, beta, info + 1));
+            quiescence_search(position, MAX_DEPTH - 1, alpha, beta, info));
     }
 
     if (is_in_check)
@@ -342,6 +382,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         LOG_DEBUG("do nullmove");
         MoveInfo moveinfo = position.do_null_move();
         info->_current_move = NO_MOVE;  // this means that this was a null move
+        info->_counter_move = &_counter_move_table[NO_PIECE][0]; // trash
         Value result = -search(position, reducedDepth, -beta, -beta + 1, info + 1);
         LOG_DEBUG("undo nullmove");
         position.undo_null_move(moveinfo);
@@ -358,6 +399,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         Move move = begin[move_count];
         LOG_DEBUG("do move %s", position.uci(move).c_str());
         info->_current_move = move;
+        info->_counter_move = &_counter_move_table[position.piece_at(from(move))][to(move)];
         MoveInfo moveinfo = position.do_move(move);
         _nodes_searched++;
 
@@ -408,7 +450,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
             assert(move != NO_MOVE);
             if (isQuiet)
             {
-                update_move_scores(position, move, info, _history_score);
+                update_move_scores(position, move, info, _history_score, depth);
             }
 
             tt::TTEntry entry(result, depth, tt::Flag::kLOWER_BOUND, move);
@@ -481,6 +523,8 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
     for (int move_count = 0; move_count < n_moves; ++move_count)
     {
         Move move = begin[move_count];
+        info->_current_move = move;
+        info->_counter_move = &_counter_move_table[position.piece_at(from(move))][to(move)];
         if (!is_in_check && position.piece_at(to(move)) == NO_PIECE &&
             promotion(move) == NO_PIECE_KIND)
             continue;

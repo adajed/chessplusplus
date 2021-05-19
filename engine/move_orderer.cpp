@@ -43,14 +43,14 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
     {
         Move move = begin[i];
 
-        PieceKind moved_piece = make_piece_kind(position.piece_at(from(move)));
+        Piece moved_piece = position.piece_at(from(move));
         PieceKind captured_piece = make_piece_kind(position.piece_at(to(move)));
         PieceKind promotion_piece = promotion(move);
 
         if (move == pvMove)
             _scores[i] = 1000000;
         else if (captured_piece != NO_PIECE_KIND)
-            _scores[i] = 30000 + CAPTURE_BONUS[captured_piece][moved_piece];
+            _scores[i] = 30000 + CAPTURE_BONUS[captured_piece][make_piece_kind(moved_piece)];
         else if (promotion_piece != NO_PIECE_KIND)
             _scores[i] = 29000 + PROMOTION_BONUS[promotion_piece];
         else if (move == info->_killer_moves[0])
@@ -60,7 +60,8 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
         else
         {
             int h = _history_score[position.color()][from(move)][to(move)];
-            _scores[i] = std::min(h, 26999);
+            int c = (*(info-1)->_counter_move)[moved_piece][to(move)];
+            _scores[i] = std::min(h + c, 26999);
         }
     }
 
@@ -79,6 +80,13 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
             std::swap(begin[i], begin[best]);
         }
     }
+
+#ifdef DEBUG
+    std::cout << "Move order: ";
+    for (int i = 0; i < n_moves; ++i)
+        std::cout << "(" << position.uci(begin[i]) << "," << _scores[i] << ") ";
+    std::cout << std::endl;
+#endif
 }
 
 }  // namespace engine

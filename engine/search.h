@@ -27,7 +27,10 @@ class Search
     void stop();
 
   private:
+    void init_search();
+
     void iter_search();
+
 
     Value search(Position& position, int depth, Value alpha, Value beta,
                  Info* info);
@@ -62,6 +65,7 @@ class Search
     StackInfo _stack_info;
     HistoryScore _history_score;
     MoveOrderer _move_orderer;
+    Array2D<PieceHistory, PIECE_NUM, SQUARE_NUM> _counter_move_table;
 };
 
 }  // namespace engine

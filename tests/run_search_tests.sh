@@ -35,9 +35,9 @@ run_search_test()
     if [ $? -eq 0 ]
     then
         SEARCH_TESTS_PASSED=$((SEARCH_TESTS_PASSED + 1))
-        echo "Search test \"${fen}\" passed"
+        echo -e "\e[0;32mSearch test \"${fen}\" passed\e[0m"
     else
-        echo "Search test \"${fen}\" failed, expected move was ${move}"
+        echo -e "\e[0;31mSearch test \"${fen}\" failed, expected move was ${move}\e[0m"
     fi
 }
 

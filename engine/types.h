@@ -375,10 +375,15 @@ constexpr PieceCountVector modify_pcv(PieceCountVector pcv, int c)
 
 #undef C
 
-// using PieceHistory = std::array<std::array<int, SQUARE_NUM>, PIECE_KIND_NUM>;
+template <typename T, int size1, int size2>
+using Array2D = std::array<std::array<T, size2>, size1>;
 
-using HistoryScore =
-    std::array<std::array<std::array<int, SQUARE_NUM>, SQUARE_NUM>, COLOR_NUM>;
+template <typename T, int size1, int size2, int size3>
+using Array3D = std::array<std::array<std::array<T, size3>, size2>, size1>;
+
+using PieceHistory = Array2D<int, PIECE_NUM, SQUARE_NUM>;
+
+using HistoryScore = Array3D<int, COLOR_NUM, SQUARE_NUM, SQUARE_NUM>;
 
 struct Info
 {
@@ -387,18 +392,10 @@ struct Info
           _static_eval(VALUE_NONE),
           _ply(0),
           _current_move(NO_MOVE),
-          _killer_moves{NO_MOVE, NO_MOVE}
-    //_piece_history(new PieceHistory)
+          _killer_moves{NO_MOVE, NO_MOVE},
+          _counter_move(nullptr)
     {
-        /* for (int p = 0; p < PIECE_KIND_NUM; ++p) */
-        /*     for (int to = 0; to < SQUARE_NUM; ++to) */
-        /*         _piece_history[p][to] = 1; */
     }
-
-    /* ~Info() */
-    /* { */
-    /*     delete piece_history; */
-    /* } */
 
     std::array<Move, MAX_DEPTH * 2> _pv_list;
     int _pv_list_length;
@@ -406,7 +403,7 @@ struct Info
     int _ply;
     Move _current_move;
     Move _killer_moves[2];
-    // PieceHistory* piece_history;
+    PieceHistory* _counter_move;
 };
 
 using StackInfo = std::array<Info, MAX_DEPTH * 2>;
