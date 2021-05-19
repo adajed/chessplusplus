@@ -17,9 +17,9 @@ CFLAGS = -Wall -std=c++17 -flto
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
 CFLAGS_DEBUG = $(CFLAGS) -g -DDEBUG
 
-LFLAGS = -pthread -flto
-LFLAGS_RELEASE = $(LFLAGS) -Ofast
-LFLAGS_DEBUG = $(LFLAGS) -g
+LFLAGS = -pthread -flto -Wall -std=c++17
+LFLAGS_RELEASE = $(LFLAGS) -Ofast -DNDEBUG
+LFLAGS_DEBUG = $(LFLAGS) -g -DDEBUG
 
 LCOV_CFLAGS = -fprofile-arcs -ftest-coverage
 LCOV_LFLAGS = --coverage
@@ -31,3 +31,5 @@ CLANG_FORMAT_ARGS = -style=file -i
 # clang tidy
 CLANG_TIDY ?= clang-tidy
 CLANG_TIDY_ARGS = -std=c++17
+
+USE_AVX2 ?= no

@@ -11,6 +11,18 @@ SOURCES=$(wildcard *.cpp)
 OBJS_RELEASE=$(SOURCES:%.cpp=$(OUTDIR_RELEASE)/%.o)
 OBJS_DEBUG=$(SOURCES:%.cpp=$(OUTDIR_DEBUG)/%.o)
 
+
+ifeq ($(USE_AVX2),yes)
+FLAGS = -msse -msse2 -msse3 -msse4.1 -mavx2 -mpopcnt
+else
+FLAGS =
+endif
+
+CFLAGS_RELEASE += $(FLAGS)
+CFLAGS_DEBUG += $(FLAGS)
+LFLAGS_RELEASE += $(FLAGS)
+LFLAGS_DEBUG += $(FLAGS)
+
 all: release debug
 
 release: engine_release
