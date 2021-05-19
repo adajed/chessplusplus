@@ -5,6 +5,27 @@ namespace engine
 {
 #ifdef DEBUG
 
+#define ASSERT(cond)                                     \
+    do                                                             \
+    {                                                              \
+        if (!(cond))                                               \
+        {                                                          \
+            fprintf(stderr, "ASSERT FAILED %s:%d:\"" #cond "\"\n", __FILE__, __LINE__);                                \
+            std::terminate();                                      \
+        }                                                          \
+    } while (false)
+
+#define ASSERT_WITH_MSG(cond, msg, ...)                                     \
+    do                                                             \
+    {                                                              \
+        if (!(cond))                                               \
+        {                                                          \
+            fprintf(stderr, "ASSERT FAILED %s:%d:\"" #cond "\" " msg "\n", __FILE__, __LINE__, \
+                    ##__VA_ARGS__);                                \
+            std::terminate();                                      \
+        }                                                          \
+    } while (false)
+
 #define LOG_DEBUG(msg, ...) fprintf(stderr, msg "\n", ##__VA_ARGS__);
 #define RETURN_DEBUG(val)                \
     {                                    \
@@ -16,9 +37,20 @@ namespace engine
 #else
 
 #define LOG_DEBUG(msg, ...) \
+    do \
     {                       \
-    }
+    } while(false)
 #define RETURN_DEBUG(val) return (val);
+
+#define ASSERT(cond) \
+    do \
+    { \
+    } while(false)
+
+#define ASSERT_WITH_MSG(cond, msg, ...) \
+    do                         \
+    {                          \
+    } while (false)
 
 #endif
 
