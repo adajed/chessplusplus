@@ -191,6 +191,15 @@ bool Position::is_draw() const
 
 bool Position::threefold_repetition() const
 {
+    int count = 1;
+    for (int i = _history_counter - 2; i >= 0; --i)
+        if (_history[i] == _zobrist_hash.get_key())
+            if (++count == 3) return true;
+    return false;
+}
+
+bool Position::is_repeated() const
+{
     for (int i = _history_counter - 2; i >= 0; --i)
         if (_history[i] == _zobrist_hash.get_key()) return true;
     return false;

@@ -173,7 +173,7 @@ TEST(PositionTest, threefold_repetition)
 {
     using TestCase = std::tuple<std::vector<std::string>, bool>;
     std::vector<TestCase> test_cases = {
-        {{"e2e4", "e7e5", "e1e2", "e8e7", "e2e1", "e7e8", "e1e2", "e8e7", "e2e1", "e7e8"}, true}
+        {{"e2e4", "e7e5", "e1e2", "e8e7", "e2e1", "e7e8", "e1e2", "e8e7", "e2e1", "e7e8", "e1e2", "e8e7", "e2e1", "e7e8"}, true}
     };
 
     for (const TestCase& test_case : test_cases)
