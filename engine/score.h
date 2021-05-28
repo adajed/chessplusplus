@@ -78,10 +78,6 @@ class PositionScorer
 
     Value game_phase_weight(const Position& position);
 
-    template <Color side>
-    Bitboard blockers_for_square(const Position& position, Square sq,
-                                 Bitboard& snipers);
-
     PawnHashTable _pawn_hash_table;
     Value _weight;
 

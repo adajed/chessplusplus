@@ -559,32 +559,4 @@ Value PositionScorer::game_phase_weight(const Position& position)
     return std::min(weight, MAX_PIECE_WEIGTHS);
 }
 
-template <Color side>
-Bitboard PositionScorer::blockers_for_square(const Position& position,
-                                             Square sq, Bitboard& snipers)
-{
-    snipers = no_squares_bb;
-    Bitboard blockers = no_squares_bb;
-
-    Bitboard possible_snipers =
-        (pseudoattacks<BISHOP>(sq) & position.pieces(!side, BISHOP, QUEEN)) |
-        (pseudoattacks<ROOK>(sq) & position.pieces(!side, ROOK, QUEEN));
-
-    Bitboard rest = position.pieces() & ~(possible_snipers | square_bb(sq));
-
-    while (possible_snipers)
-    {
-        Square sniper_sq = Square(pop_lsb(&possible_snipers));
-
-        Bitboard b = LINES[sq][sniper_sq] & rest;
-        if (b && !popcount_more_than_one(b))
-        {
-            snipers |= square_bb(sq);
-            blockers |= b;
-        }
-    }
-
-    return blockers;
-}
-
 }  // namespace engine
