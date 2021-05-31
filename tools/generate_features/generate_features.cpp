@@ -1,5 +1,8 @@
 #include "position.h"
 #include "position_bitboards.h"
+#include "endgame.h"
+#include "movegen.h"
+#include "zobrist_hash.h"
 
 using namespace engine;
 
@@ -473,11 +476,34 @@ extern "C" int number_of_features()
     return NUM_FEATURES;
 }
 
-extern "C" int* generate_features(char* fen)
+extern "C" void generate_features(char* fen, int* features)
 {
     FeatureGenerator gen{std::string(fen)};
-    int* features = new int[NUM_FEATURES];
-
     gen.generate(features);
-    return features;
+}
+
+extern "C" void parse_position(char* fen, int* arr)
+{
+    Position position{std::string(fen)};
+
+    int c = position.color() == WHITE ? 1 : 0;
+
+    const int NUM_LAYERS = PIECE_NUM + 1;
+    std::memset(arr, 0, SQUARE_NUM * NUM_LAYERS * sizeof(int));
+
+    for (int sq = 0; sq < SQUARE_NUM; ++sq)
+    {
+        Piece p = position.piece_at(Square(sq));
+        if (p != NO_PIECE)
+            arr[sq * NUM_LAYERS + p] = 1;
+        arr[sq * NUM_LAYERS + PIECE_NUM] = c;
+    }
+}
+
+extern "C" void init()
+{
+    init_move_bitboards();
+    init_zobrist();
+    bitbase::init();
+    endgame::init();
 }
