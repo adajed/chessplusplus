@@ -9,8 +9,7 @@ GTEST_INCLUDE_PATH ?= /usr/local/include
 GTEST_LIB_PATH     ?= /usr/local/lib
 
 # complier
-CC  ?= gcc
-CXX ?= g++
+COMP ?= g++
 
 # compliation flags
 CFLAGS = -Wall -std=c++17 -flto

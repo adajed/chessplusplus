@@ -51,15 +51,27 @@ compiledb:
 
 help:
 	@echo "Available commands:"
-	@echo "\trelease  - compile engine and tests"
-	@echo "\tdebug    - compile engine and tests in debug mode"
-	@echo "\tall      - release + debug"
-	@echo "\tclean    - remove all files created by make"
-	@echo "\tctags    - create tags for all files"
-	@echo "\tformat   - run clang-format on all files"
-	@echo "\compiledb - create compile_commands.json
+	@echo "\trelease   - compile engine and tests"
+	@echo "\tdebug     - compile engine and tests in debug mode"
+	@echo "\tall       - release + debug"
+	@echo "\tclean     - remove all files created by make"
+	@echo "\tctags     - create tags for all files"
+	@echo "\tformat    - run clang-format on all files"
+	@echo "\tcompiledb - create compile_commands.json"
+	@echo "\tinfo      - print compile info"
+
+info:
+	@echo "Chess engine chessplusplus"
+	@echo ""
+	@echo "Compilation:"
+	@echo "make COMP=<path to C++ compiler>"
+	@echo "Default COMP is g++."
+	@echo ""
+	@echo "Examples:"
+	@echo "make COMP=g++"
+	@echo "make COMP=clang++"
 
 
 .PHONY: release engine test tools
 .PHONY: debug engine_debug test_debug tools_debug
-.PHONY: clean compiledb ctags format coverage ehelp
+.PHONY: clean compiledb ctags format coverage help info
