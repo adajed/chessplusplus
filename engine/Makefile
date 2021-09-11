@@ -34,20 +34,20 @@ engine_debug: $(BINARY_DEBUG)
 # linking
 $(BINARY_RELEASE): $(OBJS_RELEASE) | $(OUTDIR_RELEASE)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS_RELEASE)
+	@$(COMP) -o $@ $^ $(LFLAGS_RELEASE)
 
 $(BINARY_DEBUG): $(OBJS_DEBUG) | $(OUTDIR_DEBUG)
 	@echo "Linking $@"
-	@$(CXX) -o $@ $^ $(LFLAGS_DEBUG) $(LCOV_LFLAGS)
+	@$(COMP) -o $@ $^ $(LFLAGS_DEBUG) $(LCOV_LFLAGS)
 
 # compilation
 $(OUTDIR_RELEASE)/%.o : %.cpp | $(OUTDIR_RELEASE)
 	@echo "Compiling release $<"
-	@$(CXX) -c -o $@ $< $(CFLAGS_RELEASE)
+	@$(COMP) -c -o $@ $< $(CFLAGS_RELEASE)
 
 $(OUTDIR_DEBUG)/%.o : %.cpp | $(OUTDIR_DEBUG)
 	@echo "Compiling debug $<"
-	@$(CXX) -c -o $@ $< $(CFLAGS_DEBUG)
+	@$(COMP) -c -o $@ $< $(CFLAGS_DEBUG)
 
 # dir
 $(OUTDIR_RELEASE):
