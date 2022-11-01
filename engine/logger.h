@@ -4,6 +4,12 @@
 #include <fstream>
 #include <iostream>
 
+enum SyncCout { IO_LOCK, IO_UNLOCK };
+std::ostream& operator<< (std::ostream&, SyncCout);
+
+#define sync_cout std::cout << IO_LOCK
+#define sync_endl std::endl << IO_UNLOCK
+
 namespace engine
 {
 class Logger
@@ -47,14 +53,12 @@ template <typename Type>
 Logger& operator<<(Logger& logger, Type value)
 {
     if (logger.fout.is_open()) logger.fout << value;
-    std::cout << value;
     return logger;
 }
 
 inline Logger& endl(Logger& logger)
 {
     logger.fout << std::endl;
-    std::cout << std::endl;
     return logger;
 }
 
