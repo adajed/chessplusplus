@@ -116,7 +116,6 @@ Search::Search(const Position& position, const Limits& limits)
         Move* end = generate_moves(_position, _position.color(), begin);
         _root_moves.insert(_root_moves.end(), begin, end);
     }
-    _root_moves_num = _root_moves.end() - _root_moves.begin();
 
     if (limits.infinite)
     {
