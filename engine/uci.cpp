@@ -17,17 +17,17 @@ Uci::Uci() : search(nullptr), position(), quit(false), options(), polyglot()
             this->polyglot = PolyglotBook(path);
     });
     options["Logfile"] = UciOption("", [](std::string path) {
-        /* if (path == "") */
-        /*     logger.close_file(); */
-        /* else */
-        /*     logger.open_file(path); */
+        if (path == "")
+            logger.close_file();
+        else
+            logger.open_file(path);
     });
 }
 
 void Uci::loop()
 {
-    std::cout << "Chess engine by Adam Jedrych"
-              << " (build " << __DATE__ << " " << __TIME__ << ")" << std::endl;
+    sync_cout << "Chess engine by Adam Jedrych"
+              << " (build " << __DATE__ << " " << __TIME__ << ")" << sync_endl;
 
     position = Position();
     quit = false;
@@ -37,7 +37,7 @@ void Uci::loop()
 
     while (!quit && std::getline(std::cin, line))
     {
-        /* logger.fout << line << std::endl; */
+        logger.fout << line << std::endl;
         std::istringstream istream(line);
         istream >> token;
 
@@ -62,22 +62,22 @@ void Uci::loop()
         COMMAND(printboard)
         COMMAND(hash)
         COMMAND(perft)
-        COMMAND(moves) { std::cout << "Unknown command" << std::endl; }
+        COMMAND(moves)
 
 #undef COMMAND
 
         if (!b)
         {
-            std::cout << "Unknown command" << std::endl;
+            sync_cout << "Unknown command" << sync_endl;
         }
     }
 }
 
 bool Uci::uci_command(std::istringstream& istream)
 {
-    std::cout << "id name Deep Chess" << std::endl;
-    std::cout << "id author Adam Jedrych" << std::endl;
-    std::cout << std::endl;
+    sync_cout << "id name Deep Chess" << sync_endl;
+    sync_cout << "id author Adam Jedrych" << sync_endl;
+    sync_cout << sync_endl;
 
     for (auto option_pair : options)
     {
@@ -85,7 +85,7 @@ bool Uci::uci_command(std::istringstream& istream)
         UciOption option = option_pair.second;
         OptionType optiontype = option.get_type();
 
-        std::cout << "option ";
+        sync_cout << "option ";
         std::cout << "name " << name << " ";
         std::cout << "type " << optiontype_to_string(optiontype) << " ";
         if (optiontype == kCHECK)
@@ -106,10 +106,10 @@ bool Uci::uci_command(std::istringstream& istream)
         else if (optiontype == kSTRING)
             std::cout << "default " << option.get_string() << " ";
 
-        std::cout << std::endl;
+        std::cout << sync_endl;
     }
 
-    std::cout << "uciok" << std::endl;
+    sync_cout << "uciok" << sync_endl;
     return true;
 }
 
@@ -121,7 +121,7 @@ bool Uci::ucinewgame_command(std::istringstream& istream)
 
 bool Uci::isready_command(std::istringstream& istream)
 {
-    std::cout << "readyok" << std::endl;
+    sync_cout << "readyok" << sync_endl;
     return true;
 }
 
@@ -216,7 +216,7 @@ void start_searching(Uci* uci)
     if (uci->polyglot.contains(key))
     {
         Move move = uci->polyglot.sample_move(key, uci->position);
-        std::cout << "bestmove " << uci->position.uci(move) << std::endl;
+        sync_cout << "bestmove " << uci->position.uci(move) << sync_endl;
     }
     else
         uci->search->go();
@@ -287,14 +287,14 @@ bool Uci::quit_command(std::istringstream& istream)
 
 bool Uci::printboard_command(std::istringstream& istream)
 {
-    std::cout << position << std::endl;
+    sync_cout << position << sync_endl;
     return true;
 }
 
 bool Uci::hash_command(std::istringstream& istream)
 {
-    std::cout << "Hex: " << std::hex << position.hash() << std::dec
-              << std::endl;
+    sync_cout << "Hex: " << std::hex << position.hash() << std::dec
+              << sync_endl;
     return true;
 }
 
@@ -320,7 +320,7 @@ bool Uci::perft_command(std::istringstream& istream)
 
             position.undo_move(move, moveinfo);
 
-            std::cout << position.uci(move) << ": " << n << std::endl;
+            sync_cout << position.uci(move) << ": " << n << sync_endl;
             sum += n;
         }
     }
@@ -330,11 +330,11 @@ bool Uci::perft_command(std::istringstream& istream)
                             end_time - start_time)
                             .count();
 
-    std::cout << std::endl;
-    std::cout << "Number of nodes: " << sum << std::endl;
-    std::cout << "Time: " << duration << "ms" << std::endl;
-    std::cout << "Speed: " << sum * 1000LL / (duration + 1) << "nps"
-              << std::endl;
+    sync_cout << sync_endl;
+    sync_cout << "Number of nodes: " << sum << sync_endl;
+    sync_cout << "Time: " << duration << "ms" << sync_endl;
+    sync_cout << "Speed: " << sum * 1000LL / (duration + 1) << "nps"
+              << sync_endl;
 
     return true;
 }
