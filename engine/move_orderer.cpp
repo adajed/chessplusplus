@@ -43,8 +43,9 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
     {
         Move move = begin[i];
 
-        Piece moved_piece = position.piece_at(from(move));
-        PieceKind captured_piece = make_piece_kind(position.piece_at(to(move)));
+        Castling c = castling(move);
+        Piece moved_piece = c == NO_CASTLING ? position.piece_at(from(move)) : NO_PIECE;
+        PieceKind captured_piece = c == NO_CASTLING ? make_piece_kind(position.piece_at(to(move))) : NO_PIECE_KIND;
         PieceKind promotion_piece = promotion(move);
 
         if (move == pvMove)
