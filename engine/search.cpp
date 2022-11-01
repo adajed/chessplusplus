@@ -116,6 +116,7 @@ Search::Search(const Position& position, const Limits& limits)
         Move* end = generate_moves(_position, _position.color(), begin);
         _root_moves.insert(_root_moves.end(), begin, end);
     }
+    _root_moves_num = _root_moves.end() - _root_moves.begin();
 
     if (limits.infinite)
     {
@@ -316,8 +317,8 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
 
     if (position.is_draw()) RETURN_DEBUG(VALUE_DRAW);
 
-    Move* begin = MOVE_LIST[info->_ply];
-    Move* end = generate_moves(position, position.color(), begin);
+    Move* begin = ROOT_NODE ? &(*_root_moves.begin()) : MOVE_LIST[info->_ply];
+    Move* end = ROOT_NODE ? &(*_root_moves.end()) : generate_moves(position, position.color(), begin);
     const int n_moves = end - begin;
 
     bool is_in_check = position.is_in_check(position.color());
