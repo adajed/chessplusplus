@@ -7,43 +7,52 @@
 #include "uci.h"
 #include "zobrist_hash.h"
 
+#include "ctpl_stl.h"
+
 #include <fstream>
 
 constexpr int WIN_WHITE = 0;
 constexpr int WIN_BLACK = 1;
 constexpr int DRAW = 2;
 
+// result, pgn string
+using GameResult = std::tuple<int, std::string>;
+
 struct GameParams
 {
-    GameParams(EngineWrapper* white, EngineWrapper* black,
-               const PolyglotBook& polyglot)
+    GameParams(const EngineParams& white, const EngineParams& black, bool debug)
         : engine_white(white),
           engine_black(black),
           time_format(),
-          polyglot(polyglot),
-          book_depth(0),
-          intial_moves()
+          intial_moves(),
+          debug(debug)
     {
     }
 
-    EngineWrapper* engine_white;
-    EngineWrapper* engine_black;
+    EngineParams engine_white, engine_black;
     TimeFormat time_format;
-    PolyglotBook polyglot;
-    int book_depth;
     std::vector<Move> intial_moves;
+    bool debug;
 };
 
-int game(GameParams& params, std::ofstream& fd)
+GameResult game(int id, GameParams params)
 {
+    EngineWrapper engine1(params.engine_white.command, params.engine_white.name,
+            params.debug);
+    EngineWrapper engine2(params.engine_black.command, params.engine_black.name,
+            params.debug);
+
+    engine1.uci();
+    engine2.uci();
+
     Timer timers[COLOR_NUM] = {Timer(params.time_format.time_initial_ms,
                                      params.time_format.time_increment_ms),
                                Timer(params.time_format.time_initial_ms,
                                      params.time_format.time_increment_ms)};
     EngineWrapper* engines[COLOR_NUM];
 
-    engines[WHITE] = params.engine_white;
-    engines[BLACK] = params.engine_black;
+    engines[WHITE] = &engine1;
+    engines[BLACK] = &engine2;
 
     std::cout << "New game: white=" << engines[WHITE]->get_name()
               << " black=" << engines[BLACK]->get_name()
@@ -92,6 +101,9 @@ int game(GameParams& params, std::ofstream& fd)
         depth++;
     }
 
+    engine1.quit();
+    engine2.quit();
+
     int result = DRAW;
     if (timers[WHITE].get_time_left_ms() == 0) result = WIN_BLACK;
     if (timers[BLACK].get_time_left_ms() == 0) result = WIN_WHITE;
@@ -106,34 +118,35 @@ int game(GameParams& params, std::ofstream& fd)
     else if (result == WIN_BLACK)
         resultString = "0-1";
 
-    fd << "[Event \"?\"]" << std::endl;
-    fd << "[Site \"?\"]" << std::endl;
-    fd << "[White \"" << engines[WHITE]->get_name() << "\"]" << std::endl;
-    fd << "[Black \"" << engines[BLACK]->get_name() << "\"]" << std::endl;
-    fd << "[Result \"" << resultString << "\"]" << std::endl;
-    fd << std::endl;
+    std::stringstream ss;
+    ss << "[Event \"?\"]" << std::endl;
+    ss << "[Site \"?\"]" << std::endl;
+    ss << "[White \"" << engines[WHITE]->get_name() << "\"]" << std::endl;
+    ss << "[Black \"" << engines[BLACK]->get_name() << "\"]" << std::endl;
+    ss << "[Result \"" << resultString << "\"]" << std::endl;
+    ss << std::endl;
     Position temp_position;
     for (int i = 0; i < moves.size(); i++)
     {
         if (i % 2 == 0)
         {
-            fd << (i / 2) + 1 << ". ";
+            ss << (i / 2) + 1 << ". ";
         }
-        fd << temp_position.san(moves[i]) << " ";
+        ss << temp_position.san(moves[i]) << " ";
         if (std::get<0>(moves_info[i]))
-            fd << "{ book } ";
+            ss << "{ book } ";
 
-        fd << "{ ";
+        ss << "{ ";
         if (!std::get<0>(moves_info[i]))
-            fd << "[\%eval " << std::get<2>(moves_info[i]) << "] ";
+            ss << "[\%eval " << std::get<2>(moves_info[i]) << "] ";
 
-        fd << "[\%clk " << std::get<1>(moves_info[i]) << "] } ";
+        ss << "[\%clk " << std::get<1>(moves_info[i]) << "] } ";
 
         temp_position.do_move(moves[i]);
     }
-    fd << resultString << std::endl;
+    ss << resultString << std::endl << std::endl;
 
-    return result;
+    return std::make_tuple(result, ss.str());
 }
 
 int main(int argc, char** argv)
@@ -153,22 +166,17 @@ int main(int argc, char** argv)
     bitbase::init();
     endgame::init();
 
-    EngineWrapper engine1(args.engines[0].command, args.engines[0].name,
-                          args.debug);
-    EngineWrapper engine2(args.engines[1].command, args.engines[1].name,
-                          args.debug);
-
-    engine1.uci();
-    engine2.uci();
-
     PolyglotBook polyglot(args.polyglot);
-    GameParams params(&engine1, &engine2, polyglot);
-    params.book_depth = args.book_depth;
+    GameParams params(args.engines[0], args.engines[1], args.debug);
     params.time_format = args.time_format;
 
     std::map<std::string, double> points;
-    points[engine1.get_name()] = 0.0;
-    points[engine2.get_name()] = 0.0;
+    points[args.engines[0].name] = 0.0;
+    points[args.engines[1].name] = 0.0;
+
+    ctpl::thread_pool p(args.num_threads);
+    std::vector<std::future<GameResult>> results(args.num_games);
+    std::vector<GameParams> gameParams;
 
     for (int i = 0; i < args.num_games; ++i)
     {
@@ -188,42 +196,45 @@ int main(int argc, char** argv)
             }
         }
 
-        int result = game(params, fd);
-
-        if (result == WIN_WHITE)
-        {
-            points[params.engine_white->get_name()] += 1.;
-            std::cout << params.engine_white->get_name() << "(white) won"
-                      << std::endl;
-        }
-        else if (result == WIN_BLACK)
-        {
-            points[params.engine_black->get_name()] += 1.;
-            std::cout << params.engine_black->get_name() << "(black) won"
-                      << std::endl;
-        }
-        else
-        {
-            points[params.engine_white->get_name()] += 0.5;
-            points[params.engine_black->get_name()] += 0.5;
-            std::cout << "draw" << std::endl;
-        }
-
-        std::cout << "Current score: " << engine1.get_name() << "="
-                  << points[engine1.get_name()] << " " << engine2.get_name()
-                  << "=" << points[engine2.get_name()] << std::endl;
+        gameParams.push_back(params);
+        results[i] = p.push(game, params);
 
         std::swap(params.engine_white, params.engine_black);
     }
 
-    engine1.quit();
-    engine2.quit();
+    for (int i = 0; i < args.num_games; ++i)
+    {
+        GameResult gameResult = results[i].get();
 
-    std::cout << "Final score:" << std::endl;
-    std::cout << engine1.get_name() << " : " << points[engine1.get_name()]
-              << std::endl;
-    std::cout << engine2.get_name() << " : " << points[engine2.get_name()]
-              << std::endl;
+        if (std::get<0>(gameResult) == WIN_WHITE)
+        {
+            points[gameParams[i].engine_white.name] += 1.;
+            std::cout << gameParams[i].engine_white.name << "(white) won"
+                << std::endl;
+        }
+        else if (std::get<0>(gameResult) == WIN_BLACK)
+        {
+            points[gameParams[i].engine_black.name] += 1.;
+            std::cout << gameParams[i].engine_black.name << "(black) won"
+                << std::endl;
+        }
+        else
+        {
+            points[gameParams[i].engine_white.name] += 0.5;
+            points[gameParams[i].engine_black.name] += 0.5;
+            std::cout << "draw" << std::endl;
+        }
+
+        std::cout << "Current score: "
+                  << args.engines[0].name << "=" << points[args.engines[0].name] << " "
+                  << args.engines[1].name << "=" << points[args.engines[1].name] << std::endl;
+
+        fd << std::get<1>(gameResult);
+    }
+
+    std::cout << "Final score: "
+              << args.engines[0].name << "=" << points[args.engines[0].name] << " "
+              << args.engines[1].name << "=" << points[args.engines[1].name] << std::endl;
 
     return 0;
 }
