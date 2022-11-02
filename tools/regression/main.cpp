@@ -55,6 +55,8 @@ int game(GameParams& params, std::ofstream& fd)
 
     Position position;
     std::vector<Move> moves;
+    // bookmove, time left, engine eval
+    std::vector<std::tuple<bool, std::string, std::string>> moves_info;
 
     int depth = 0;
 
@@ -66,11 +68,12 @@ int game(GameParams& params, std::ofstream& fd)
         engines[side]->position(Position::STARTPOS_FEN, moves);
 
         Move move = NO_MOVE;
-        uint64_t hash = PolyglotBook::hash(position);
         timers[side].start();
-        if (depth < params.book_depth && params.polyglot.contains(hash))
+        bool bookmove = depth < params.intial_moves.size();
+        std::string score = "";
+        if (bookmove)
         {
-            move = params.polyglot.sample_move(hash, position);
+            move = params.intial_moves[depth];
         }
         else
         {
@@ -79,10 +82,11 @@ int game(GameParams& params, std::ofstream& fd)
             params.time_inc[WHITE] = timers[WHITE].get_time_inc_ms();
             params.time[BLACK] = timers[BLACK].get_time_left_ms();
             params.time_inc[BLACK] = timers[BLACK].get_time_inc_ms();
-            move = engines[side]->go(params);
+            move = engines[side]->go(params, side, score);
         }
         timers[side].end();
         moves.push_back(move);
+        moves_info.push_back(std::make_tuple(bookmove, timers[side].get_time_left_human(), score));
         position.do_move(move);
 
         depth++;
@@ -94,11 +98,19 @@ int game(GameParams& params, std::ofstream& fd)
     if (position.is_checkmate())
         result = position.color() == WHITE ? WIN_BLACK : WIN_WHITE;
 
+    std::string resultString = "";
+    if (result == DRAW)
+        resultString = "1/2-1/2";
+    else if (result == WIN_WHITE)
+        resultString = "1-0";
+    else if (result == WIN_BLACK)
+        resultString = "0-1";
+
     fd << "[Event \"?\"]" << std::endl;
     fd << "[Site \"?\"]" << std::endl;
     fd << "[White \"" << engines[WHITE]->get_name() << "\"]" << std::endl;
     fd << "[Black \"" << engines[BLACK]->get_name() << "\"]" << std::endl;
-    fd << "[Result \"?\"]" << std::endl;
+    fd << "[Result \"" << resultString << "\"]" << std::endl;
     fd << std::endl;
     Position temp_position;
     for (int i = 0; i < moves.size(); i++)
@@ -108,15 +120,18 @@ int game(GameParams& params, std::ofstream& fd)
             fd << (i / 2) + 1 << ". ";
         }
         fd << temp_position.san(moves[i]) << " ";
+        if (std::get<0>(moves_info[i]))
+            fd << "{ book } ";
+
+        fd << "{ ";
+        if (!std::get<0>(moves_info[i]))
+            fd << "[\%eval " << std::get<2>(moves_info[i]) << "] ";
+
+        fd << "[\%clk " << std::get<1>(moves_info[i]) << "] } ";
+
         temp_position.do_move(moves[i]);
     }
-    if (result == DRAW)
-        fd << "1/2-1/2" << std::endl;
-    else if (result == WIN_WHITE)
-        fd << "1-0" << std::endl;
-    else if (result == WIN_BLACK)
-        fd << "0-1" << std::endl;
-    fd << std::endl;
+    fd << resultString << std::endl;
 
     return result;
 }
@@ -152,11 +167,27 @@ int main(int argc, char** argv)
     params.time_format = args.time_format;
 
     std::map<std::string, double> points;
-    points[engine1.get_name()] = 0.;
-    points[engine2.get_name()] = 0.;
+    points[engine1.get_name()] = 0.0;
+    points[engine2.get_name()] = 0.0;
 
     for (int i = 0; i < args.num_games; ++i)
     {
+        if (!args.repeat || i % 2 == 0)
+        {
+            params.intial_moves.clear();
+            Position position;
+            uint64_t hash = PolyglotBook::hash(position);
+            int depth = 0;
+            while (depth < args.book_depth && polyglot.contains(hash))
+            {
+                Move move = polyglot.sample_move(hash, position);
+                position.do_move(move);
+                params.intial_moves.push_back(move);
+                hash = PolyglotBook::hash(position);
+                depth++;
+            }
+        }
+
         int result = game(params, fd);
 
         if (result == WIN_WHITE)
