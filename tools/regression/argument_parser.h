@@ -27,7 +27,8 @@ struct Args
           repeat(false),
           polyglot(""),
           book_depth(0),
-          pgn_file("games.pgn")
+          pgn_file("games.pgn"),
+          num_threads(1)
     {
     }
 
@@ -39,6 +40,7 @@ struct Args
     std::string polyglot;
     int book_depth;
     std::string pgn_file;
+    int num_threads;
 };
 
 Args parse_args(int argc, char** argv)
@@ -57,6 +59,7 @@ Args parse_args(int argc, char** argv)
         std::cout << "\t--engine [engineOption [engineOption ...]] - Adds new engine with given parameters to regression" << std::endl;
         std::cout << "\t--time - Time format: <intial_time in minutes>:<increment in seconds> (default: 5+3)" << std::endl;
         std::cout << "\t--numgames - Number of games to run (default: 1)" << std::endl;
+        std::cout << "\t--threads - Number of threads to use (default: 1)" << std::endl;
         std::cout << "\t--pgn - Path to PGN files where games will be saved (default: games.pgn)" << std::endl;
         std::cout << "\t--polyglot - Path to polyglot book used for openings (default: not used)" << std::endl;
         std::cout << "\t--bookdepth - Depth (in plies) up to which the book is used (default: 0)" << std::endl;
@@ -119,6 +122,11 @@ Args parse_args(int argc, char** argv)
         {
             pos++;
             args.num_games = std::stoi(tokens[pos++]);
+        }
+        else if (tokens[pos] == "--threads")
+        {
+            pos++;
+            args.num_threads = std::stoi(tokens[pos++]);
         }
         else if (tokens[pos] == "--debug")
         {
