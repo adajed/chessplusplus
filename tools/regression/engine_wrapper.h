@@ -22,10 +22,17 @@
 
 using namespace engine;
 
+enum class ScoreType
+{
+    kCentipawn,
+    kMate
+};
+
 struct CommandInfoData
 {
     int depth;
-    std::string score;
+    ScoreType scoreType;
+    int scoreValue;
     uint64_t nodes;
     uint64_t nps;
     uint64_t time;
@@ -61,7 +68,7 @@ class EngineWrapper
 
     void quit();
 
-    Move go(const CommandGoParams& params);
+    Move go(const CommandGoParams& params, Color color, std::string& score);
 
     void set_option(const std::string& name, const std::string& value);
     void set_option(const std::string& name);

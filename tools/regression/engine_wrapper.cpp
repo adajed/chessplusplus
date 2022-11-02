@@ -1,5 +1,8 @@
 #include "engine_wrapper.h"
 
+#include <iomanip>
+#include <sstream>
+
 #include "position.h"
 
 #define SEND(msg)                                      \
@@ -136,7 +139,7 @@ void EngineWrapper::quit()
     close(CHILD_STDERR_READ);
 }
 
-Move EngineWrapper::go(const CommandGoParams& params)
+Move EngineWrapper::go(const CommandGoParams& params, Color color, std::string& score)
 {
     if (running_) return NO_MOVE;
 
@@ -167,6 +170,21 @@ Move EngineWrapper::go(const CommandGoParams& params)
     do
     {
         READ(message);
+        if (message.find("info") == 0)
+        {
+            CommandInfoData infoData = parse_command_info(message);
+            int value = color == WHITE ? infoData.scoreValue : -infoData.scoreValue;
+            if (infoData.scoreType == ScoreType::kCentipawn)
+            {
+                std::stringstream ss;
+                ss << std::fixed << std::setprecision(2) << static_cast<double>(value) / 100.0;
+                score = ss.str();
+            }
+            else if (infoData.scoreType == ScoreType::kMate)
+            {
+                score = "#" + std::to_string(value);
+            }
+        }
     } while (message.find("bestmove") != 0);
 
     CommandBestmoveData data = parse_command_bestmove(message);
@@ -216,10 +234,13 @@ CommandInfoData EngineWrapper::parse_command_info(const std::string& command)
         {
             std::string s;
             ss >> token;
+            if (token == "cp")
+                data.scoreType = ScoreType::kCentipawn;
+            else if (token == "mate")
+                data.scoreType = ScoreType::kMate;
             s += token;
             ss >> token;
-            s += " " + token;
-            data.score = s;
+            data.scoreValue = std::atoi(token.c_str());
         }
         else if (token == "nodes")
         {

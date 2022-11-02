@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -46,6 +47,28 @@ Args parse_args(int argc, char** argv)
     for (int i = 0; i < argc; ++i)
     {
         tokens.push_back(std::string(argv[i]));
+    }
+
+    if (std::find(tokens.begin(), tokens.end(), "--help") != tokens.end())
+    {
+        std::cout << "Usage: " << tokens[0] << " [option [option ...]]" << std::endl << std::endl;
+
+        std::cout << "Options:" << std::endl;
+        std::cout << "\t--engine [engineOption [engineOption ...]] - Adds new engine with given parameters to regression" << std::endl;
+        std::cout << "\t--time - Time format: <intial_time in minutes>:<increment in seconds> (default: 5+3)" << std::endl;
+        std::cout << "\t--numgames - Number of games to run (default: 1)" << std::endl;
+        std::cout << "\t--pgn - Path to PGN files where games will be saved (default: games.pgn)" << std::endl;
+        std::cout << "\t--polyglot - Path to polyglot book used for openings (default: not used)" << std::endl;
+        std::cout << "\t--bookdepth - Depth (in plies) up to which the book is used (default: 0)" << std::endl;
+        std::cout << "\t--repeat - Repeat opening for both sides" << std::endl;
+        std::cout << "\t--debug - Print debug messages" << std::endl;
+        std::cout << std::endl;
+
+        std::cout << "Engine options:" << std::endl;
+        std::cout << "\tcommand=<command> - command used to run engine" << std::endl;
+        std::cout << "\tname=<name> - name of the engine" << std::endl;
+        std::cout << std::endl;
+        exit(0);
     }
 
     Args args;
