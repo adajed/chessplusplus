@@ -116,8 +116,6 @@ bool Endgame<kKNBK>::applies(const Position& position) const
 template <>
 Value Endgame<kKNBK>::score(const Position& position) const
 {
-    Square strongKing =
-        position.piece_position(make_piece(strongSide, KING), 0);
     Square weakKing = position.piece_position(make_piece(weakSide, KING), 0);
     Square bishop = position.piece_position(make_piece(strongSide, BISHOP), 0);
     Color bishopColor = (rank(bishop) + file(bishop)) & 1 ? WHITE : BLACK;

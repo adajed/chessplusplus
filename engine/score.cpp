@@ -144,8 +144,6 @@ template <Color side>
 void PositionScorer::setup(const Position& position)
 {
     const Square ownKing = position.piece_position(make_piece(side, KING), 0);
-    const Square opponentsKing =
-        position.piece_position(make_piece(!side, KING), 0);
 
     _attacked_by_bb[side][PAWN] =
         pawn_attacks<side>(position.pieces(make_piece(side, PAWN)));
