@@ -367,7 +367,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         info->_static_eval = _scorer.score(position);
     }
 
-    const bool improving = !is_in_check && info->_ply >= 2 && (info->_static_eval > (info - 2)->_static_eval || (info - 2)->_static_eval == VALUE_NONE);
+    /* const bool improving = !is_in_check && info->_ply >= 2 && (info->_static_eval > (info - 2)->_static_eval || (info - 2)->_static_eval == VALUE_NONE); */
 
     // null move pruning
     if (!IS_NULL && !is_in_check &&

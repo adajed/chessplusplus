@@ -39,7 +39,7 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
     int n_moves = static_cast<int>(end - begin);
 
     // score moves
-    for (uint32_t i = 0; i < n_moves; ++i)
+    for (int i = 0; i < n_moves; ++i)
     {
         Move move = begin[i];
 
