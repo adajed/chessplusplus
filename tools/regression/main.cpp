@@ -15,6 +15,8 @@ constexpr int WIN_WHITE = 0;
 constexpr int WIN_BLACK = 1;
 constexpr int DRAW = 2;
 
+const std::string DRAW_NAME = "__draw__";
+
 // result, pgn string
 using GameResult = std::tuple<int, std::string>;
 
@@ -67,7 +69,7 @@ GameResult game(int id, GameParams params)
     // bookmove, time left, engine eval
     std::vector<std::tuple<bool, std::string, std::string>> moves_info;
 
-    int depth = 0;
+    uint32_t depth = 0;
 
     while (!position.is_checkmate() && !position.is_draw() &&
            timers[WHITE].get_time_left_ms() > 0 &&
@@ -126,7 +128,7 @@ GameResult game(int id, GameParams params)
     ss << "[Result \"" << resultString << "\"]" << std::endl;
     ss << std::endl;
     Position temp_position;
-    for (int i = 0; i < moves.size(); i++)
+    for (uint32_t i = 0; i < moves.size(); i++)
     {
         if (i % 2 == 0)
         {
@@ -173,6 +175,7 @@ int main(int argc, char** argv)
     std::map<std::string, double> points;
     points[args.engines[0].name] = 0.0;
     points[args.engines[1].name] = 0.0;
+    points[DRAW_NAME] = 0.0;
 
     ctpl::thread_pool p(args.num_threads);
     std::vector<std::future<GameResult>> results(args.num_games);
@@ -208,33 +211,32 @@ int main(int argc, char** argv)
 
         if (std::get<0>(gameResult) == WIN_WHITE)
         {
-            points[gameParams[i].engine_white.name] += 1.;
-            std::cout << gameParams[i].engine_white.name << "(white) won"
-                << std::endl;
+            points[gameParams[i].engine_white.name] += 1.0;
+            std::cout << gameParams[i].engine_white.name << "(white) won" << std::endl;
         }
         else if (std::get<0>(gameResult) == WIN_BLACK)
         {
-            points[gameParams[i].engine_black.name] += 1.;
-            std::cout << gameParams[i].engine_black.name << "(black) won"
-                << std::endl;
+            points[gameParams[i].engine_black.name] += 1.0;
+            std::cout << gameParams[i].engine_black.name << "(black) won" << std::endl;
         }
         else
         {
-            points[gameParams[i].engine_white.name] += 0.5;
-            points[gameParams[i].engine_black.name] += 0.5;
+            points[DRAW_NAME] += 1.0;
             std::cout << "draw" << std::endl;
         }
 
         std::cout << "Current score: "
                   << args.engines[0].name << "=" << points[args.engines[0].name] << " "
-                  << args.engines[1].name << "=" << points[args.engines[1].name] << std::endl;
+                  << args.engines[1].name << "=" << points[args.engines[1].name] << " "
+                  << "draw=" << points[DRAW_NAME] << std::endl;
 
         fd << std::get<1>(gameResult);
     }
 
     std::cout << "Final score: "
               << args.engines[0].name << "=" << points[args.engines[0].name] << " "
-              << args.engines[1].name << "=" << points[args.engines[1].name] << std::endl;
+              << args.engines[1].name << "=" << points[args.engines[1].name] << " "
+                  << "draw=" << points[DRAW_NAME] << std::endl;
 
     return 0;
 }
