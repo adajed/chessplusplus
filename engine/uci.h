@@ -49,6 +49,8 @@ class Uci
 
     bool moves_command(std::istringstream& istream);
 
+    bool staticeval_command(std::istringstream& istream);
+
     std::shared_ptr<Search> search;
     Position position;
     bool is_search;

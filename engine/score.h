@@ -26,7 +26,7 @@ struct Score
     }
     Score operator-(const Score& other) const
     {
-        return Score(mg - other.mg, eg - other.mg);
+        return Score(mg - other.mg, eg - other.eg);
     }
 
     Score& operator+=(const Score& other)
@@ -55,6 +55,8 @@ class PositionScorer
 
     Value score(const Position& position);
 
+    void print_stats();
+
     void clear();
 
   private:
@@ -72,6 +74,12 @@ class PositionScorer
     Score score_pawns_for_side(const Position& position);
 
     template <Color side>
+    Score score_king(const Position& position);
+
+    template <Color side>
+    Score score_king_shelter(const Position& position, Square king_sq);
+
+    template <Color side>
     Score score_king_safety(const Position& position);
 
     Value combine(const Score& score);
@@ -82,6 +90,18 @@ class PositionScorer
     Bitboard blockers_for_square(const Position& position, Square sq,
                                  Bitboard& snipers);
 
+    /*
+     * Return bitboard will all "reasonable" moves from 'sq',
+     *   i.e. don't move to squares with your pieces on it or
+     *   don't moves to empty squares controlled by enemy pieces.
+     * \in position - Evaulated position.
+     * \in sq - Starting sqaure.
+     * \in moves - Bitboard with all pseudo legal moves.
+     * \out - Bitboard with "reasonable" moves.
+     */
+    template <Color side>
+    Bitboard get_real_possible_moves(const Position& position, Square sq, Bitboard moves);
+
     PawnHashTable _pawn_hash_table;
     Value _weight;
 
@@ -91,6 +111,9 @@ class PositionScorer
 
     Bitboard _blockers_for_king[COLOR_NUM];
     Bitboard _snipers_for_king[COLOR_NUM];
+
+    Score _side_scores[COLOR_NUM];
+    Score _piece_scores[COLOR_NUM][PIECE_KIND_NUM];
 };
 
 }  // namespace engine

@@ -63,6 +63,7 @@ void Uci::loop()
         COMMAND(hash)
         COMMAND(perft)
         COMMAND(moves)
+        COMMAND(staticeval)
 
 #undef COMMAND
 
@@ -196,6 +197,16 @@ bool Uci::position_command(std::istringstream& istream)
         position.do_move(position.parse_uci(token));
     }
 
+    return true;
+}
+
+bool Uci::staticeval_command(std::istringstream& istream)
+{
+    sync_cout << position << std::endl << std::endl;
+
+    PositionScorer scorer;
+    Value score = scorer.score(position);
+    std::cout << "Score: " << score2str(score) << sync_endl;
     return true;
 }
 
