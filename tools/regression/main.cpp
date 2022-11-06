@@ -10,6 +10,7 @@
 #include "ctpl_stl.h"
 
 #include <fstream>
+#include <set>
 
 constexpr int WIN_WHITE = 0;
 constexpr int WIN_BLACK = 1;
@@ -17,6 +18,8 @@ constexpr int DRAW = 2;
 
 // result, pgn string
 using GameResult = std::tuple<int, std::string>;
+
+using OpeningLine = std::vector<Move>;
 
 struct GameParams
 {
@@ -31,7 +34,7 @@ struct GameParams
 
     EngineParams engine_white, engine_black;
     TimeFormat time_format;
-    std::vector<Move> intial_moves;
+    OpeningLine intial_moves;
     bool debug;
 };
 
@@ -166,7 +169,7 @@ int main(int argc, char** argv)
     bitbase::init();
     endgame::init();
 
-    PolyglotBook polyglot(args.polyglot);
+    PolyglotBook polyglot(args.polyglot, args.seed);
     GameParams params(args.engines[0], args.engines[1], args.debug);
     params.time_format = args.time_format;
 
@@ -177,23 +180,28 @@ int main(int argc, char** argv)
     ctpl::thread_pool p(args.num_threads);
     std::vector<std::future<GameResult>> results(args.num_games);
     std::vector<GameParams> gameParams;
+    std::set<OpeningLine> openingLines;
 
     for (int i = 0; i < args.num_games; ++i)
     {
         if (!args.repeat || i % 2 == 0)
         {
-            params.intial_moves.clear();
-            Position position;
-            uint64_t hash = PolyglotBook::hash(position);
-            int depth = 0;
-            while (depth < args.book_depth && polyglot.contains(hash))
+            do
             {
-                Move move = polyglot.sample_move(hash, position);
-                position.do_move(move);
-                params.intial_moves.push_back(move);
-                hash = PolyglotBook::hash(position);
-                depth++;
-            }
+                params.intial_moves.clear();
+                Position position;
+                uint64_t hash = PolyglotBook::hash(position);
+                int depth = 0;
+                while (depth < args.book_depth && polyglot.contains(hash))
+                {
+                    Move move = polyglot.sample_move(hash, position);
+                    position.do_move(move);
+                    params.intial_moves.push_back(move);
+                    hash = PolyglotBook::hash(position);
+                    depth++;
+                }
+            } while (openingLines.find(params.intial_moves) != openingLines.end());
+            openingLines.insert(params.intial_moves);
         }
 
         gameParams.push_back(params);

@@ -322,10 +322,13 @@ const uint64_t POLYGLOT_ENPASSANT[FILE_NUM] = {
 
 const uint64_t POLYGLOT_TURN = 0xF8D626AAAF278509ULL;
 
-PolyglotBook::PolyglotBook(std::string path)
+PolyglotBook::PolyglotBook(std::string path) : PolyglotBook(path, std::chrono::system_clock::now().time_since_epoch().count()) { }
+
+PolyglotBook::PolyglotBook(std::string path, size_t seed)
     : _hashmap(),
-      _gen(std::chrono::system_clock::now().time_since_epoch().count()),
-      _dist()
+      _gen(seed),
+      _dist(),
+      _seed(seed)
 {
     std::ifstream stream(path, std::ios::binary);
     stream.seekg(0);

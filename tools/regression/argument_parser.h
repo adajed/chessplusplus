@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -28,7 +29,8 @@ struct Args
           polyglot(""),
           book_depth(0),
           pgn_file("games.pgn"),
-          num_threads(1)
+          num_threads(1),
+          seed(std::chrono::system_clock::now().time_since_epoch().count())
     {
     }
 
@@ -41,6 +43,7 @@ struct Args
     int book_depth;
     std::string pgn_file;
     int num_threads;
+    size_t seed;
 };
 
 Args parse_args(int argc, char** argv)
@@ -152,6 +155,11 @@ Args parse_args(int argc, char** argv)
         {
             pos++;
             args.pgn_file = tokens[pos++];
+        }
+        else if (tokens[pos] == "--seed")
+        {
+            pos++;
+            args.seed = std::stoll(tokens[pos++]);
         }
         else
         {
