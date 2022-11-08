@@ -2,8 +2,8 @@
 #define CHESS_ENGINE_SCORE_H_
 
 #include "movegen.h"
-#include "pawn_hash_table.h"
 #include "types.h"
+#include "hashmap.h"
 
 namespace engine
 {
@@ -47,6 +47,8 @@ inline Score operator*(const Value& value, const Score& score)
 {
     return Score(score.mg * value, score.eg * value);
 }
+
+using PawnHashMap = HashMap<uint64_t, Score, 512 * 512>;
 
 class PositionScorer
 {
@@ -102,7 +104,7 @@ class PositionScorer
     template <Color side>
     Bitboard get_real_possible_moves(const Position& position, Square sq, Bitboard moves);
 
-    PawnHashTable _pawn_hash_table;
+    PawnHashMap _pawn_hash_table;
     Value _weight;
 
     Bitboard _attacked_by_bb[COLOR_NUM][PIECE_KIND_NUM];
