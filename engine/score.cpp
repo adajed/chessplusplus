@@ -485,23 +485,19 @@ Score PositionScorer::score_king(const Position& position)
 
 Score PositionScorer::score_pawns(const Position& position)
 {
-    std::pair<Value, Value> p;
-    Score value;
+    uint64_t key = position.pawn_hash();
+    bool found = false;
+    auto entry = _pawn_hash_table.probe(key, found);
 
-    // check in hash table
-    if (!_pawn_hash_table.get(position, p))
+    if (found)
     {
-        _piece_scores[WHITE][PAWN] = score_pawns_for_side<WHITE>(position);
-        _piece_scores[BLACK][PAWN] = score_pawns_for_side<BLACK>(position);
-        value = _piece_scores[WHITE][PAWN] - _piece_scores[BLACK][PAWN];
-        _pawn_hash_table.update(position, std::make_pair(value.mg, value.eg));
-    }
-    else
-    {
-        value = Score(p.first, p.second);
+        return entry->second;
     }
 
-    return value;
+    Score score = score_pawns_for_side<WHITE>(position) -
+                  score_pawns_for_side<BLACK>(position);
+    *entry = std::make_pair(key, score);
+    return score;
 }
 
 template <Color side>

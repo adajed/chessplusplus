@@ -4,7 +4,7 @@
 #include "position.h"
 #include "types.h"
 
-#include <unordered_map>
+#include "hashmap.h"
 
 namespace engine
 {
@@ -19,6 +19,7 @@ enum class Flag
 
 struct TTEntry
 {
+    TTEntry() {}
     TTEntry(int64_t score, int32_t depth, Flag flag, Move move)
         : score(score), depth(depth), flag(flag), move(move)
     {
@@ -30,20 +31,7 @@ struct TTEntry
     Move move;
 };
 
-class TTable
-{
-  public:
-    TTable();
-
-    void update(uint64_t key, TTEntry entry);
-
-    const TTEntry* get(uint64_t key) const;
-
-    void clear();
-
-  private:
-    std::unordered_map<uint64_t, TTEntry> _hashmap;
-};
+using TTable = HashMap<uint64_t, TTEntry, 1024 * 1024>;
 
 }  // namespace tt
 }  // namespace engine

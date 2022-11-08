@@ -354,31 +354,32 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         EXIT_SEARCH(is_in_check ? lost_in((info - 1)->_ply) : VALUE_DRAW);
 
     Value alphaOriginal = alpha;
-    const tt::TTEntry* entryPtr = _ttable.get(position.hash());
-    if (entryPtr && (entryPtr->depth >= depth) &&
-        (std::find(begin, end, entryPtr->move) != end))
+    bool found = false;
+    const auto entryPtr = _ttable.probe(position.hash(), found);
+    if (found && (entryPtr->second.depth >= depth) &&
+        (std::find(begin, end, entryPtr->second.move) != end))
     {
         LOG_DEBUG("[%d] CACHE HIT score=%ld depth=%d flag=%d move=%s",
-                info->_ply, entryPtr->score, entryPtr->depth,
-                static_cast<int>(entryPtr->flag),
-                position.uci(entryPtr->move).c_str());
+                info->_ply, entryPtr->second.score, entryPtr->second.depth,
+                static_cast<int>(entryPtr->second.flag),
+                position.uci(entryPtr->second.move).c_str());
 
-        switch (entryPtr->flag)
+        switch (entryPtr->second.flag)
         {
         case tt::Flag::kEXACT:
-            set_new_pv_list(info, entryPtr->move);
-            EXIT_SEARCH(Value(entryPtr->score));
+            set_new_pv_list(info, entryPtr->second.move);
+            return Value(entryPtr->second.score);
         case tt::Flag::kLOWER_BOUND:
-            alpha = std::max(alpha, entryPtr->score);
+            alpha = std::max(alpha, entryPtr->second.score);
             break;
         case tt::Flag::kUPPER_BOUND:
-            beta = std::min(beta, entryPtr->score);
+            beta = std::min(beta, entryPtr->second.score);
             break;
         }
 
         if (alpha >= beta)
         {
-            EXIT_SEARCH(Value(entryPtr->score));
+            EXIT_SEARCH(Value(entryPtr->second.score));
         }
     }
 
@@ -498,7 +499,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
             }
 
             tt::TTEntry entry(result, depth, tt::Flag::kLOWER_BOUND, move);
-            _ttable.update(position.hash(), entry);
+            _ttable.insert(position.hash(), entry);
 
             add_new_move_to_pv_list(info, move, info + 1);
 
@@ -552,7 +553,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     tt::Flag flag =
         alpha <= alphaOriginal ? tt::Flag::kUPPER_BOUND : tt::Flag::kEXACT;
     tt::TTEntry entry(alpha, depth, flag, best_move);
-    _ttable.update(position.hash(), entry);
+    _ttable.insert(position.hash(), entry);
 
     LOG_DEBUG("[%d] BEST MOVE %s", info->_ply, position.uci(best_move).c_str());
     EXIT_SEARCH(alpha);
