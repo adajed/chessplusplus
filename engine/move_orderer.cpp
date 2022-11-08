@@ -33,8 +33,9 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
                               Info* info)
 {
     Move pvMove = NO_MOVE;
-    const tt::TTEntry* entryPtr = _ttable.get(position.hash());
-    if (entryPtr) pvMove = entryPtr->move;
+    bool found = false;
+    const auto entryPtr = _ttable.probe(position.hash(), found);
+    if (found) pvMove = entryPtr->second.move;
 
     int n_moves = static_cast<int>(end - begin);
 
