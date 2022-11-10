@@ -98,17 +98,17 @@ class ifdstream : public _fdstream
         return *this;
     }
 
-    void getline(char* s, std::streamsize n) { return (getline(s, n, '\n')); }
+    bool getline(char* s, std::streamsize n) { return (getline(s, n, '\n')); }
 
-    void getline(char* s, std::streamsize n, char delim)
+    bool getline(char* s, std::streamsize n, char delim)
     {
         _stream->getline(s, n, delim);
         if (_stream->rdstate() & std::istream::failbit)
         {
             std::cout << "failbit was set" << std::endl;
-            if (_stream->eof()) std::cout << "EOF was set" << std::endl;
-            exit(1);
+            return !_stream->eof();
         }
+        return true;
     }
 
     ~ifdstream() { delete _stream; }
@@ -161,11 +161,12 @@ class ofdstream : public _fdstream
     std::ostream* _stream;
 };
 
-inline void getline_fd(ifdstream& ifds, std::string& str)
+inline bool getline_fd(ifdstream& ifds, std::string& str)
 {
     char tmp[BUFFER_SIZE];
-    ifds.getline(tmp, BUFFER_SIZE);
+    bool b = ifds.getline(tmp, BUFFER_SIZE);
     str = tmp;
+    return b;
 }
 
 #else

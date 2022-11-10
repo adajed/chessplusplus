@@ -43,9 +43,9 @@ struct GameParams
 GameResult game(int id, GameParams params)
 {
     EngineWrapper engine1(params.engine_white.command, params.engine_white.name,
-            params.debug);
+                          id, params.debug);
     EngineWrapper engine2(params.engine_black.command, params.engine_black.name,
-            params.debug);
+                          id, params.debug);
 
     engine1.uci();
     engine2.uci();

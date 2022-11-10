@@ -57,7 +57,7 @@ class EngineWrapper
 {
   public:
     explicit EngineWrapper(const std::string& command, const std::string& name,
-                           bool debug);
+                           int id, bool debug);
 
     std::string get_name() const { return name_; }
 
@@ -80,6 +80,7 @@ class EngineWrapper
     std::string command_;
     std::string name_;
     bool debug_;
+    int id_;
 
     int pipe_status_;
     int pipefds_input_[2];
