@@ -437,6 +437,7 @@ MoveInfo Position::do_move(Move move)
             set_enpassant_square(NO_SQUARE);
     }
 
+    assert(_history_counter < MAX_PLIES);
     _history[_history_counter++] = _zobrist_hash.get_key();
 
     return create_moveinfo(captured, prev_castling, prev_enpassant_sq,
