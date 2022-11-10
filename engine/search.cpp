@@ -82,6 +82,25 @@ void update_move_scores(const Position& position, Move move, Info* info,
         add_bonus(&(*(info-1)->_counter_move)[moved_piece][to_sq], bonus);
 }
 
+Value compute_search_delta(Move *previous_best_moves, int current_depth, Value current_score)
+{
+    int no_times_move_repeated = 0;
+    for (int i = current_depth - 1; i > 0; i--)
+    {
+        if (previous_best_moves[i] == previous_best_moves[i - 1])
+        {
+            no_times_move_repeated++;
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    Value delta = static_cast<Value>(100.0 / (0.33 * static_cast<double>(no_times_move_repeated) + 1.0));
+    return delta;
+}
+
 const Duration INFINITE = 1LL << 32;
 
 Search::Search(const Position& position, const Limits& limits)
@@ -221,6 +240,8 @@ void Search::iter_search()
 
     MoveList pv_list;
     Value previous_score;
+    Move previous_moves[MAX_DEPTH + 1];
+    previous_moves[0] = NO_MOVE;
     Value min_bound = -VALUE_INFINITE;
     Value max_bound = VALUE_INFINITE;
 
@@ -236,9 +257,8 @@ void Search::iter_search()
         _nodes_searched = 0;
 
         Value result;
-        Value delta = 100;
-
-        if (_current_depth >= 4)
+        Value delta = compute_search_delta(previous_moves, _current_depth, previous_score);
+        if (_current_depth > 2)
         {
             min_bound = std::max(previous_score - delta, -VALUE_INFINITE);
             max_bound = std::min(previous_score + delta, VALUE_INFINITE);
@@ -247,13 +267,20 @@ void Search::iter_search()
         while (true)
         {
             assert(min_bound < max_bound);
+            LOG_DEBUG("Search depth=%d bound=[%ld, %ld]\n", _current_depth, min_bound, max_bound);
             result = search(_position, _current_depth, min_bound, max_bound,
                             info + 1);
 
             if (result <= min_bound)
+            {
                 min_bound = std::max(min_bound - delta, -VALUE_INFINITE);
+                max_bound = result;
+            }
             else if (result >= max_bound)
+            {
+                min_bound = result;
                 max_bound = std::min(max_bound + delta, VALUE_INFINITE);
+            }
             else
                 break;
 
@@ -279,6 +306,7 @@ void Search::iter_search()
                        realInfo);
             _best_move = realInfo->_pv_list[0];
         }
+        previous_moves[_current_depth] = _best_move;
 
         if (result < lost_in(MAX_DEPTH) || result > win_in(MAX_DEPTH)) break;
 
@@ -487,11 +515,16 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
 Value Search::quiescence_search(Position& position, int depth, Value alpha,
                                 Value beta, Info* info)
 {
+    assert(alpha < beta);
+
     info->_ply = (info - 1)->_ply + 1;
     clear_pv_list(info);
 
     LOG_DEBUG("[%d] enter quiescence_search depth=%d alpha=%ld beta=%ld",
               info->_ply, depth, alpha, beta);
+
+    const bool PV_NODE = beta != alpha + 1;
+    const bool IS_NULL = (info - 1)->_current_move == NO_MOVE;
 
     if (stop_search || check_limits())
     {
@@ -499,9 +532,23 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
         return 0;
     }
 
+    bool is_in_check = position.is_in_check(position.color());
+
+    if (depth <= 0) RETURN_DEBUG(is_in_check ? VALUE_DRAW : _scorer.score(position));
+
     if (position.is_draw()) RETURN_DEBUG(VALUE_DRAW);
 
-    bool is_in_check = position.is_in_check(position.color());
+    Value standpat = -VALUE_INFINITE;
+    if (!is_in_check)
+    {
+        standpat = _scorer.score(position);
+
+        if (standpat >= beta)
+            RETURN_DEBUG(beta);
+
+        if (PV_NODE && standpat > alpha)
+            alpha = standpat;
+    }
 
     Move* begin = MOVE_LIST[info->_ply];
     Move* end = generate_moves(position, position.color(), begin);
@@ -509,13 +556,6 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
 
     if (n_moves == 0)
         RETURN_DEBUG(is_in_check ? lost_in((info - 1)->_ply) : VALUE_DRAW);
-
-    Value standpat = _scorer.score(position);
-
-    if (depth <= 0) RETURN_DEBUG(standpat);
-
-    if (standpat >= beta) RETURN_DEBUG(beta);
-    if (standpat > alpha) alpha = standpat;
 
     _move_orderer.order_moves(position, begin, end, info);
 
@@ -532,18 +572,8 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
         MoveInfo moveinfo = position.do_move(move);
         _nodes_searched++;
 
-        Value result;
-        if (search_full_window)
-            result = -quiescence_search(position, depth - 1, -beta, -alpha,
+        Value result = -quiescence_search(position, depth - 1, -beta, -alpha,
                                         info + 1);
-        else
-        {
-            result = -quiescence_search(position, depth - 1, -alpha - 1, -alpha,
-                                        info + 1);
-            if (alpha < result && result < beta)
-                result = -quiescence_search(position, depth - 1, -beta, -alpha,
-                                            info + 1);
-        }
         LOG_DEBUG("undo move %s", position.uci(move).c_str());
         position.undo_move(move, moveinfo);
 

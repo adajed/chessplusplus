@@ -18,6 +18,8 @@ class PolyglotBook
 
     PolyglotBook(std::string path);
 
+    PolyglotBook(std::string path, size_t seed);
+
     static uint64_t hash(const Position& position);
 
     bool contains(uint64_t key) const;
@@ -30,6 +32,7 @@ class PolyglotBook
     std::map<uint64_t, std::vector<WeightedMove>> _hashmap;
     mutable std::mt19937 _gen;
     mutable std::uniform_int_distribution<std::mt19937::result_type> _dist;
+    mutable size_t _seed;
 };
 
 }  // namespace engine

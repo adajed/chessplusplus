@@ -10,13 +10,18 @@
 #include "ctpl_stl.h"
 
 #include <fstream>
+#include <set>
 
 constexpr int WIN_WHITE = 0;
 constexpr int WIN_BLACK = 1;
 constexpr int DRAW = 2;
 
+const std::string DRAW_NAME = "__draw__";
+
 // result, pgn string
 using GameResult = std::tuple<int, std::string>;
+
+using OpeningLine = std::vector<Move>;
 
 struct GameParams
 {
@@ -31,7 +36,7 @@ struct GameParams
 
     EngineParams engine_white, engine_black;
     TimeFormat time_format;
-    std::vector<Move> intial_moves;
+    OpeningLine intial_moves;
     bool debug;
 };
 
@@ -67,7 +72,7 @@ GameResult game(int id, GameParams params)
     // bookmove, time left, engine eval
     std::vector<std::tuple<bool, std::string, std::string>> moves_info;
 
-    int depth = 0;
+    uint32_t depth = 0;
 
     while (!position.is_checkmate() && !position.is_draw() &&
            timers[WHITE].get_time_left_ms() > 0 &&
@@ -126,7 +131,7 @@ GameResult game(int id, GameParams params)
     ss << "[Result \"" << resultString << "\"]" << std::endl;
     ss << std::endl;
     Position temp_position;
-    for (int i = 0; i < moves.size(); i++)
+    for (uint32_t i = 0; i < moves.size(); i++)
     {
         if (i % 2 == 0)
         {
@@ -166,34 +171,40 @@ int main(int argc, char** argv)
     bitbase::init();
     endgame::init();
 
-    PolyglotBook polyglot(args.polyglot);
+    PolyglotBook polyglot(args.polyglot, args.seed);
     GameParams params(args.engines[0], args.engines[1], args.debug);
     params.time_format = args.time_format;
 
     std::map<std::string, double> points;
     points[args.engines[0].name] = 0.0;
     points[args.engines[1].name] = 0.0;
+    points[DRAW_NAME] = 0.0;
 
     ctpl::thread_pool p(args.num_threads);
     std::vector<std::future<GameResult>> results(args.num_games);
     std::vector<GameParams> gameParams;
+    std::set<OpeningLine> openingLines;
 
     for (int i = 0; i < args.num_games; ++i)
     {
         if (!args.repeat || i % 2 == 0)
         {
-            params.intial_moves.clear();
-            Position position;
-            uint64_t hash = PolyglotBook::hash(position);
-            int depth = 0;
-            while (depth < args.book_depth && polyglot.contains(hash))
+            do
             {
-                Move move = polyglot.sample_move(hash, position);
-                position.do_move(move);
-                params.intial_moves.push_back(move);
-                hash = PolyglotBook::hash(position);
-                depth++;
-            }
+                params.intial_moves.clear();
+                Position position;
+                uint64_t hash = PolyglotBook::hash(position);
+                int depth = 0;
+                while (depth < args.book_depth && polyglot.contains(hash))
+                {
+                    Move move = polyglot.sample_move(hash, position);
+                    position.do_move(move);
+                    params.intial_moves.push_back(move);
+                    hash = PolyglotBook::hash(position);
+                    depth++;
+                }
+            } while (openingLines.find(params.intial_moves) != openingLines.end());
+            openingLines.insert(params.intial_moves);
         }
 
         gameParams.push_back(params);
@@ -208,33 +219,32 @@ int main(int argc, char** argv)
 
         if (std::get<0>(gameResult) == WIN_WHITE)
         {
-            points[gameParams[i].engine_white.name] += 1.;
-            std::cout << gameParams[i].engine_white.name << "(white) won"
-                << std::endl;
+            points[gameParams[i].engine_white.name] += 1.0;
+            std::cout << gameParams[i].engine_white.name << "(white) won" << std::endl;
         }
         else if (std::get<0>(gameResult) == WIN_BLACK)
         {
-            points[gameParams[i].engine_black.name] += 1.;
-            std::cout << gameParams[i].engine_black.name << "(black) won"
-                << std::endl;
+            points[gameParams[i].engine_black.name] += 1.0;
+            std::cout << gameParams[i].engine_black.name << "(black) won" << std::endl;
         }
         else
         {
-            points[gameParams[i].engine_white.name] += 0.5;
-            points[gameParams[i].engine_black.name] += 0.5;
+            points[DRAW_NAME] += 1.0;
             std::cout << "draw" << std::endl;
         }
 
         std::cout << "Current score: "
                   << args.engines[0].name << "=" << points[args.engines[0].name] << " "
-                  << args.engines[1].name << "=" << points[args.engines[1].name] << std::endl;
+                  << args.engines[1].name << "=" << points[args.engines[1].name] << " "
+                  << "draw=" << points[DRAW_NAME] << std::endl;
 
         fd << std::get<1>(gameResult);
     }
 
     std::cout << "Final score: "
               << args.engines[0].name << "=" << points[args.engines[0].name] << " "
-              << args.engines[1].name << "=" << points[args.engines[1].name] << std::endl;
+              << args.engines[1].name << "=" << points[args.engines[1].name] << " "
+                  << "draw=" << points[DRAW_NAME] << std::endl;
 
     return 0;
 }
