@@ -5,27 +5,32 @@
 
 #include "position.h"
 
+#define NAME (name_ + "[" + std::to_string(id_) + "]")
+
 #define SEND(msg)                                      \
     {                                                  \
         if (debug_)                                    \
         {                                              \
-            std::cout << name_ << "< " << msg << "\n"; \
+            std::cerr << NAME << "< " << msg << "\n";  \
         }                                              \
         in_stream_ << msg << "\n";                     \
     }
 
-#define READ(msg)                                           \
-    {                                                       \
-        getline_fd(out_stream_, msg);                       \
-        if (debug_)                                         \
-        {                                                   \
-            std::cout << name_ << "> " << msg << std::endl; \
-        }                                                   \
+#define READ(msg)                                                           \
+    {                                                                       \
+        if (!getline_fd(out_stream_, msg))                                  \
+        {                                                                   \
+            std::cerr << "ERROR: EOF while reading " << NAME << std::endl;  \
+        }                                                                   \
+        if (debug_)                                                         \
+        {                                                                   \
+            std::cerr << NAME << "> " << msg << std::endl;                  \
+        }                                                                   \
     }
 
 EngineWrapper::EngineWrapper(const std::string& command,
-                             const std::string& name, bool debug)
-    : command_(command), name_(name), debug_(debug), running_(false)
+                             const std::string& name, int id, bool debug)
+    : command_(command), name_(name), debug_(debug), id_(id), running_(false)
 {
     pipe_status_ = pipe(pipefds_input_);
     if (pipe_status_ == -1)
