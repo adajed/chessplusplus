@@ -274,11 +274,11 @@ void Search::iter_search()
             if (result <= min_bound)
             {
                 min_bound = std::max(min_bound - delta, -VALUE_INFINITE);
-                max_bound = result;
+                max_bound = std::min(result + 1, VALUE_INFINITE);
             }
             else if (result >= max_bound)
             {
-                min_bound = result;
+                min_bound = std::max(result - 1, -VALUE_INFINITE);
                 max_bound = std::min(max_bound + delta, VALUE_INFINITE);
             }
             else
@@ -287,7 +287,7 @@ void Search::iter_search()
             if (stop_search || check_limits()) break;
 
             delta =
-                std::min(static_cast<Value>(static_cast<float>(delta) * 1.25f),
+                std::min(static_cast<Value>(std::max(static_cast<float>(delta), 100.0f) * 1.25f),
                          VALUE_INFINITE);
         }
 
