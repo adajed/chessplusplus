@@ -324,8 +324,8 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     info->_ply = (info - 1)->_ply + 1;
     clear_pv_list(info);
 
-    LOG_DEBUG("[%d] enter search depth=%d alpha=%ld beta=%ld fen=%s", info->_ply,
-              depth, alpha, beta, position.fen().c_str());
+    LOG_DEBUG("ENTER SEARCH ply=%d depth=%d alpha=%ld beta=%ld fen=%s",
+              info->_ply, depth, alpha, beta, position.fen().c_str());
 
     const bool ROOT_NODE = info->_ply == 0;
     const bool PV_NODE = beta != alpha + 1;
@@ -334,15 +334,15 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     if (stop_search || check_limits())
     {
         stop_search = true;
-        return Value(0);
+        EXIT_SEARCH(Value(0));
     }
 
     // cannot check it in ROOT_NODE as it might return
     // without any move
     if (!ROOT_NODE && position.is_repeated())
-        RETURN_DEBUG(VALUE_DRAW);
+        EXIT_SEARCH(VALUE_DRAW);
 
-    if (position.is_draw()) RETURN_DEBUG(VALUE_DRAW);
+    if (position.is_draw()) EXIT_SEARCH(VALUE_DRAW);
 
     Move* begin = ROOT_NODE ? &(*_root_moves.begin()) : MOVE_LIST[info->_ply];
     Move* end = ROOT_NODE ? &(*_root_moves.end()) : generate_moves(position, position.color(), begin);
@@ -351,7 +351,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     bool is_in_check = position.is_in_check(position.color());
 
     if (n_moves == 0)
-        RETURN_DEBUG(is_in_check ? lost_in((info - 1)->_ply) : VALUE_DRAW);
+        EXIT_SEARCH(is_in_check ? lost_in((info - 1)->_ply) : VALUE_DRAW);
 
     Value alphaOriginal = alpha;
     const tt::TTEntry* entryPtr = _ttable.get(position.hash());
@@ -362,7 +362,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         {
         case tt::Flag::kEXACT:
             set_new_pv_list(info, entryPtr->move);
-            RETURN_DEBUG(Value(entryPtr->score));
+            EXIT_SEARCH(Value(entryPtr->score));
         case tt::Flag::kLOWER_BOUND:
             alpha = std::max(alpha, entryPtr->score);
             break;
@@ -373,7 +373,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
 
         if (alpha >= beta)
         {
-            RETURN_DEBUG(Value(entryPtr->score));
+            EXIT_SEARCH(Value(entryPtr->score));
         }
     }
 
@@ -381,10 +381,10 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
 
     if (depth == 0)
     {
-        LOG_DEBUG("start quiescence_search");
+        LOG_DEBUG("START QUIESCENCE_SEARCH");
         Value result = quiescence_search(position, MAX_DEPTH - 1, alpha, beta, info);
-        LOG_DEBUG("end quiescence_search");
-        RETURN_DEBUG(result);
+        LOG_DEBUG("END QUIESCENCE_SEARCH");
+        EXIT_SEARCH(result);
     }
 
     if (is_in_check)
@@ -405,17 +405,16 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     {
         int reducedDepth = 3 + depth / 4 - (info->_static_eval - beta) / 300;
         reducedDepth = std::max(reducedDepth, 0);
-        LOG_DEBUG("nullmove reduction %d", reducedDepth);
 
-        LOG_DEBUG("do nullmove");
+        LOG_DEBUG("DO MOVE nullmove alpha=%ld beta=%ld", alpha, beta);
         MoveInfo moveinfo = position.do_null_move();
         info->_current_move = NO_MOVE;  // this means that this was a null move
         info->_counter_move = &_counter_move_table[NO_PIECE][0]; // trash
         Value result = -search(position, reducedDepth, -beta, -beta + 1, info + 1);
-        LOG_DEBUG("undo nullmove with score=%ld", result);
+        LOG_DEBUG("UNDO MOVE nullmove score=%ld", result);
         position.undo_null_move(moveinfo);
 
-        if (result >= beta) RETURN_DEBUG(beta);
+        if (result >= beta) EXIT_SEARCH(beta);
     }
 
     Move best_move = NO_MOVE;
@@ -425,7 +424,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     for (int move_count = 0; move_count < n_moves; ++move_count)
     {
         Move move = begin[move_count];
-        LOG_DEBUG("do move %s ; alpha=%ld beta=%ld", position.uci(move).c_str(), alpha, beta);
+        LOG_DEBUG("DO MOVE %s alpha=%ld beta=%ld", position.uci(move).c_str(), alpha, beta);
         info->_current_move = move;
         info->_counter_move = &_counter_move_table[position.piece_at(from(move))][to(move)];
         MoveInfo moveinfo = position.do_move(move);
@@ -440,7 +439,6 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         if (search_full_window)
         {
             result = -search(position, depth - 1, -beta, -alpha, info + 1);
-            LOG_DEBUG("end search with score=%ld", result);
         }
         else
         {
@@ -464,22 +462,19 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
             }
 
             result = -search(position, depth - 1 - reduction, -alpha - 1, -alpha, info + 1);
-            LOG_DEBUG("end search with score=%ld", result);
 
             if (reduction > 0 && result > alpha)
             {
                 result = -search(position, depth - 1, -alpha - 1, -alpha, info + 1);
-                LOG_DEBUG("end search with score=%ld", result);
             }
             if (PV_NODE && alpha < result && result < beta)
             {
                 result = -search(position, depth - 1, -beta, -alpha, info + 1);
-                LOG_DEBUG("end search with score=%ld", result);
             }
         }
 
-        LOG_DEBUG("undo move %s", position.uci(move).c_str());
         position.undo_move(move, moveinfo);
+        LOG_DEBUG("UNDO MOVE %s score=%ld", position.uci(move).c_str(), result);
 
         if (result >= beta)
         {
@@ -494,7 +489,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
 
             add_new_move_to_pv_list(info, move, info + 1);
 
-            RETURN_DEBUG(beta);
+            EXIT_SEARCH(beta);
         }
 
         if (result > alpha)
@@ -517,7 +512,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     tt::TTEntry entry(alpha, depth, flag, best_move);
     _ttable.update(position.hash(), entry);
 
-    RETURN_DEBUG(alpha);
+    EXIT_SEARCH(alpha);
 }
 
 Value Search::quiescence_search(Position& position, int depth, Value alpha,
@@ -528,7 +523,7 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
     info->_ply = (info - 1)->_ply + 1;
     clear_pv_list(info);
 
-    LOG_DEBUG("[%d] enter quiescence_search depth=%d alpha=%ld beta=%ld fen=%s",
+    LOG_DEBUG("ENTER QUIESCENCE_SEARCH ply=%d depth=%d alpha=%ld beta=%ld fen=%s",
               info->_ply, depth, alpha, beta, position.fen().c_str());
 
     const bool PV_NODE = beta != alpha + 1;
@@ -537,23 +532,23 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
     if (stop_search || check_limits())
     {
         stop_search = true;
-        return 0;
+        EXIT_QSEARCH(Value(0));
     }
 
     bool is_in_check = position.is_in_check(position.color());
 
-    if (depth <= 0) RETURN_DEBUG(is_in_check ? VALUE_DRAW : _scorer.score(position));
+    if (depth <= 0) EXIT_QSEARCH(is_in_check ? VALUE_DRAW : _scorer.score(position));
 
-    if (position.is_draw()) RETURN_DEBUG(VALUE_DRAW);
+    if (position.is_draw()) EXIT_QSEARCH(VALUE_DRAW);
 
     Value standpat = -VALUE_INFINITE;
     if (!is_in_check)
     {
         standpat = _scorer.score(position);
-        LOG_DEBUG("Position score = %ld", standpat);
+        LOG_DEBUG("POSITION score=%ld", standpat);
 
         if (standpat >= beta)
-            RETURN_DEBUG(beta);
+            EXIT_QSEARCH(beta);
 
         if (PV_NODE && standpat > alpha)
             alpha = standpat;
@@ -564,7 +559,7 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
     const int n_moves = end - begin;
 
     if (n_moves == 0)
-        RETURN_DEBUG(is_in_check ? lost_in((info - 1)->_ply) : VALUE_DRAW);
+        EXIT_QSEARCH(is_in_check ? lost_in((info - 1)->_ply) : VALUE_DRAW);
 
     _move_orderer.order_moves(position, begin, end, info);
 
@@ -577,16 +572,16 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
         if (!is_in_check && position.piece_at(to(move)) == NO_PIECE &&
             promotion(move) == NO_PIECE_KIND)
             continue;
-        LOG_DEBUG("do move %s", position.uci(move).c_str());
+        LOG_DEBUG("DO MOVE %s alpha=%ld beta=%ld", position.uci(move).c_str(), alpha, beta);
         MoveInfo moveinfo = position.do_move(move);
         _nodes_searched++;
 
         Value result = -quiescence_search(position, depth - 1, -beta, -alpha,
                                         info + 1);
-        LOG_DEBUG("undo move %s with score=%ld", position.uci(move).c_str(), result);
         position.undo_move(move, moveinfo);
+        LOG_DEBUG("UNDO MOVE %s score=%ld", position.uci(move).c_str(), result);
 
-        if (result >= beta) RETURN_DEBUG(beta);
+        if (result >= beta) EXIT_QSEARCH(beta);
         if (result > alpha)
         {
             alpha = result;
@@ -594,7 +589,7 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
         }
     }
 
-    RETURN_DEBUG(alpha);
+    EXIT_QSEARCH(alpha);
 }
 
 bool Search::check_limits()

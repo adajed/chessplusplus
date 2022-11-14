@@ -27,11 +27,26 @@ namespace engine
     } while (false)
 
 #define LOG_DEBUG(msg, ...) fprintf(stderr, msg "\n", ##__VA_ARGS__);
+
 #define RETURN_DEBUG(val)                \
     {                                    \
         Value ret = (val);               \
         LOG_DEBUG("exit with %ld", ret); \
         return ret;                      \
+    }
+
+#define EXIT_SEARCH(val)                                            \
+    {                                                               \
+        Value ret = (val);                                          \
+        LOG_DEBUG("EXIT SEARCH ply=%d score=%ld", info->_ply, ret); \
+        return ret;                                                 \
+    }
+
+#define EXIT_QSEARCH(val)                                                       \
+    {                                                                           \
+        Value ret = (val);                                                      \
+        LOG_DEBUG("EXIT QUIESCENCE_SEARCH ply=%d score=%ld", info->_ply, ret);  \
+        return ret;                                                             \
     }
 
 #else
@@ -40,7 +55,11 @@ namespace engine
     do \
     {                       \
     } while(false)
+
 #define RETURN_DEBUG(val) return (val);
+
+#define EXIT_SEARCH(val) return (val);
+#define EXIT_QSEARCH(val) return (val);
 
 #define ASSERT(cond) \
     do \
