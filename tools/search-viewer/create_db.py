@@ -1,0 +1,201 @@
+import argparse
+from collections import namedtuple
+import re
+import time
+from tqdm import tqdm
+
+from db import Database, CHUNK_FIELDS
+
+EnterSearchData = namedtuple(
+    'EnterSearchData', ['ply', 'depth', 'alpha', 'beta', 'fen'])
+
+CacheHit = namedtuple('CacheHit', ['move', 'depth', 'score', 'flag'])
+NodeData = namedtuple('NodeData', ['alpha', 'beta', 'score', 'fen',
+                                   'ply', 'depth', 'move_order', 'cache',
+                                   'move', 'static_eval'])
+ChunkInfo = namedtuple('ChunkInfo', ['start', 'end', 'ply', 'nodeData'])
+
+ENTER_SEARCH_REGEX = re.compile(
+    r"^ENTER (SEARCH) ply=(\d+) depth=(\d+) alpha=(-?\d+) beta=(-?\d+) fen=(.*)$")
+EXIT_SEARCH_REGEX = re.compile(r"^EXIT (SEARCH) ply=(\d+) score=(-?\d+)$")
+DO_MOVE_REGEX = re.compile(
+    r"^\[(\d+)\] DO MOVE (\w+) alpha=(-?\d+) beta=(-?\d+)$")
+UNDO_MOVE_REGEX = re.compile(r"^\[(\d+)\] UNDO MOVE (\w+) score=(-?\d+)$")
+CACHE_HIT_REGEX = re.compile(
+    r"^\[(\d+)\] CACHE HIT score=(-?\d+) depth=(\d+) flag=(\d+) move=(\w+)$")
+MOVE_ORDER_REGEX = re.compile(r"^\[(\d+)\] MOVE ORDER (.*)$")
+POSITION_REGEX = re.compile(r"^\[(\d+)\] POSITION score=(-?\d+)$")
+BEST_MOVE_REGEX = re.compile(r"\[(\d+)\] BEST MOVE (\w+)$")
+PV_LIST_REGEX = re.compile(r"\[(\d+)\] PV LIST (.*)$")
+
+
+def parseArguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--logfile", "-l", type=str, required=True)
+    parser.add_argument("--output", "-o", type=str, default="logs.sqlite")
+    parser.add_argument("--max-ply", "-d", type=int, default=None)
+    return parser.parse_args()
+
+
+class LineGenerator:
+    def __init__(self, filepath):
+        with open(filepath, "r") as fd:
+            start = time.time()
+            self.__lines = fd.readlines()
+            end = time.time()
+            print(f"Loading duration = {end - start}s")
+            self.__pbar = tqdm(total=len(self.__lines))
+
+        self.__pos = 0
+
+    def hasNext(self):
+        return self.__pos < len(self.__lines)
+
+    def next(self):
+        line = self.__lines[self.__pos]
+        self.__pos += 1
+        self.__pbar.update(1)
+        return line
+
+
+class Parser:
+    def __init__(self, filepath, db, maxPly):
+        self._lineGenerator = LineGenerator(filepath)
+        self._db = db
+        self._maxPly = 40 if maxPly is None else maxPly
+        self._chunkStack = [{"depth": -1, "ply": 0}]
+        self._moveStack = []
+
+    def parse(self):
+        nodeIds = []
+
+        while self._lineGenerator.hasNext():
+            line = self._lineGenerator.next()
+
+            if (self._tryParseEnterSearch(line)):
+                if (self._get("ply") > self._maxPly):
+                    continue
+                childIds = self.parse()
+                id_ = self._db.insert_chunk(self._chunkStack.pop())
+                self._db.insert_connections(id_, childIds)
+                nodeIds.append(id_)
+            elif (self._tryParseExitSearch(line)):
+                return nodeIds
+            elif (self._tryParseDoMove(line)):
+                pass
+            elif (self._tryParseUndoMove(line)):
+                pass
+            elif (self._tryParseMoveOrder(line)):
+                pass
+            elif (self._tryParsePvList(line)):
+                pass
+            elif (self._tryParseCache(line)):
+                pass
+            elif (self._tryParsePosition(line)):
+                pass
+            elif (self._tryParseBestMove(line)):
+                pass
+
+        return nodeIds
+
+    def _get(self, key):
+        return self._chunkStack[-1][key]
+
+    def _updateChunk(self, key, value):
+        self._chunkStack[-1][key] = value
+
+    def _tryParseEnterSearch(self, line):
+        if (m := ENTER_SEARCH_REGEX.match(line)):
+            self._chunkStack.append(dict())
+            for field in CHUNK_FIELDS:
+                self._updateChunk(field, None)
+            self._updateChunk("ply", int(m.group(2)))
+            self._updateChunk("depth", int(m.group(3)))
+            self._updateChunk("alpha", int(m.group(4)))
+            self._updateChunk("beta", int(m.group(5)))
+            self._updateChunk("fen", m.group(6))
+            return True
+        return False
+
+    def _tryParseExitSearch(self, line):
+        if (m := EXIT_SEARCH_REGEX.match(line)):
+            if int(m.group(2)) == self._get("ply"):
+                self._updateChunk("score", int(m.group(3)))
+                if len(self._moveStack) > 0:
+                    self._updateChunk("move", self._moveStack[-1])
+                return True
+        return False
+
+    def _tryParseDoMove(self, line):
+        if (m := DO_MOVE_REGEX.match(line)):
+            if (int(m.group(1)) == self._get("ply")):
+                self._moveStack.append(m.group(2))
+                return True
+        return False
+
+    def _tryParseUndoMove(self, line):
+        if (m := UNDO_MOVE_REGEX.match(line)):
+            if (int(m.group(1)) == self._get("ply")):
+                self._moveStack.pop()
+                return True
+        return False
+
+    def _tryParseCache(self, line):
+        if (m := CACHE_HIT_REGEX.match(line)):
+            if (int(m.group(1)) == self._get("ply")):
+                self._updateChunk("cache_score", int(m.group(2)))
+                self._updateChunk("cache_depth", int(m.group(3)))
+                self._updateChunk("cache_flag", int(m.group(4)))
+                self._updateChunk("cache_move", m.group(5))
+                return True
+        return False
+
+    def _tryParsePosition(self, line):
+        if (m := POSITION_REGEX.match(line)):
+            if (int(m.group(1)) == self._get("ply")):
+                self._updateChunk("static_eval", int(m.group(2)))
+                return True
+        return False
+
+    def _tryParseMoveOrder(self, line):
+        if (m := MOVE_ORDER_REGEX.match(line)):
+            if (int(m.group(1)) == self._get("ply")):
+                self._updateChunk("move_order", m.group(2))
+                return True
+        return False
+
+    def _tryParsePvList(self, line):
+        if (m := PV_LIST_REGEX.match(line)):
+            if (int(m.group(1)) == self._get("ply")):
+                self._updateChunk("pv_list", m.group(2))
+                return True
+        return False
+
+    def _tryParseBestMove(self, line):
+        if (m := BEST_MOVE_REGEX.match(line)):
+            if (int(m.group(1)) == self._get("ply")):
+                self._updateChunk("best_move", m.group(2))
+                return True
+        return False
+
+
+def main():
+    args = parseArguments()
+
+    db = Database(args.output)
+    db.create_tables()
+
+    parser = Parser(args.logfile, db, args.max_ply)
+    nodeIds = parser.parse()
+    chunkData = {field: None for field in CHUNK_FIELDS}
+    chunkData["depth"] = -1
+    id_ = db.insert_chunk(chunkData)
+    db.insert_connections(id_, nodeIds)
+    db.get_conn().commit()
+
+
+if __name__ == "__main__":
+    start = time.time()
+    main()
+    end = time.time()
+    print(f"Duration: {end - start}s")

@@ -9,6 +9,7 @@ Logfile.log
 examples.txt
 
 tools/search-viewer/__pycache__/
+tools/search-viewer/*.sqlite
 
 *.log
 *.pgn
