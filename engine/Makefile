@@ -1,5 +1,11 @@
 include ../makes/defines.makefile
 
+DEPDIR_RELEASE := .deps_release
+DEPDIR_DEBUG := .deps_debug
+
+DEPFLAGS_RELEASE = -MT $@ -MMD -MP -MF $(DEPDIR_RELEASE)/$*.d
+DEPFLAGS_DEBUG = -MT $@ -MMD -MP -MF $(DEPDIR_DEBUG)/$*.d
+
 BINARY_RELEASE=$(BUILD_DIR)/chessplusplus
 BINARY_DEBUG=$(BUILD_DIR)/chessplusplus_debug
 
@@ -18,8 +24,8 @@ else
 FLAGS =
 endif
 
-CFLAGS_RELEASE += $(FLAGS)
-CFLAGS_DEBUG += $(FLAGS)
+CFLAGS_RELEASE += $(DEPFLAGS_RELEASE) $(FLAGS)
+CFLAGS_DEBUG += $(DEPFLAGS_DEBUG) $(FLAGS)
 LFLAGS_RELEASE += $(FLAGS)
 LFLAGS_DEBUG += $(FLAGS)
 
@@ -41,11 +47,11 @@ $(BINARY_DEBUG): $(OBJS_DEBUG) | $(OUTDIR_DEBUG)
 	@$(COMP) -o $@ $^ $(LFLAGS_DEBUG) $(LCOV_LFLAGS)
 
 # compilation
-$(OUTDIR_RELEASE)/%.o : %.cpp | $(OUTDIR_RELEASE)
+$(OUTDIR_RELEASE)/%.o : %.cpp $(DEPDIR_RELEASE)/%.d | $(OUTDIR_RELEASE) $(DEPDIR_RELEASE)
 	@echo "Compiling release $<"
 	@$(COMP) -c -o $@ $< $(CFLAGS_RELEASE)
 
-$(OUTDIR_DEBUG)/%.o : %.cpp | $(OUTDIR_DEBUG)
+$(OUTDIR_DEBUG)/%.o : %.cpp $(DEPDIR_DEBUG)/%.d | $(OUTDIR_DEBUG) $(DEPDIR_DEBUG)
 	@echo "Compiling debug $<"
 	@$(COMP) -c -o $@ $< $(CFLAGS_DEBUG)
 
@@ -56,6 +62,20 @@ $(OUTDIR_RELEASE):
 $(OUTDIR_DEBUG):
 	mkdir -p $@
 
+$(DEPDIR_RELEASE):
+	mkdir -p $@
+
+$(DEPDIR_DEBUG):
+	mkdir -p $@
+
+DEPFILES_RELEASE := $(SOURCES:%.cpp=$(DEPDIR_RELEASE)/%.d)
+$(DEPFILES_RELEASE):
+
+DEPFILES_DEBUG := $(SOURCES:%.cpp=$(DEPDIR_DEBUG)/%.d)
+$(DEPFILES_DEBUG):
+
+include $(wildcard $(DEPFILES_RELEASE))
+include $(wildcard $(DEPFILES_DEBUG))
 
 format:
 	$(CLANG_FORMAT) $(CLANG_FORMAT_ARGS) $(SOURCES) $(HEADERS)
