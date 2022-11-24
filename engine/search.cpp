@@ -18,7 +18,7 @@ namespace engine
 int late_move_reduction(int depth, int move_number)
 {
     move_number = std::min(move_number, 64);
-    return static_cast<int>(std::floor(1 + std::log(depth) * std::log(move_number)));
+    return static_cast<int>(std::floor(1 + std::log(move_number)));
 }
 
 std::string score2str(Value score)
