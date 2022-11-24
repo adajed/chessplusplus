@@ -527,7 +527,6 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
               info->_ply, depth, alpha, beta, position.fen().c_str());
 
     const bool PV_NODE = beta != alpha + 1;
-    const bool IS_NULL = (info - 1)->_current_move == NO_MOVE;
 
     if (stop_search || check_limits())
     {
@@ -563,7 +562,6 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
 
     _move_orderer.order_moves(position, begin, end, info);
 
-    bool search_full_window = true;
     for (int move_count = 0; move_count < n_moves; ++move_count)
     {
         Move move = begin[move_count];
@@ -585,7 +583,6 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
         if (result > alpha)
         {
             alpha = result;
-            search_full_window = false;
         }
     }
 

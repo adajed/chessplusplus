@@ -237,8 +237,6 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
     {
         _piece_scores[side][KNIGHT] = Score{};
         constexpr Piece piece = make_piece(side, KNIGHT);
-        Bitboard opponent_pieces =
-            position.pieces(!side) & ~position.pieces(!side, PAWN);
         int no_pieces = position.number_of_pieces(piece);
 
         _piece_scores[side][KNIGHT] += PIECE_VALUE[KNIGHT] * Value(no_pieces);
@@ -274,8 +272,6 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
     {
         _piece_scores[side][BISHOP] = Score{};
         constexpr Piece piece = make_piece(side, BISHOP);
-        Bitboard opponent_pieces =
-            position.pieces(!side) & ~position.pieces(!side, PAWN);
         int no_pieces = position.number_of_pieces(piece);
 
         _piece_scores[side][BISHOP] += PIECE_VALUE[BISHOP] * Value(no_pieces);
@@ -315,8 +311,6 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
     {
         _piece_scores[side][ROOK] = Score{};
         constexpr Piece piece = make_piece(side, ROOK);
-        Bitboard opponent_pieces =
-            position.pieces(!side) & ~position.pieces(!side, PAWN);
         int no_pieces = position.number_of_pieces(piece);
 
         _piece_scores[side][ROOK] += PIECE_VALUE[ROOK] * Value(no_pieces);
@@ -359,8 +353,6 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
     {
         _piece_scores[side][QUEEN] = Score{};
         constexpr Piece piece = make_piece(side, QUEEN);
-        Bitboard opponent_pieces =
-            position.pieces(!side) & ~position.pieces(!side, PAWN);
         int no_pieces = position.number_of_pieces(piece);
 
         _piece_scores[side][QUEEN] += PIECE_VALUE[QUEEN] * Value(no_pieces);
@@ -460,8 +452,6 @@ Score PositionScorer::score_king(const Position& position)
     Score value;
 
     Bitboard king_area = KING_MASK[ownKing] | square_bb(ownKing);
-
-    Bitboard pawns_in_king_area = king_area & position.pieces(side, PAWN);
 
     value += score_king_safety<side>(position);
 
@@ -624,8 +614,6 @@ template <Color side>
 Bitboard PositionScorer::get_real_possible_moves(const Position& position, Square sq, Bitboard moves)
 {
     const Square ownKing = position.piece_position(make_piece(side, KING), 0);
-    const Square opponentsKing =
-        position.piece_position(make_piece(!side, KING), 0);
 
     Bitboard opponent_pieces =
         position.pieces(!side) & ~position.pieces(!side, PAWN);
