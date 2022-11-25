@@ -358,6 +358,11 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     if (entryPtr && (entryPtr->depth >= depth) &&
         (std::find(begin, end, entryPtr->move) != end))
     {
+        LOG_DEBUG("[%d] CACHE HIT score=%ld depth=%d flag=%d move=%s",
+                info->_ply, entryPtr->score, entryPtr->depth,
+                static_cast<int>(entryPtr->flag),
+                position.uci(entryPtr->move).c_str());
+
         switch (entryPtr->flag)
         {
         case tt::Flag::kEXACT:
@@ -381,9 +386,9 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
 
     if (depth == 0)
     {
-        LOG_DEBUG("START QUIESCENCE_SEARCH");
+        LOG_DEBUG("[%d] START QUIESCENCE_SEARCH", info->_ply);
         Value result = quiescence_search(position, MAX_DEPTH - 1, alpha, beta, info);
-        LOG_DEBUG("END QUIESCENCE_SEARCH");
+        LOG_DEBUG("[%d] END QUIESCENCE_SEARCH", info->_ply);
         EXIT_SEARCH(result);
     }
 
@@ -406,12 +411,12 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         int reducedDepth = 3 + depth / 4 - (info->_static_eval - beta) / 300;
         reducedDepth = std::max(reducedDepth, 0);
 
-        LOG_DEBUG("DO MOVE nullmove alpha=%ld beta=%ld", alpha, beta);
+        LOG_DEBUG("[%d] DO MOVE nullmove alpha=%ld beta=%ld", info->_ply, alpha, beta);
         MoveInfo moveinfo = position.do_null_move();
         info->_current_move = NO_MOVE;  // this means that this was a null move
         info->_counter_move = &_counter_move_table[NO_PIECE][0]; // trash
         Value result = -search(position, reducedDepth, -beta, -beta + 1, info + 1);
-        LOG_DEBUG("UNDO MOVE nullmove score=%ld", result);
+        LOG_DEBUG("[%d] UNDO MOVE nullmove score=%ld", info->_ply, result);
         position.undo_null_move(moveinfo);
 
         if (result >= beta) EXIT_SEARCH(beta);
@@ -424,7 +429,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     for (int move_count = 0; move_count < n_moves; ++move_count)
     {
         Move move = begin[move_count];
-        LOG_DEBUG("DO MOVE %s alpha=%ld beta=%ld", position.uci(move).c_str(), alpha, beta);
+        LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply, position.uci(move).c_str(), alpha, beta);
         info->_current_move = move;
         info->_counter_move = &_counter_move_table[position.piece_at(from(move))][to(move)];
         MoveInfo moveinfo = position.do_move(move);
@@ -474,7 +479,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         }
 
         position.undo_move(move, moveinfo);
-        LOG_DEBUG("UNDO MOVE %s score=%ld", position.uci(move).c_str(), result);
+        LOG_DEBUG("[%d] UNDO MOVE %s score=%ld", info->_ply, position.uci(move).c_str(), result);
 
         if (result >= beta)
         {
@@ -489,6 +494,21 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
 
             add_new_move_to_pv_list(info, move, info + 1);
 
+#ifdef DEBUG
+            {
+                Position temp_position = position;
+                std::cerr << "[" << info->_ply << "] PV LIST ";
+                for (int i = 0; i < info->_pv_list_length; ++i)
+                {
+                    Move m = info->_pv_list[i];
+                    std::cerr << temp_position.uci(m) << " ";
+                    temp_position.do_move(m);
+                }
+                std::cerr << "\n";
+            }
+#endif
+
+            LOG_DEBUG("[%d] BEST MOVE %s", info->_ply, position.uci(move).c_str());
             EXIT_SEARCH(beta);
         }
 
@@ -507,11 +527,26 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         set_new_pv_list(info, best_move);
     }
 
+#ifdef DEBUG
+    {
+        Position temp_position = position;
+        std::cerr << "[" << info->_ply << "] PV LIST ";
+        for (int i = 0; i < info->_pv_list_length; ++i)
+        {
+            Move m = info->_pv_list[i];
+            std::cerr << temp_position.uci(m) << " ";
+            temp_position.do_move(m);
+        }
+        std::cerr << "\n";
+    }
+#endif
+
     tt::Flag flag =
         alpha <= alphaOriginal ? tt::Flag::kUPPER_BOUND : tt::Flag::kEXACT;
     tt::TTEntry entry(alpha, depth, flag, best_move);
     _ttable.update(position.hash(), entry);
 
+    LOG_DEBUG("[%d] BEST MOVE %s", info->_ply, position.uci(best_move).c_str());
     EXIT_SEARCH(alpha);
 }
 
@@ -544,7 +579,7 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
     if (!is_in_check)
     {
         standpat = _scorer.score(position);
-        LOG_DEBUG("POSITION score=%ld", standpat);
+        LOG_DEBUG("[%d] POSITION score=%ld", info->_ply, standpat);
 
         if (standpat >= beta)
             EXIT_QSEARCH(beta);
@@ -570,14 +605,14 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
         if (!is_in_check && position.piece_at(to(move)) == NO_PIECE &&
             promotion(move) == NO_PIECE_KIND)
             continue;
-        LOG_DEBUG("DO MOVE %s alpha=%ld beta=%ld", position.uci(move).c_str(), alpha, beta);
+        LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply, position.uci(move).c_str(), alpha, beta);
         MoveInfo moveinfo = position.do_move(move);
         _nodes_searched++;
 
         Value result = -quiescence_search(position, depth - 1, -beta, -alpha,
                                         info + 1);
         position.undo_move(move, moveinfo);
-        LOG_DEBUG("UNDO MOVE %s score=%ld", position.uci(move).c_str(), result);
+        LOG_DEBUG("[%d] UNDO MOVE %s score=%ld", info->_ply, position.uci(move).c_str(), result);
 
         if (result >= beta) EXIT_QSEARCH(beta);
         if (result > alpha)
