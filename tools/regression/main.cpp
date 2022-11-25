@@ -1,4 +1,5 @@
 #include "argument_parser.h"
+#include "elo_utils.h"
 #include "endgame.h"
 #include "engine_wrapper.h"
 #include "movegen.h"
@@ -237,6 +238,9 @@ int main(int argc, char** argv)
                   << args.engines[0].name << "=" << points[args.engines[0].name] << " "
                   << args.engines[1].name << "=" << points[args.engines[1].name] << " "
                   << "draw=" << points[DRAW_NAME] << std::endl;
+        double eloDiff = computeEloDifferenceFromScores(points[args.engines[0].name], points[DRAW_NAME], points[args.engines[1].name]);
+        double marginError = computeErrorMargin(points[args.engines[0].name], points[DRAW_NAME], points[args.engines[1].name]);
+        std::cout << "ELO difference = " << eloDiff << " +- " << marginError << " ELO" << std::endl;
 
         fd << std::get<1>(gameResult);
     }
@@ -245,6 +249,9 @@ int main(int argc, char** argv)
               << args.engines[0].name << "=" << points[args.engines[0].name] << " "
               << args.engines[1].name << "=" << points[args.engines[1].name] << " "
                   << "draw=" << points[DRAW_NAME] << std::endl;
+    double eloDiff = computeEloDifferenceFromScores(points[args.engines[0].name], points[DRAW_NAME], points[args.engines[1].name]);
+    double marginError = computeErrorMargin(points[args.engines[0].name], points[DRAW_NAME], points[args.engines[1].name]);
+    std::cout << "ELO difference = " << eloDiff << " +- " << marginError << " ELO" << std::endl;
 
     return 0;
 }
