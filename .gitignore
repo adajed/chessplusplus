@@ -3,9 +3,12 @@ weights/*
 !weights/basic.w
 !weights/test_weights.w
 compile_commands.json
+.cache/
 .clangd/
 Logfile.log
 examples.txt
+
+tools/search-viewer/__pycache__/
 
 *.log
 *.pgn
