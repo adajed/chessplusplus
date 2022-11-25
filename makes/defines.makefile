@@ -1,3 +1,11 @@
+# UCI engine name
+ENGINE_NAME = chessplusplus
+
+# version
+VERSION_MAJOR = 1
+VERSION_MINOR = 0
+VERSION_PATCH = 0
+
 # main paths
 ROOTDIR=$(shell dirname $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
 BUILD_DIR=$(ROOTDIR)/build
@@ -10,9 +18,10 @@ GTEST_LIB_PATH     ?= /usr/local/lib
 
 # complier
 COMP ?= g++
-
 # compliation flags
 CFLAGS = -Wall -std=c++17 -flto
+CFLAGS += -DENGINE_NAME='"$(ENGINE_NAME)"'
+CFLAGS += -DVERSION_MAJOR=$(VERSION_MAJOR) -DVERSION_MINOR=$(VERSION_MINOR) -DVERSION_PATCH=$(VERSION_PATCH)
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
 CFLAGS_DEBUG = $(CFLAGS) -g -DDEBUG
 

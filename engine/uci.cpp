@@ -76,7 +76,8 @@ void Uci::loop()
 
 bool Uci::uci_command(std::istringstream& istream)
 {
-    sync_cout << "id name Deep Chess" << sync_endl;
+    sync_cout << "id name " << ENGINE_NAME << " "
+              << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH << sync_endl;
     sync_cout << "id author Adam Jedrych" << sync_endl;
     sync_cout << sync_endl;
 
