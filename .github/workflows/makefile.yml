@@ -11,6 +11,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    - name: Install expect
+      run: sudo apt install expect
+
     steps:
     - name: Install GoogleTest
       run: |
