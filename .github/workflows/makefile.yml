@@ -12,18 +12,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    
+    - name: Install gtest manually
+      run: sudo apt-get install libgtest-dev \
+            && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make \
+            && sudo cp *.a /usr/lib && sudo ln -s /usr/lib/libgtest.a /usr/local/lib/libgtest.a \
+            && sudo ln -s /usr/lib/libgtest_main.a /usr/local/lib/libgtest_main.a
+      
     - uses: actions/checkout@v3
     
-    - name: Install GoogleTest
-      run:  apt-get update -y && \
-            apt-get install -y libgtest-dev valgrind cmake clang-tidy-8 expect && \
-            wget https://github.com/google/googletest/archive/release-1.10.0.tar.gz && \
-            tar xf release-1.10.0.tar.gz && \
-            cd googletest-release-1.10.0 && \
-            mkdir build; cd build && \
-            cmake -DBUILD_SHARED_LIBS=ON -DBUILD_GMOCK=OFF .. && \
-            make && \
-            make install
-      
     - name: Install dependencies
       run: make
