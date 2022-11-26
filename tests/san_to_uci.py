@@ -6,7 +6,7 @@ import re
 
 if __name__ == "__main__":
     for line in sys.stdin.readlines():
-        if (m := re.match(r"^run_search_test \"(.*)\" (.*)$", line)):
+        if (m := re.match(r"^run_search_test \"(.*)\" (\w*)$", line)):
             fen = m.group(1)
             move_san = m.group(2)
             board = chess.Board(fen=fen)
