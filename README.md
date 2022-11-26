@@ -6,51 +6,35 @@
 
 ## Building
 
-#### All targets
-```
-make -j8
-```
+### All targets
+`make -j8`
 
-#### Build only engine
-Release mode
-```
-make engine -j8
-```
+### Build only engine
+Release mode:
+`make engine -j8`
 
-Debug mode
-```
-make engine_debug -j8
-```
+Debug mode:
+`make engine_debug -j8`
 
-#### Build tools (regression)
-Release mode
-```
-make tools -j8
-```
+### Build tools (regression)
+Release mode:
+`make tools -j8`
 
-Debug mode
-```
-make tools_debug
-```
+Debug mode:
+`make tools_debug`
 
-#### Build tests
+### Build tests
 Tests require Google Test
 
-Release mode
-```
-make test -j8
-```
+Release mode:
+`make test -j8`
 
-Debug mode
-```
-make test_debug -j8
-```
+Debug mode:
+`make test_debug -j8`
 
-#### LOG\_LEVEL
+### LOG\_LEVEL
 To add additional logs during runtime:
-```
-make LOG_LEVEL=2 -j8
-```
+`make LOG_LEVEL=2 -j8`
 
 LEVELS:
 - 0 - No logging.
