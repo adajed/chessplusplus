@@ -2,9 +2,9 @@ name: Makefile CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "develop" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "develop" ]
 
 jobs:
   build:
@@ -12,14 +12,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    
-    - name: Install gtest manually
-      run: sudo apt-get install libgtest-dev \
-            && cd /usr/src/gtest && sudo cmake CMakeLists.txt && sudo make \
-            && sudo cp *.a /usr/lib && sudo ln -s /usr/lib/libgtest.a /usr/local/lib/libgtest.a \
-            && sudo ln -s /usr/lib/libgtest_main.a /usr/local/lib/libgtest_main.a
-      
-    - uses: actions/checkout@v3
-    
-    - name: Install dependencies
+    - name: Install expect
+      run: sudo apt install expect
+
+    - name: Install GoogleTest
+      run: |
+        wget https://github.com/google/googletest/archive/release-1.10.0.tar.gz
+        tar xf release-1.10.0.tar.gz
+        cd googletest-release-1.10.0
+        mkdir build
+        cd build
+        cmake -DBUILD_SHARED_LIBS=ON -DBUILD_GMOCK=OFF ..
+        sudo make install
+
+    - name: Checkout repo
+      uses: actions/checkout@v3
+
+    - name: Build
       run: make
+
+    - name: Run tests
+      run: |
+        export LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
+        ./build/tests
+        ./build/tests_debug
+        ./tests/run_perft_tests.sh release
+        ./tests/run_search_tests.sh release
