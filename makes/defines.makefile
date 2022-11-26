@@ -6,6 +6,9 @@ VERSION_MAJOR = 1
 VERSION_MINOR = 0
 VERSION_PATCH = 0
 
+# log level
+LOG_LEVEL ?= 0
+
 # main paths
 ROOTDIR=$(shell dirname $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
 BUILD_DIR=$(ROOTDIR)/build
@@ -20,6 +23,7 @@ GTEST_LIB_PATH     ?= /usr/local/lib
 COMP ?= g++
 # compliation flags
 CFLAGS = -Wall -std=c++17 -flto
+CFLAGS += -DLOG_LEVEL=$(LOG_LEVEL)
 CFLAGS += -DENGINE_NAME='"$(ENGINE_NAME)"'
 CFLAGS += -DVERSION_MAJOR=$(VERSION_MAJOR) -DVERSION_MINOR=$(VERSION_MINOR) -DVERSION_PATCH=$(VERSION_PATCH)
 CFLAGS_RELEASE = $(CFLAGS) -Ofast -DNDEBUG
