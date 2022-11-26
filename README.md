@@ -5,19 +5,57 @@
 </p>
 
 ## Building
+
+#### All targets
 ```
-make -j8 // builds all targets
-
-make engine // builds engine in realese mode
-make engine_debug // builds engine in debug mode
-
-make tools // builds tools in release mode
-make tools_debug // builds tools in debug mode
-
-// Tests require google test
-make test // builds tests in release mode
-make test_debug // builds tests in debug mode
+make -j8
 ```
+
+#### Build only engine
+Release mode
+```
+make engine -j8
+```
+
+Debug mode
+```
+make engine_debug -j8
+```
+
+#### Build tools (regression)
+Release mode
+```
+make tools -j8
+```
+
+Debug mode
+```
+make tools_debug
+```
+
+#### Build tests
+Tests require Google Test
+
+Release mode
+```
+make test -j8
+```
+
+Debug mode
+```
+make test_debug -j8
+```
+
+#### LOG\_LEVEL
+To add additional logs during runtime:
+```
+make LOG_LEVEL=2 -j8
+```
+
+LEVELS:
+- 0 - No logging.
+- 1 - Small amout of logging, mainly about iter search.
+- 2 - Full logging, prints info from whole search tree. This causes massive slowdown!!!
 
 ## Implemented non-UCI commands
 - `printboard`

@@ -37,6 +37,10 @@ void Uci::loop()
 
     while (!quit && std::getline(std::cin, line))
     {
+        // handle empty lines
+        if (line == "")
+            continue;
+
         logger.fout << line << std::endl;
         std::istringstream istream(line);
         istream >> token;

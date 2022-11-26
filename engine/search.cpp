@@ -494,7 +494,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
 
             add_new_move_to_pv_list(info, move, info + 1);
 
-#ifdef DEBUG
+#if LOG_LEVEL > 1
             {
                 Position temp_position = position;
                 std::cerr << "[" << info->_ply << "] PV LIST ";
@@ -527,7 +527,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         set_new_pv_list(info, best_move);
     }
 
-#ifdef DEBUG
+#if LOG_LEVEL > 1
     {
         Position temp_position = position;
         std::cerr << "[" << info->_ply << "] PV LIST ";
