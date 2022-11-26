@@ -11,6 +11,8 @@ NODES = []
 
 
 def getItemName(mainChunk: dict, chunk: dict, move_order: dict) -> str:
+    if (mainChunk["depth"] == 0):
+        return "quiescence"
     if chunk["move"] is None:
         depth = chunk["depth"]
         return f"Search depth={depth}"

@@ -1,23 +1,14 @@
 import argparse
-from collections import namedtuple
 import re
 import time
 from tqdm import tqdm
 
 from db import Database, CHUNK_FIELDS
 
-EnterSearchData = namedtuple(
-    'EnterSearchData', ['ply', 'depth', 'alpha', 'beta', 'fen'])
-
-CacheHit = namedtuple('CacheHit', ['move', 'depth', 'score', 'flag'])
-NodeData = namedtuple('NodeData', ['alpha', 'beta', 'score', 'fen',
-                                   'ply', 'depth', 'move_order', 'cache',
-                                   'move', 'static_eval'])
-ChunkInfo = namedtuple('ChunkInfo', ['start', 'end', 'ply', 'nodeData'])
-
 ENTER_SEARCH_REGEX = re.compile(
-    r"^ENTER (SEARCH) ply=(\d+) depth=(\d+) alpha=(-?\d+) beta=(-?\d+) fen=(.*)$")
-EXIT_SEARCH_REGEX = re.compile(r"^EXIT (SEARCH) ply=(\d+) score=(-?\d+)$")
+    r"^ENTER (QUIESCENCE_SEARCH|SEARCH) ply=(\d+) depth=(\d+) alpha=(-?\d+) beta=(-?\d+) fen=(.*)$")
+EXIT_SEARCH_REGEX = re.compile(
+    r"^EXIT (QUIESCENCE_SEARCH|SEARCH) ply=(\d+) score=(-?\d+)$")
 DO_MOVE_REGEX = re.compile(
     r"^\[(\d+)\] DO MOVE (\w+) alpha=(-?\d+) beta=(-?\d+)$")
 UNDO_MOVE_REGEX = re.compile(r"^\[(\d+)\] UNDO MOVE (\w+) score=(-?\d+)$")
