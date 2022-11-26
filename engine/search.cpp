@@ -324,7 +324,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     info->_ply = (info - 1)->_ply + 1;
     clear_pv_list(info);
 
-    LOG_DEBUG("ENTER SEARCH ply=%d depth=%d alpha=%ld beta=%ld fen=%s",
+    LOG_DEBUG("[%d] ENTER SEARCH depth=%d alpha=%ld beta=%ld fen=%s",
               info->_ply, depth, alpha, beta, position.fen().c_str());
 
     const bool ROOT_NODE = info->_ply == 0;
@@ -558,7 +558,7 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
     info->_ply = (info - 1)->_ply + 1;
     clear_pv_list(info);
 
-    LOG_DEBUG("ENTER QUIESCENCE_SEARCH ply=%d depth=%d alpha=%ld beta=%ld fen=%s",
+    LOG_DEBUG("[%d] ENTER QUIESCENCE_SEARCH depth=%d alpha=%ld beta=%ld fen=%s",
               info->_ply, depth, alpha, beta, position.fen().c_str());
 
     const bool PV_NODE = beta != alpha + 1;
