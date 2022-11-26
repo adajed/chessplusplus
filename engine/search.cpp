@@ -419,7 +419,15 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         LOG_DEBUG("[%d] UNDO MOVE nullmove score=%ld", info->_ply, result);
         position.undo_null_move(moveinfo);
 
-        if (result >= beta) EXIT_SEARCH(beta);
+        if (result >= beta)
+        {
+            // verification search
+            result = -search(position, reducedDepth, -beta, -beta + 1, info + 1);
+            if (result >= beta)
+            {
+                EXIT_SEARCH(beta);
+            }
+        }
     }
 
     Move best_move = NO_MOVE;
