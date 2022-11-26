@@ -82,7 +82,7 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
         }
     }
 
-#ifdef DEBUG
+#if LOG_LEVEL > 1
     std::cerr << "[" << info->_ply << "] MOVE ORDER ";
     for (int i = 0; i < n_moves; ++i)
         std::cerr << "(" << position.uci(begin[i]) << "," << _scores[i] << ") ";
