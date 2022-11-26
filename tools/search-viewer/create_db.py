@@ -6,9 +6,9 @@ from tqdm import tqdm
 from db import Database, CHUNK_FIELDS
 
 ENTER_SEARCH_REGEX = re.compile(
-    r"^ENTER (QUIESCENCE_SEARCH|SEARCH) ply=(\d+) depth=(\d+) alpha=(-?\d+) beta=(-?\d+) fen=(.*)$")
+    r"^\[(\d+)\] ENTER (QUIESCENCE_SEARCH|SEARCH) depth=(\d+) alpha=(-?\d+) beta=(-?\d+) fen=(.*)$")
 EXIT_SEARCH_REGEX = re.compile(
-    r"^EXIT (QUIESCENCE_SEARCH|SEARCH) ply=(\d+) score=(-?\d+)$")
+    r"^\[(\d+)\] EXIT (QUIESCENCE_SEARCH|SEARCH) score=(-?\d+)$")
 DO_MOVE_REGEX = re.compile(
     r"^\[(\d+)\] DO MOVE (\w+) alpha=(-?\d+) beta=(-?\d+)$")
 UNDO_MOVE_REGEX = re.compile(r"^\[(\d+)\] UNDO MOVE (\w+) score=(-?\d+)$")
@@ -100,7 +100,7 @@ class Parser:
             self._chunkStack.append(dict())
             for field in CHUNK_FIELDS:
                 self._updateChunk(field, None)
-            self._updateChunk("ply", int(m.group(2)))
+            self._updateChunk("ply", int(m.group(1)))
             self._updateChunk("depth", int(m.group(3)))
             self._updateChunk("alpha", int(m.group(4)))
             self._updateChunk("beta", int(m.group(5)))
@@ -110,7 +110,7 @@ class Parser:
 
     def _tryParseExitSearch(self, line):
         if (m := EXIT_SEARCH_REGEX.match(line)):
-            if int(m.group(2)) == self._get("ply"):
+            if int(m.group(1)) == self._get("ply"):
                 self._updateChunk("score", int(m.group(3)))
                 if len(self._moveStack) > 0:
                     self._updateChunk("move", self._moveStack[-1])

@@ -39,33 +39,7 @@ namespace engine
         }                                                          \
     } while (false)
 
-#define RETURN_DEBUG(val)                \
-    {                                    \
-        Value ret = (val);               \
-        LOG_DEBUG("exit with %ld", ret); \
-        return ret;                      \
-    }
-
-#define EXIT_SEARCH(val)                                            \
-    {                                                               \
-        Value ret = (val);                                          \
-        LOG_DEBUG("EXIT SEARCH ply=%d score=%ld", info->_ply, ret); \
-        return ret;                                                 \
-    }
-
-#define EXIT_QSEARCH(val)                                                       \
-    {                                                                           \
-        Value ret = (val);                                                      \
-        LOG_DEBUG("EXIT QUIESCENCE_SEARCH ply=%d score=%ld", info->_ply, ret);  \
-        return ret;                                                             \
-    }
-
 #else
-
-#define RETURN_DEBUG(val) return (val);
-
-#define EXIT_SEARCH(val) return (val);
-#define EXIT_QSEARCH(val) return (val);
 
 #define ASSERT(cond) \
     do \
@@ -78,6 +52,27 @@ namespace engine
     } while (false)
 
 #endif
+
+#define RETURN_DEBUG(val)                \
+    {                                    \
+        Value ret = (val);               \
+        LOG_DEBUG("exit with %ld", ret); \
+        return ret;                      \
+    }
+
+#define EXIT_SEARCH(val)                                            \
+    {                                                               \
+        Value ret = (val);                                          \
+        LOG_DEBUG("[%d] EXIT SEARCH score=%ld", info->_ply, ret); \
+        return ret;                                                 \
+    }
+
+#define EXIT_QSEARCH(val)                                                       \
+    {                                                                           \
+        Value ret = (val);                                                      \
+        LOG_DEBUG("[%d] EXIT QUIESCENCE_SEARCH score=%ld", info->_ply, ret);  \
+        return ret;                                                             \
+    }
 
 }  // namespace engine
 
