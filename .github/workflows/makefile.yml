@@ -11,10 +11,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    steps:
     - name: Install expect
       run: sudo apt install expect
 
-    steps:
     - name: Install GoogleTest
       run: |
         wget https://github.com/google/googletest/archive/release-1.10.0.tar.gz
