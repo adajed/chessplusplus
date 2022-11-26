@@ -3,6 +3,19 @@
 
 namespace engine
 {
+
+#if LOG_LEVEL > 0
+#define LOG_INFO(msg, ...) do { fprintf(stderr, msg "\n", ##__VA_ARGS__); } while(false)
+#else
+#define LOG_INFO(msg, ...) do { } while(false)
+#endif
+
+#if LOG_LEVEL > 1
+#define LOG_DEBUG(msg, ...) do { fprintf(stderr, msg "\n", ##__VA_ARGS__); } while(false)
+#else
+#define LOG_DEBUG(msg, ...) do { } while(false)
+#endif
+
 #ifdef DEBUG
 
 #define ASSERT(cond)                                     \
@@ -26,8 +39,6 @@ namespace engine
         }                                                          \
     } while (false)
 
-#define LOG_DEBUG(msg, ...) fprintf(stderr, msg "\n", ##__VA_ARGS__);
-
 #define RETURN_DEBUG(val)                \
     {                                    \
         Value ret = (val);               \
@@ -50,11 +61,6 @@ namespace engine
     }
 
 #else
-
-#define LOG_DEBUG(msg, ...) \
-    do \
-    {                       \
-    } while(false)
 
 #define RETURN_DEBUG(val) return (val);
 
