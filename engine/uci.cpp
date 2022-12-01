@@ -212,6 +212,7 @@ bool Uci::staticeval_command(std::istringstream& istream)
     PositionScorer scorer;
     Value score = scorer.score(position);
     std::cout << "Score: " << score2str(score) << sync_endl;
+    scorer.print_stats();
     return true;
 }
 
