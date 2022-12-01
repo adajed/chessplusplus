@@ -30,22 +30,15 @@ def parseArguments():
 
 class LineGenerator:
     def __init__(self, filepath):
-        with open(filepath, "r") as fd:
-            start = time.time()
-            self.__lines = fd.readlines()
-            end = time.time()
-            print(f"Loading duration = {end - start}s")
-            self.__pbar = tqdm(total=len(self.__lines))
-
-        self.__pos = 0
+        self.__fd = open(filepath, "r")
+        self.__line = self.__fd.readline()
 
     def hasNext(self):
-        return self.__pos < len(self.__lines)
+        return self.__line != ''
 
     def next(self):
-        line = self.__lines[self.__pos]
-        self.__pos += 1
-        self.__pbar.update(1)
+        line = self.__line
+        self.__line = self.__fd.readline()
         return line
 
 
