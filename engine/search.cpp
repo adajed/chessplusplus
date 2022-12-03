@@ -182,12 +182,9 @@ void Search::go()
     // check if there is only one move to make
     if (_root_moves.size() == 1)
     {
-        _best_move = _root_moves[0];
+        _search_time = 500;
     }
-    else
-    {
-        iter_search();
-    }
+    iter_search();
 
     ASSERT(_best_move != NO_MOVE);
     sync_cout << "bestmove " << _position.uci(_best_move) << sync_endl;
