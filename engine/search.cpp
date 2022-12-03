@@ -347,6 +347,8 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     const int n_moves = end - begin;
 
     bool is_in_check = position.is_in_check(position.color());
+    if (is_in_check) depth++;
+
 
     if (n_moves == 0)
         EXIT_SEARCH(is_in_check ? lost_in((info - 1)->_ply) : VALUE_DRAW);
@@ -381,8 +383,6 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
             EXIT_SEARCH(Value(entryPtr->second.score));
         }
     }
-
-    if (is_in_check) depth++;
 
     if (depth == 0)
     {
