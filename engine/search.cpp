@@ -103,9 +103,10 @@ Value compute_search_delta(Move *previous_best_moves, int current_depth, Value c
 
 const Duration INFINITE = 1LL << 32;
 
-Search::Search(const Position& position, const Limits& limits)
+Search::Search(const Position& position, const Limits& limits,
+               PositionScorer& scorer, tt::TTable& ttable)
     : _position(position),
-      _scorer(),
+      _scorer(scorer),
       limits(limits),
       check_limits_counter(4096),
       stop_search(false),
@@ -117,7 +118,7 @@ Search::Search(const Position& position, const Limits& limits)
       _start_time(),
       _nodes_searched(0),
       _root_moves(),
-      _ttable(),
+      _ttable(ttable),
       _stack_info(),
       _history_score(),
       _move_orderer(_ttable, _history_score),
@@ -173,8 +174,6 @@ void Search::stop()
 
 void Search::go()
 {
-    _ttable.clear();
-    _scorer.clear();
     init_search();
     stop_search = false;
     _start_time = std::chrono::steady_clock::now();
