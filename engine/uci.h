@@ -3,7 +3,9 @@
 
 #include "polyglot.h"
 #include "position.h"
+#include "score.h"
 #include "search.h"
+#include "transposition_table.h"
 #include "ucioption.h"
 
 #include <map>
@@ -53,6 +55,8 @@ class Uci
 
     std::shared_ptr<Search> search;
     Position position;
+    PositionScorer scorer;
+    tt::TTable ttable;
     bool is_search;
     bool quit;
 

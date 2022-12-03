@@ -21,7 +21,8 @@ std::string score2str(Value score);
 class Search
 {
   public:
-    Search(const Position& position, const Limits& limits);
+    Search(const Position& position, const Limits& limits,
+           PositionScorer& scorer, tt::TTable& ttable);
 
     void go();
 
@@ -45,7 +46,7 @@ class Search
     bool check_limits();
 
     Position _position;
-    PositionScorer _scorer;
+    PositionScorer& _scorer;
     Limits limits;
 
     int64_t check_limits_counter;
@@ -63,7 +64,7 @@ class Search
 
     std::vector<Move> _root_moves;
 
-    tt::TTable _ttable;
+    tt::TTable& _ttable;
     StackInfo _stack_info;
     HistoryScore _history_score;
     MoveOrderer _move_orderer;

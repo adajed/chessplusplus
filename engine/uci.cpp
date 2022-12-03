@@ -122,6 +122,8 @@ bool Uci::uci_command(std::istringstream& istream)
 bool Uci::ucinewgame_command(std::istringstream& istream)
 {
     position = Position();
+    scorer.clear();
+    ttable.clear();
     return true;
 }
 
@@ -276,7 +278,7 @@ bool Uci::go_command(std::istringstream& istream)
         }
     }
 
-    search = std::make_shared<Search>(position, limits);
+    search = std::make_shared<Search>(position, limits, scorer, ttable);
 
     std::thread search_thread(start_searching, this);
     search_thread.detach();
