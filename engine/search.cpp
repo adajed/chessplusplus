@@ -33,23 +33,23 @@ std::string score2str(Value score)
 
 void clear_pv_list(Info* info)
 {
-    assert(info != nullptr);
+    ASSERT(info != nullptr);
     info->_pv_list_length = 0;
 }
 
 void set_new_pv_list(Info* info, Move move)
 {
-    assert(info != nullptr);
+    ASSERT(info != nullptr);
     info->_pv_list_length = 1;
     info->_pv_list[0] = move;
 }
 
 void add_new_move_to_pv_list(Info* destInfo, Move move, Info* srcInfo)
 {
-    assert(srcInfo != nullptr);
-    assert(destInfo != nullptr);
+    ASSERT(srcInfo != nullptr);
+    ASSERT(destInfo != nullptr);
     const int len = srcInfo->_pv_list_length;
-    assert(len < MAX_DEPTH * 2);
+    ASSERT(len < MAX_DEPTH * 2);
     destInfo->_pv_list_length = len + 1;
     destInfo->_pv_list[0] = move;
     std::memcpy(destInfo->_pv_list.data() + 1, srcInfo->_pv_list.data(),
@@ -189,7 +189,7 @@ void Search::go()
         iter_search();
     }
 
-    assert(_best_move != NO_MOVE);
+    ASSERT(_best_move != NO_MOVE);
     sync_cout << "bestmove " << _position.uci(_best_move) << sync_endl;
 }
 
@@ -268,7 +268,7 @@ void Search::iter_search()
 
         while (true)
         {
-            assert(min_bound < max_bound);
+            ASSERT(min_bound < max_bound);
             LOG_DEBUG("Search depth=%d bound=[%ld, %ld] delta=%ld\n", _current_depth, min_bound, max_bound, delta);
             result = search(_position, _current_depth, min_bound, max_bound,
                             info + 1);
@@ -303,7 +303,7 @@ void Search::iter_search()
         if (!stop_search)
         {
             Info* realInfo = info + 1;
-            assert(realInfo->_pv_list_length > 0);
+            ASSERT(realInfo->_pv_list_length > 0);
             print_info(result, _current_depth, _nodes_searched,
                        _tb_hits, elapsed, realInfo);
             _best_move = realInfo->_pv_list[0];
@@ -321,7 +321,7 @@ void Search::iter_search()
 Value Search::search(Position& position, int depth, Value alpha, Value beta,
                      Info* info)
 {
-    assert(alpha < beta);
+    ASSERT(alpha < beta);
 
     info->_ply = (info - 1)->_ply + 1;
     clear_pv_list(info);
@@ -426,7 +426,9 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         if (result >= beta)
         {
             // verification search
+            LOG_DEBUG("[%d] DO MOVE nullmove alpha=%ld beta=%ld", info->_ply, alpha, beta);
             result = -search(position, reducedDepth, -beta, -beta + 1, info + 1);
+            LOG_DEBUG("[%d] UNDO MOVE nullmove score=%ld", info->_ply, result);
             if (result >= beta)
             {
                 EXIT_SEARCH(beta);
@@ -565,7 +567,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
 Value Search::quiescence_search(Position& position, int depth, Value alpha,
                                 Value beta, Info* info)
 {
-    assert(alpha < beta);
+    ASSERT(alpha < beta);
 
     info->_ply = (info - 1)->_ply + 1;
     clear_pv_list(info);
