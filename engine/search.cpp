@@ -2,9 +2,12 @@
 
 #include "endgame.h"
 #include "logger.h"
+#include "movegen.h"
+#include "score.h"
 #include "search_utils.h"
 #include "time_manager.h"
 #include "transposition_table.h"
+#include "types.h"
 #include "utils.h"
 
 #include <algorithm>
@@ -353,7 +356,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     if (n_moves == 0)
         EXIT_SEARCH(is_in_check ? lost_in((info - 1)->_ply) : VALUE_DRAW);
 
-    Value alphaOriginal = alpha;
+    Value bestValue = -VALUE_INFINITE;
     bool found = false;
     const auto entryPtr = _ttable.probe(position.hash(), found);
     if (found && (entryPtr->second.depth >= depth) &&
@@ -371,6 +374,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
             set_new_pv_list(info, entryPtr->second.move);
             return Value(entryPtr->second.score);
         case tt::Flag::kLOWER_BOUND:
+            bestValue = entryPtr->second.score;
             alpha = std::max(alpha, entryPtr->second.score);
             break;
         case tt::Flag::kUPPER_BOUND:
@@ -435,7 +439,6 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     Move best_move = NO_MOVE;
     _move_orderer.order_moves(position, begin, end, info);
 
-    bool search_full_window = true;
     for (int move_count = 0; move_count < n_moves; ++move_count)
     {
         Move move = begin[move_count];
@@ -450,84 +453,82 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
 
         bool isQuiet = capturedPiece == NO_PIECE_KIND && promotedPiece == NO_PIECE_KIND;
 
-        Value result;
-        if (search_full_window)
+        Value result = VALUE_NONE;
+        int reduction = 0;
+        Value updated_score = info->_static_eval
+                + BASIC_PIECE_VALUE[capturedPiece]
+                + BASIC_PIECE_VALUE[promotedPiece];
+
+        if (depth > 3 && (isQuiet || updated_score <= alpha))
+        {
+            reduction = late_move_reduction(depth, move_count + 1);
+            reduction -= 2 * static_cast<int>(PV_NODE);
+
+            if (isQuiet)
+            {
+                if (move == info->_killer_moves[0] || move == info->_killer_moves[1])
+                    reduction--;
+            }
+            else
+            {
+                reduction += std::min(2, static_cast<int>((alpha - updated_score) / 300));
+            }
+            reduction = std::min(depth - 1, std::max(reduction, 0));
+        }
+
+        result = -search(position, depth - 1 - reduction, -(alpha + 1), -alpha, info + 1);
+
+        if (reduction > 0 && result > alpha)
+        {
+            result = -search(position, depth - 1, -(alpha + 1), -alpha, info + 1);
+        }
+        if (PV_NODE && alpha < result && result < beta)
         {
             result = -search(position, depth - 1, -beta, -alpha, info + 1);
-        }
-        else
-        {
-            int reduction = 0;
-            Value updated_score = info->_static_eval + BASIC_PIECE_VALUE[capturedPiece] + BASIC_PIECE_VALUE[promotedPiece];
-            if (depth > 3 && (isQuiet || updated_score <= alpha))
-            {
-                reduction = late_move_reduction(depth, move_count + 1);
-                reduction -= 2 * static_cast<int>(PV_NODE);
-
-                if (isQuiet)
-                {
-                    if (move == info->_killer_moves[0] || move == info->_killer_moves[1])
-                        reduction--;
-                }
-                else
-                {
-                    reduction += std::min(2, static_cast<int>((alpha - updated_score) / 300));
-                }
-                reduction = std::min(depth - 1, std::max(reduction, 0));
-            }
-
-            result = -search(position, depth - 1 - reduction, -alpha - 1, -alpha, info + 1);
-
-            if (reduction > 0 && result > alpha)
-            {
-                result = -search(position, depth - 1, -alpha - 1, -alpha, info + 1);
-            }
-            if (PV_NODE && alpha < result && result < beta)
-            {
-                result = -search(position, depth - 1, -beta, -alpha, info + 1);
-            }
         }
 
         position.undo_move(move, moveinfo);
         LOG_DEBUG("[%d] UNDO MOVE %s score=%ld", info->_ply, position.uci(move).c_str(), result);
 
-        if (result >= beta)
+        if (result > bestValue)
         {
-            assert(move != NO_MOVE);
-            if (isQuiet)
+            bestValue = result;
+
+            if (result > alpha)
             {
-                update_move_scores(position, move, info, _history_score, depth);
-            }
+                alpha = result;
+                best_move = move;
+                add_new_move_to_pv_list(info, move, info + 1);
 
-            tt::TTEntry entry(result, depth, tt::Flag::kLOWER_BOUND, move);
-            _ttable.insert(position.hash(), entry);
+                if (result >= beta)
+                {
+                    ASSERT(move != NO_MOVE);
+                    if (isQuiet)
+                    {
+                        update_move_scores(position, move, info, _history_score, depth);
+                    }
 
-            add_new_move_to_pv_list(info, move, info + 1);
+                    tt::TTEntry entry(result, depth, tt::Flag::kLOWER_BOUND, move);
+                    _ttable.insert(position.hash(), entry);
 
 #if LOG_LEVEL > 1
-            {
-                Position temp_position = position;
-                std::cerr << "[" << info->_ply << "] PV LIST ";
-                for (int i = 0; i < info->_pv_list_length; ++i)
-                {
-                    Move m = info->_pv_list[i];
-                    std::cerr << temp_position.uci(m) << " ";
-                    temp_position.do_move(m);
-                }
-                std::cerr << "\n";
-            }
+                    {
+                        Position temp_position = position;
+                        std::cerr << "[" << info->_ply << "] PV LIST ";
+                        for (int i = 0; i < info->_pv_list_length; ++i)
+                        {
+                            Move m = info->_pv_list[i];
+                            std::cerr << temp_position.uci(m) << " ";
+                            temp_position.do_move(m);
+                        }
+                        std::cerr << "\n";
+                    }
 #endif
 
-            LOG_DEBUG("[%d] BEST MOVE %s", info->_ply, position.uci(move).c_str());
-            EXIT_SEARCH(beta);
-        }
-
-        if (result > alpha)
-        {
-            alpha = result;
-            search_full_window = false;
-            best_move = move;
-            add_new_move_to_pv_list(info, move, info + 1);
+                    LOG_DEBUG("[%d] BEST MOVE %s", info->_ply, position.uci(move).c_str());
+                    EXIT_SEARCH(result);
+                }
+            }
         }
     }
 
@@ -535,6 +536,14 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     {
         best_move = begin[0];
         set_new_pv_list(info, best_move);
+    }
+    else
+    {
+        tt::Flag flag = PV_NODE ? tt::Flag::kEXACT : tt::Flag::kUPPER_BOUND;
+        tt::TTEntry entry(bestValue, depth, flag, best_move);
+        _ttable.insert(position.hash(), entry);
+
+        LOG_DEBUG("[%d] BEST MOVE %s", info->_ply, position.uci(best_move).c_str());
     }
 
 #if LOG_LEVEL > 1
@@ -551,13 +560,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     }
 #endif
 
-    tt::Flag flag =
-        alpha <= alphaOriginal ? tt::Flag::kUPPER_BOUND : tt::Flag::kEXACT;
-    tt::TTEntry entry(alpha, depth, flag, best_move);
-    _ttable.insert(position.hash(), entry);
-
-    LOG_DEBUG("[%d] BEST MOVE %s", info->_ply, position.uci(best_move).c_str());
-    EXIT_SEARCH(alpha);
+    EXIT_SEARCH(bestValue);
 }
 
 Value Search::quiescence_search(Position& position, int depth, Value alpha,
@@ -586,13 +589,16 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
     if (position.is_draw()) EXIT_QSEARCH(VALUE_DRAW);
 
     Value standpat = -VALUE_INFINITE;
-    if (!is_in_check)
+    Value bestValue = -VALUE_INFINITE;
+    if (!is_in_check) // && !is_queen_attacked)
     {
-        standpat = _scorer.score(position);
+        standpat = bestValue = _scorer.score(position);
         LOG_DEBUG("[%d] POSITION score=%ld", info->_ply, standpat);
 
         if (standpat >= beta)
-            EXIT_QSEARCH(beta);
+        {
+            EXIT_QSEARCH(standpat);
+        }
 
         if (PV_NODE && standpat > alpha)
             alpha = standpat;
@@ -619,19 +625,29 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
         MoveInfo moveinfo = position.do_move(move);
         _nodes_searched++;
 
-        Value result = -quiescence_search(position, depth - 1, -beta, -alpha,
-                                        info + 1);
+        Value result = -quiescence_search(position, depth - 1, -(alpha + 1), -alpha, info + 1);
+        if (PV_NODE && alpha < result && result < beta)
+        {
+            result = -quiescence_search(position, depth - 1, -beta, -alpha, info + 1);
+        }
+
         position.undo_move(move, moveinfo);
         LOG_DEBUG("[%d] UNDO MOVE %s score=%ld", info->_ply, position.uci(move).c_str(), result);
 
-        if (result >= beta) EXIT_QSEARCH(beta);
-        if (result > alpha)
+        if (result > bestValue)
         {
-            alpha = result;
+            bestValue = result;
+            if (result > alpha)
+            {
+                add_new_move_to_pv_list(info, move, info + 1);
+                alpha = result;
+                if (result >= beta)
+                    EXIT_QSEARCH(result);
+            }
         }
     }
 
-    EXIT_QSEARCH(alpha);
+    EXIT_QSEARCH(bestValue);
 }
 
 bool Search::check_limits()
