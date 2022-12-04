@@ -212,13 +212,15 @@ void Search::init_search()
 }
 
 void Search::print_info(Value result, int depth, int64_t nodes_searched,
-                        int64_t elapsed, Info* info)
+                        int64_t tb_hits, int64_t elapsed, Info* info)
 {
     sync_cout << "info "
            << "depth " << depth << " "
            << "score " << score2str(result) << " "
            << "nodes " << nodes_searched << " "
            << "nps " << (nodes_searched * 1000 / (elapsed + 1)) << " "
+           << "tbhits " << tb_hits << " "
+           << "hashfull " << _ttable.hashfull() << " "
            << "time " << elapsed << " "
            << "pv ";
     Position temp_position = _position;
@@ -302,8 +304,8 @@ void Search::iter_search()
         {
             Info* realInfo = info + 1;
             assert(realInfo->_pv_list_length > 0);
-            print_info(result, _current_depth, _nodes_searched, elapsed,
-                       realInfo);
+            print_info(result, _current_depth, _nodes_searched,
+                       _tb_hits, elapsed, realInfo);
             _best_move = realInfo->_pv_list[0];
         }
         previous_moves[_current_depth] = _best_move;
@@ -359,6 +361,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     if (found && (entryPtr->second.depth >= depth) &&
         (std::find(begin, end, entryPtr->second.move) != end))
     {
+        _tb_hits++;
         LOG_DEBUG("[%d] CACHE HIT score=%ld depth=%d flag=%d move=%s",
                 info->_ply, entryPtr->second.score, entryPtr->second.depth,
                 static_cast<int>(entryPtr->second.flag),
