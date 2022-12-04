@@ -9,6 +9,7 @@
 #include "types.h"
 
 #include <chrono>
+#include <cstdint>
 
 namespace engine
 {
@@ -39,7 +40,7 @@ class Search
                             Value beta, Info* info);
 
     void print_info(Value score, int depth, int64_t nodes_searched,
-                    int64_t elapsed, Info* info);
+                    int64_t tb_hits, int64_t elapsed, Info* info);
 
     bool check_limits();
 
@@ -58,6 +59,7 @@ class Search
     Move _best_move;
     TimePoint _start_time;
     int64_t _nodes_searched;
+    int64_t _tb_hits;
 
     std::vector<Move> _root_moves;
 
