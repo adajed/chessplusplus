@@ -1,15 +1,17 @@
 #ifndef CHESS_ENGINE_HASHMAP_H_
 #define CHESS_ENGINE_HASHMAP_H_
 
+#include <cstdint>
 #include <vector>
 
 namespace engine
 {
 
-    template <typename Key, typename Value, size_t Size>
+    template <typename Key, typename Value, std::size_t Size>
     class HashMap
     {
         static_assert(!(Size & (Size - 1)), "Size must be a power of 2");
+        static_assert(Size >= 1000, "Size must be >= 1000");
 
         public:
             using Entry = std::pair<Key, Value>;
@@ -32,10 +34,20 @@ namespace engine
 
             void clear()
             {
-                for (size_t i = 0; i < Size; ++i)
+                for (std::size_t i = 0; i < Size; ++i)
                 {
                     data_[i].first = 0ULL;
                 }
+            }
+
+            int32_t hashfull()
+            {
+                int32_t count = 0;
+                for (std::size_t i = 0; i < 1000; ++i)
+                {
+                    count += static_cast<int32_t>(data_[i].first == 0ULL);
+                }
+                return count;
             }
 
         private:
