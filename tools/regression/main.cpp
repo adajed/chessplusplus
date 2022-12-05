@@ -49,7 +49,10 @@ GameResult game(int id, GameParams params)
                           id, params.debug);
 
     engine1.uci();
+    engine1.ucinewgame();
+
     engine2.uci();
+    engine2.ucinewgame();
 
     Timer timers[COLOR_NUM] = {Timer(params.time_format.time_initial_ms,
                                      params.time_format.time_increment_ms),
@@ -159,9 +162,9 @@ int main(int argc, char** argv)
 {
     Args args = parse_args(argc, argv);
 
-    if (args.engines.size() < 2)
+    if (args.engines.size() != 2)
     {
-        std::cerr << "At least 2 engines necessary" << std::endl;
+        std::cerr << "Currently only 2 engines are supported" << std::endl;
         return 1;
     }
 
