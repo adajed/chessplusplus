@@ -1,7 +1,6 @@
 import argparse
 import re
 import time
-from tqdm import tqdm
 
 from db import Database, CHUNK_FIELDS
 
@@ -120,6 +119,7 @@ class Parser:
     def _tryParseUndoMove(self, line):
         if (m := UNDO_MOVE_REGEX.match(line)):
             if (int(m.group(1)) == self._get("ply")):
+                assert(self._moveStack[-1] == m.group(2))
                 self._moveStack.pop()
                 return True
         return False

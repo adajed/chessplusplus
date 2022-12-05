@@ -352,7 +352,6 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     bool is_in_check = position.is_in_check(position.color());
     if (is_in_check) depth++;
 
-
     if (n_moves == 0)
         EXIT_SEARCH(is_in_check ? lost_in((info - 1)->_ply) : VALUE_DRAW);
 
@@ -372,7 +371,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         {
         case tt::Flag::kEXACT:
             set_new_pv_list(info, entryPtr->second.move);
-            return Value(entryPtr->second.score);
+            EXIT_SEARCH(Value(entryPtr->second.score));
         case tt::Flag::kLOWER_BOUND:
             bestValue = entryPtr->second.score;
             alpha = std::max(alpha, entryPtr->second.score);
@@ -427,7 +426,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         {
             // verification search
             LOG_DEBUG("[%d] DO MOVE nullmove alpha=%ld beta=%ld", info->_ply, alpha, beta);
-            result = -search(position, reducedDepth, -beta, -beta + 1, info + 1);
+            result = search(position, reducedDepth, beta - 1, beta, info + 1);
             LOG_DEBUG("[%d] UNDO MOVE nullmove score=%ld", info->_ply, result);
             if (result >= beta)
             {

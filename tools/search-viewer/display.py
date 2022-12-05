@@ -97,8 +97,9 @@ class NodeInfoView(View):
 
 
 class PreviewView(View):
-    def __init__(self, window):
+    def __init__(self, window, negate=False):
         View.__init__(self, window, useBorder=True)
+        self.__setattr__("negate", negate)
         for field in CHUNK_FIELDS:
             self.__setattr__(field, None)
 
@@ -106,17 +107,29 @@ class PreviewView(View):
         for field in CHUNK_FIELDS:
             self.__setattr__(field, chunkInfo[field])
 
+    def tryNegate(self, value):
+        if value is None:
+            return None
+        return -value
+
     def display(self):
         super().display()
+
+        alpha = self.tryNegate(self.beta) if self.negate else self.alpha
+        beta = self.tryNegate(self.alpha) if self.negate else self.beta
+        score = self.tryNegate(self.score) if self.negate else self.score
+        static_eval = self.tryNegate(self.static_eval) if self.negate else self.static_eval
+        cache_score = self.tryNegate(self.cache_score) if self.negate else self.cache_score
+
         if self.fen is not None:
             print_centered(
                 self.window, 1, f"NODE best move : {parseMove(self.fen, self.best_move)}")
             print_centered(
                 self.window, 2, f"ply : {self.ply}  depth : {self.depth}")
             print_centered(
-                self.window, 3, f"alpha = {self.alpha}  beta = {self.beta}")
+                self.window, 3, f"alpha = {alpha}  beta = {beta}")
             print_centered(
-                self.window, 4, f"result = {self.score} position = {self.static_eval}")
+                self.window, 4, f"result = {score} position = {static_eval}")
             if (self.pv_list is not None):
                 pv_list_san = []
                 board = chess.Board(fen=self.fen)
@@ -149,7 +162,7 @@ class PreviewView(View):
                 elif (self.cache_flag == 2):
                     flag = "UPPER BOUND"
                 print_centered(self.window, 18,
-                               f"CACHE Move {parseMove(self.fen, self.cache_move)} Depth {self.cache_depth} Score {self.cache_score} Flag {flag}")
+                               f"CACHE Move {parseMove(self.fen, self.cache_move)} Depth {self.cache_depth} Score {cache_score} Flag {flag}")
 
 
 class MenuView(View):
@@ -207,9 +220,9 @@ class Display(View):
 
         self.__logBarView = LogBarView(log_bar)
         self.__topBarView = TopBarView(top_bar)
-        self.__nodeInfoView = PreviewView(top_window)
+        self.__nodeInfoView = PreviewView(top_window, negate=False)
         self.__menuView = MenuView(menu_window, useIndex=True)
-        self.__previewView = PreviewView(bottom_window)
+        self.__previewView = PreviewView(bottom_window, negate=True)
 
         # self.loading_panel = panel.new_panel(self.window)
         # self.panel.hide()
