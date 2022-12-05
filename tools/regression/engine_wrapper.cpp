@@ -21,6 +21,7 @@
         if (!getline_fd(out_stream_, msg))                                  \
         {                                                                   \
             std::cerr << "ERROR: EOF while reading " << NAME << std::endl;  \
+            std::exit(-1);                                                  \
         }                                                                   \
         if (debug_)                                                         \
         {                                                                   \
@@ -93,9 +94,7 @@ EngineWrapper::EngineWrapper(const std::string& command,
 void EngineWrapper::uci()
 {
     std::string message = "";
-
     SEND("uci");
-
     do
     {
         READ(message);
@@ -104,12 +103,19 @@ void EngineWrapper::uci()
 
 void EngineWrapper::ucinewgame()
 {
+    std::string message = "";
     SEND("ucinewgame");
+    SEND("isready");
+    do
+    {
+        READ(message);
+    } while (message != "readyok");
 }
 
 void EngineWrapper::position(const std::string& fen,
                              const std::vector<Move>& moves)
 {
+    std::string message = "";
     position_ = Position(fen);
 
     std::string command = "position";
@@ -133,6 +139,11 @@ void EngineWrapper::position(const std::string& fen,
     }
 
     SEND(command);
+    SEND("isready");
+    do
+    {
+        READ(message);
+    } while (message != "readyok");
 }
 
 void EngineWrapper::quit()
