@@ -31,7 +31,7 @@ struct TTEntry
     Move move;
 };
 
-using TTable = HashMap<uint64_t, TTEntry, 1024 * 1024>;
+using TTable = HashMap<uint64_t, TTEntry, 4 * 1024 * 1024>;
 
 }  // namespace tt
 }  // namespace engine
