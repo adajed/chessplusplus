@@ -47,7 +47,10 @@ coverage: test_debug
 	genhtml coverage.info --output-directory coverage --demangle-cpp
 
 compiledb:
-	compiledb -n make
+	compiledb -o build/compile_commands.json -n make
+	compdb -p build list >compile_commands.json
+	@rm build/compile_commands.json
+
 
 help:
 	@echo "Available commands:"
