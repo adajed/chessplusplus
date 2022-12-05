@@ -45,7 +45,7 @@ namespace engine
                 int32_t count = 0;
                 for (std::size_t i = 0; i < 1000; ++i)
                 {
-                    count += static_cast<int32_t>(data_[i].first == 0ULL);
+                    count += static_cast<int32_t>(data_[i].first != 0ULL);
                 }
                 return count;
             }
