@@ -353,7 +353,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     if (is_in_check) depth++;
 
     if (n_moves == 0)
-        EXIT_SEARCH(is_in_check ? lost_in((info - 1)->_ply) : VALUE_DRAW);
+        EXIT_SEARCH(is_in_check ? lost_in(info->_ply) : VALUE_DRAW);
 
     Value bestValue = -VALUE_INFINITE;
     bool found = false;
