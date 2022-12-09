@@ -9,7 +9,7 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" "RelWithDebInfo")
 set(LOG_LEVEL 0 CACHE STRING "Logging level")
 
-add_compile_options(-Wall -Wextra -pedantic -Werror -flto)
+add_compile_options(-Wall -Wextra -pedantic -Werror -flto -march=native -mtune=native)
 add_compile_options("-DLOG_LEVEL=${LOG_LEVEL}")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
