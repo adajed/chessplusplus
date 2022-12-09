@@ -316,7 +316,7 @@ Pin* generate_pins(const Position& pos, Pin* list, Bitboard* pinned_bb)
 
 template <Color side>
 Move* generate_pinned_pawn_moves(Square from, Ray ray, const Position& pos,
-                                 Bitboard target, Move* list)
+                                 Bitboard /* target */, Move* list)
 {
     const Direction UP = side == WHITE ? NORTH : SOUTH;
     const Direction DOUBLEUP = Direction(UP + UP);
@@ -333,30 +333,30 @@ Move* generate_pinned_pawn_moves(Square from, Ray ray, const Position& pos,
         case 0:
             if (shift<UPLEFT>(square_bb(from)) & pos.pieces(!side))
             {
-                *list++ = create_promotion(from, Square(from + UPLEFT), QUEEN);
-                *list++ = create_promotion(from, Square(from + UPLEFT), ROOK);
-                *list++ = create_promotion(from, Square(from + UPLEFT), KNIGHT);
-                *list++ = create_promotion(from, Square(from + UPLEFT), BISHOP);
+                *list++ = create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UPLEFT)), QUEEN);
+                *list++ = create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UPLEFT)), ROOK);
+                *list++ = create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UPLEFT)), KNIGHT);
+                *list++ = create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UPLEFT)), BISHOP);
             }
             break;
         case 1:
             if (shift<UP>(square_bb(from)) & ~pos.pieces())
             {
-                *list++ = create_promotion(from, Square(from + UP), QUEEN);
-                *list++ = create_promotion(from, Square(from + UP), ROOK);
-                *list++ = create_promotion(from, Square(from + UP), KNIGHT);
-                *list++ = create_promotion(from, Square(from + UP), BISHOP);
+                *list++ = create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UP)), QUEEN);
+                *list++ = create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UP)), ROOK);
+                *list++ = create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UP)), KNIGHT);
+                *list++ = create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UP)), BISHOP);
             }
             break;
         case 2:
             if (shift<UPRIGHT>(square_bb(from)) & pos.pieces(!side))
             {
-                *list++ = create_promotion(from, Square(from + UPRIGHT), QUEEN);
-                *list++ = create_promotion(from, Square(from + UPRIGHT), ROOK);
+                *list++ = create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UPRIGHT)), QUEEN);
+                *list++ = create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UPRIGHT)), ROOK);
                 *list++ =
-                    create_promotion(from, Square(from + UPRIGHT), KNIGHT);
+                    create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UPRIGHT)), KNIGHT);
                 *list++ =
-                    create_promotion(from, Square(from + UPRIGHT), BISHOP);
+                    create_promotion(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UPRIGHT)), BISHOP);
             }
             break;
         }
@@ -367,19 +367,19 @@ Move* generate_pinned_pawn_moves(Square from, Ray ray, const Position& pos,
         {
         case 0:
             if (shift<UPLEFT>(square_bb(from)) & pos.pieces(!side))
-                *list++ = create_move(from, Square(from + UPLEFT));
+                *list++ = create_move(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UPLEFT)));
             break;
         case 1:
             if (shift<UP>(square_bb(from)) & ~pos.pieces())
             {
-                *list++ = create_move(from, Square(from + UP));
+                *list++ = create_move(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UP)));
                 if (shift<DOUBLEUP>(square_bb(from) & rank2_bb) & ~pos.pieces())
-                    *list++ = create_move(from, Square(from + UP + UP));
+                    *list++ = create_move(from, Square(static_cast<uint64_t>(from) + 2 * static_cast<uint64_t>(UP)));
             }
             break;
         case 2:
             if (shift<UPRIGHT>(square_bb(from)) & pos.pieces(!side))
-                *list++ = create_move(from, Square(from + UPRIGHT));
+                *list++ = create_move(from, Square(static_cast<uint64_t>(from) + static_cast<uint64_t>(UPRIGHT)));
             break;
         }
     }

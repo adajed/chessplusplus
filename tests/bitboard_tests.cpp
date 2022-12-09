@@ -51,8 +51,8 @@ TEST(Bitboard, forward_ranks_bb)
         for (int file = 0; file < 8; file++)
         {
             Square sq = make_square(Rank(rank), File(file));
-            check_bb(forward_ranks_bb<WHITE>(sq), [rank](int x, int y){return x > rank;});
-            check_bb(forward_ranks_bb<BLACK>(sq), [rank](int x, int y){return x < rank;});
+            check_bb(forward_ranks_bb<WHITE>(sq), [rank](int x, int /* y */){return x > rank;});
+            check_bb(forward_ranks_bb<BLACK>(sq), [rank](int x, int /* y */){return x < rank;});
         }
     }
 }
@@ -215,8 +215,8 @@ TEST(Bitboard, pseudoattacks_BISHOP)
             if (rank(sq) == x && file(sq) == y)
                 return false;
 
-            int c1 = rank(sq) - file(sq);
-            int c2 = rank(sq) + file(sq);
+            int c1 = static_cast<int>(rank(sq)) - static_cast<int>(file(sq));
+            int c2 = static_cast<int>(rank(sq)) + static_cast<int>(file(sq));
             return ((x - y) == c1 || (x + y) == c2);
         };
 
@@ -234,8 +234,8 @@ TEST(Bitboard, pseudoattacks_QUEEN)
             if (rank(sq) == x && file(sq) == y)
                 return false;
 
-            int c1 = rank(sq) - file(sq);
-            int c2 = rank(sq) + file(sq);
+            int c1 = static_cast<int>(rank(sq)) - static_cast<int>(file(sq));
+            int c2 = static_cast<int>(rank(sq)) + static_cast<int>(file(sq));
             return ((x - y) == c1 || (x + y) == c2 || x == rank(sq) || y == file(sq));
         };
 

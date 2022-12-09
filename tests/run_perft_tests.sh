@@ -2,30 +2,10 @@
 
 trap "{ exit 255; }" INT
 
-print_usage_and_exit()
-{
-    echo "Usage: $0 release|debug"
-    exit 1
-}
-
-if [ "$#" -ne 1 ]
-then
-    print_usage_and_exit
-fi
-
-BUILD_TYPE=$1
-
-if [ "$1" == "release" ]
-then
-    PROGRAM="./build/chessplusplus"
-elif [ "$1" == "debug" ]
-then
-    PROGRAM="./build/chessplusplus_debug"
-else
-    print_usage_and_exit
-fi
+PROGRAM="./build/chessplusplus"
 
 run_perft_test()
+
 {
     fen=$1
     depth=$2

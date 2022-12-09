@@ -1,10 +1,10 @@
 #include "uci.h"
 
+#include <thread>
+
 #include "logger.h"
 #include "transposition_table.h"
-
-#include <bits/stdint-uintn.h>
-#include <thread>
+#include "chessplusplusConfig.h"
 
 namespace engine
 {
@@ -78,10 +78,10 @@ void Uci::loop()
     }
 }
 
-bool Uci::uci_command(std::istringstream& istream)
+bool Uci::uci_command(std::istringstream& /* istream */)
 {
     sync_cout << "id name " << ENGINE_NAME << " "
-              << VERSION_MAJOR << "." << VERSION_MINOR << "." << VERSION_PATCH << sync_endl;
+              << CHESSPLUSPLUS_VERSION << sync_endl;
     sync_cout << "id author Adam Jedrych" << sync_endl;
     sync_cout << sync_endl;
 
@@ -119,7 +119,7 @@ bool Uci::uci_command(std::istringstream& istream)
     return true;
 }
 
-bool Uci::ucinewgame_command(std::istringstream& istream)
+bool Uci::ucinewgame_command(std::istringstream& /* istream */)
 {
     position = Position();
     scorer.clear();
@@ -127,7 +127,7 @@ bool Uci::ucinewgame_command(std::istringstream& istream)
     return true;
 }
 
-bool Uci::isready_command(std::istringstream& istream)
+bool Uci::isready_command(std::istringstream& /* istream */)
 {
     sync_cout << "readyok" << sync_endl;
     return true;
@@ -207,7 +207,7 @@ bool Uci::position_command(std::istringstream& istream)
     return true;
 }
 
-bool Uci::staticeval_command(std::istringstream& istream)
+bool Uci::staticeval_command(std::istringstream& /* istream */)
 {
     sync_cout << position << std::endl << std::endl;
 
@@ -286,31 +286,31 @@ bool Uci::go_command(std::istringstream& istream)
     return true;
 }
 
-bool Uci::stop_command(std::istringstream& istream)
+bool Uci::stop_command(std::istringstream& /* istream */)
 {
     if (search) search->stop();
     return true;
 }
 
-bool Uci::ponderhit_command(std::istringstream& istream)
+bool Uci::ponderhit_command(std::istringstream& /* istream */)
 {
     return true;
 }
 
-bool Uci::quit_command(std::istringstream& istream)
+bool Uci::quit_command(std::istringstream& /* istream */)
 {
     if (search) search->stop();
     quit = true;
     return true;
 }
 
-bool Uci::printboard_command(std::istringstream& istream)
+bool Uci::printboard_command(std::istringstream& /* istream */)
 {
     sync_cout << position << sync_endl;
     return true;
 }
 
-bool Uci::hash_command(std::istringstream& istream)
+bool Uci::hash_command(std::istringstream& /* istream */)
 {
     sync_cout << "Hex: " << std::hex << position.hash() << std::dec
               << sync_endl;

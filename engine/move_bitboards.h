@@ -91,7 +91,7 @@ extern Bitboard BISHOP_TABLE[SQUARE_NUM][4096];
 void init_move_bitboards();
 
 template <PieceKind piece>
-inline Bitboard slider_attack(Square sq, Bitboard blockers)
+inline Bitboard slider_attack(Square /* sq */, Bitboard /* blockers */)
 {
     assert(false);
     return 0ULL;

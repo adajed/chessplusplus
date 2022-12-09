@@ -2,28 +2,7 @@
 
 trap "{ exit 255; }" INT
 
-print_usage_and_exit()
-{
-    echo "Usage: $0 release|debug"
-    exit 1
-}
-
-if [ "$#" -ne 1 ]
-then
-    print_usage_and_exit
-fi
-
-BUILD_TYPE=$1
-
-if [ "$1" == "release" ]
-then
-    PROGRAM="./build/chessplusplus"
-elif [ "$1" == "debug" ]
-then
-    PROGRAM="./build/chessplusplus_debug"
-else
-    print_usage_and_exit
-fi
+PROGRAM="./build/chessplusplus"
 
 run_search_test()
 {
@@ -41,7 +20,7 @@ run_search_test()
     fi
 }
 
-expect tests/scripts/uci.exp ${PROGRAM} ${WEIGHTS_PATH} >/dev/null
+expect tests/scripts/uci.exp ${PROGRAM} >/dev/null
 
 NUMBER_OF_SEARCH_TESTS=0
 SEARCH_TESTS_PASSED=0
