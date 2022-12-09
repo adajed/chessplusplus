@@ -147,9 +147,9 @@ GameResult game(int id, GameParams params)
 
         ss << "{ ";
         if (!std::get<0>(moves_info[i]))
-            ss << "[\%eval " << std::get<2>(moves_info[i]) << "] ";
+            ss << "[%eval " << std::get<2>(moves_info[i]) << "] ";
 
-        ss << "[\%clk " << std::get<1>(moves_info[i]) << "] } ";
+        ss << "[%clk " << std::get<1>(moves_info[i]) << "] } ";
 
         temp_position.do_move(moves[i]);
     }

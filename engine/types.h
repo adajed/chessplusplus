@@ -196,7 +196,7 @@ constexpr File file(Square sq)
 constexpr Color sq_color(Square sq)
 {
     ASSERT(sq != NO_SQUARE);
-    return (rank(sq) + file(sq)) % 2 ? WHITE : BLACK;
+    return (static_cast<int>(rank(sq)) + static_cast<int>(file(sq))) % 2 ? WHITE : BLACK;
 }
 
 constexpr Square make_square(Rank rank, File file)

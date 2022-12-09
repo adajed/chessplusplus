@@ -5,7 +5,7 @@
 
 using namespace engine;
 
-int main(int argc, char** argv)
+int main()
 {
     init_move_bitboards();
     init_zobrist();

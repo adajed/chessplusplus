@@ -18,7 +18,7 @@
 namespace engine
 {
 
-int late_move_reduction(int depth, int move_number)
+int late_move_reduction(int /* depth */, int move_number)
 {
     move_number = std::min(move_number, 64);
     return static_cast<int>(std::floor(1 + std::log(move_number)));
@@ -85,7 +85,7 @@ void update_move_scores(const Position& position, Move move, Info* info,
         add_bonus(&(*(info-1)->_counter_move)[moved_piece][to_sq], bonus);
 }
 
-Value compute_search_delta(Move *previous_best_moves, int current_depth, Value current_score)
+Value compute_search_delta(Move *previous_best_moves, int current_depth, Value /* current_score */)
 {
     int no_times_move_repeated = 0;
     for (int i = current_depth - 1; i > 0; i--)

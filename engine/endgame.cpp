@@ -57,24 +57,24 @@ struct SandboxPCV
 template <>
 struct SandboxPCV<kKPK> {
     static constexpr PieceCountVector pcv[COLOR_NUM] = {
-        [WHITE] = create_pcv(1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
-        [BLACK] = create_pcv(0, 0, 0, 0, 0, 1, 0, 0, 0, 0)
+        create_pcv(1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+        create_pcv(0, 0, 0, 0, 0, 1, 0, 0, 0, 0)
     };
 };
 
 template <>
 struct SandboxPCV<kKNBK> {
     static constexpr PieceCountVector pcv[COLOR_NUM] = {
-        [WHITE] = create_pcv(0, 1, 1, 0, 0, 0, 0, 0, 0, 0),
-        [BLACK] = create_pcv(0, 0, 0, 0, 0, 0, 1, 1, 0, 0)
+        create_pcv(0, 1, 1, 0, 0, 0, 0, 0, 0, 0),
+        create_pcv(0, 0, 0, 0, 0, 0, 1, 1, 0, 0)
     };
 };
 
 template <>
 struct SandboxPCV<kKQKR> {
     static constexpr PieceCountVector pcv[COLOR_NUM] = {
-        [WHITE] = create_pcv(0, 0, 0, 0, 1, 0, 0, 0, 1, 0),
-        [BLACK] = create_pcv(0, 0, 0, 1, 0, 0, 0, 0, 0, 1)
+        create_pcv(0, 0, 0, 0, 1, 0, 0, 0, 1, 0),
+        create_pcv(0, 0, 0, 1, 0, 0, 0, 0, 0, 1)
     };
 };
 
@@ -118,7 +118,7 @@ Value Endgame<kKNBK>::score(const Position& position) const
 {
     Square weakKing = position.piece_position(make_piece(weakSide, KING), 0);
     Square bishop = position.piece_position(make_piece(strongSide, BISHOP), 0);
-    Color bishopColor = (rank(bishop) + file(bishop)) & 1 ? WHITE : BLACK;
+    Color bishopColor = (static_cast<int>(rank(bishop)) + static_cast<int>(file(bishop))) & 1 ? WHITE : BLACK;
 
     Square kingSquare =
         bishopColor == WHITE ? flip_vertically(weakKing) : weakKing;

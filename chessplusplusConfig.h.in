@@ -1,0 +1,6 @@
+#define ENGINE_NAME "@PROJECT_NAME@"
+#define CHESSPLUSPLUS_VERSION "@chessplusplus_VERSION@"
+#define CHESSPLUSPLUS_MAJOR @chessplusplus_MAJOR@
+#define CHESSPLUSPLUS_MINOR @chessplusplus_MINOR@
+#define CHESSPLUSPLUS_PATCH @chessplusplus_PATCH@
+#define CHESSPLUSPLUS_TWEAK @chessplusplus_TWEAK@
