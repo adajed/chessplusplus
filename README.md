@@ -6,35 +6,16 @@
 
 ## Building
 
-### All targets
-`make -j8`
-
-### Build only engine
-Release mode:
-`make engine -j8`
-
-Debug mode:
-`make engine_debug -j8`
-
-### Build tools (regression)
-Release mode:
-`make tools -j8`
-
-Debug mode:
-`make tools_debug`
-
-### Build tests
-Tests require Google Test
-
-Release mode:
-`make test -j8`
-
-Debug mode:
-`make test_debug -j8`
+```
+mkdir build
+cd build
+cmake ..
+make chessplusplus -j8
+```
 
 ### LOG\_LEVEL
 To add additional logs during runtime:
-`make LOG_LEVEL=2 -j8`
+`cmake -DLOG_LEVEL=2 ..`
 
 LEVELS:
 - 0 - No logging.
