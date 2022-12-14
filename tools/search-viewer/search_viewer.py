@@ -38,7 +38,7 @@ def run(display: Display, database: Database, chunk_id: int) -> None:
 
     move_order = dict()
     if chunk["move_order"] is not None:
-        for m in re.findall(r"\((\w+),(\w+)\)", chunk["move_order"]):
+        for m in re.findall(r"\(([a-h][1-8][a-h][1-8][nbrq]?),(-?\d+)\)", chunk["move_order"]):
             move_order[m[0]] = int(m[1])
 
     child_ids = list(map(lambda p: p[0], database.select_child_ids(chunk_id)))
