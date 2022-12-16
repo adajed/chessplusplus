@@ -177,7 +177,6 @@ int main(int argc, char** argv)
 
     PolyglotBook polyglot(args.polyglot, args.seed);
     GameParams params(args.engines[0], args.engines[1], args.debug);
-    params.time_format = args.time_format;
 
     std::map<std::string, double> points;
     points[args.engines[0].name] = 0.0;
@@ -185,39 +184,46 @@ int main(int argc, char** argv)
     points[DRAW_NAME] = 0.0;
 
     ctpl::thread_pool p(args.num_threads);
-    std::vector<std::future<GameResult>> results(args.num_games);
+    std::vector<std::future<GameResult>> results(args.getTotalNumGames());
     std::vector<GameParams> gameParams;
     std::set<OpeningLine> openingLines;
 
-    for (int i = 0; i < args.num_games; ++i)
+    int gameCounter = 0;
+    for (const auto& format : args.game_format)
     {
-        if (!args.repeat || i % 2 == 0)
+        params.time_format = format.first;
+        int numGames = format.second;
+
+        for (int i = 0; i < numGames; ++i)
         {
-            do
+            if (!args.repeat || i % 2 == 0)
             {
-                params.intial_moves.clear();
-                Position position;
-                uint64_t hash = PolyglotBook::hash(position);
-                int depth = 0;
-                while (depth < args.book_depth && polyglot.contains(hash))
+                do
                 {
-                    Move move = polyglot.sample_move(hash, position);
-                    position.do_move(move);
-                    params.intial_moves.push_back(move);
-                    hash = PolyglotBook::hash(position);
-                    depth++;
-                }
-            } while (openingLines.find(params.intial_moves) != openingLines.end());
-            openingLines.insert(params.intial_moves);
+                    params.intial_moves.clear();
+                    Position position;
+                    uint64_t hash = PolyglotBook::hash(position);
+                    int depth = 0;
+                    while (depth < args.book_depth && polyglot.contains(hash))
+                    {
+                        Move move = polyglot.sample_move(hash, position);
+                        position.do_move(move);
+                        params.intial_moves.push_back(move);
+                        hash = PolyglotBook::hash(position);
+                        depth++;
+                    }
+                } while (openingLines.find(params.intial_moves) != openingLines.end());
+                openingLines.insert(params.intial_moves);
+            }
+
+            gameParams.push_back(params);
+            results[gameCounter++] = p.push(game, params);
+
+            std::swap(params.engine_white, params.engine_black);
         }
-
-        gameParams.push_back(params);
-        results[i] = p.push(game, params);
-
-        std::swap(params.engine_white, params.engine_black);
     }
 
-    for (int i = 0; i < args.num_games; ++i)
+    for (int i = 0; i < args.getTotalNumGames(); ++i)
     {
         GameResult gameResult = results[i].get();
 

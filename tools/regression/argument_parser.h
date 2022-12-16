@@ -22,8 +22,7 @@ struct Args
 {
     Args()
         : engines(),
-          time_format{300000, 3000},
-          num_games(1),
+          game_format({{TimeFormat{300000, 3000}, 1}}),
           debug(false),
           repeat(false),
           polyglot(""),
@@ -34,9 +33,18 @@ struct Args
     {
     }
 
+    int getTotalNumGames() const
+    {
+        int total = 0;
+        for (const auto& p : game_format)
+        {
+            total += p.second;
+        }
+        return total;
+    }
+
     std::vector<EngineParams> engines;
-    TimeFormat time_format;
-    int num_games;
+    std::vector<std::pair<TimeFormat, int>> game_format;
     bool debug;
     bool repeat;
     std::string polyglot;
@@ -46,7 +54,37 @@ struct Args
     size_t seed;
 };
 
-Args parse_args(int argc, char** argv)
+std::pair<TimeFormat, int> parse_single_time_format(std::string str)
+{
+    size_t pos = str.find(":");
+    std::string time_str = str.substr(0, pos);
+    int num_games = std::stoi(str.substr(pos + 1));
+
+    pos = time_str.find("+");
+    int time_initial_ms = std::stoi(time_str.substr(0, pos)) * 60 * 1000;
+    int time_increment_ms = std::stoi(time_str.substr(pos + 1)) * 1000;
+
+    return {TimeFormat{time_initial_ms, time_increment_ms}, num_games};
+}
+
+std::vector<std::pair<TimeFormat, int>> parse_game_format(std::string str)
+{
+    std::vector<std::pair<TimeFormat, int>> result;
+
+    size_t pos = 0;
+    std::string token;
+    while ((pos = str.find(",")) != std::string::npos)
+    {
+        token = str.substr(0, pos);
+        result.push_back(parse_single_time_format(token));
+        str.erase(0, pos + 1);
+    }
+    result.push_back(parse_single_time_format(str));
+
+    return result;
+}
+
+inline Args parse_args(int argc, char** argv)
 {
     std::vector<std::string> tokens;
     for (int i = 0; i < argc; ++i)
@@ -60,8 +98,7 @@ Args parse_args(int argc, char** argv)
 
         std::cout << "Options:" << std::endl;
         std::cout << "\t--engine [engineOption [engineOption ...]] - Adds new engine with given parameters to regression" << std::endl;
-        std::cout << "\t--time - Time format: <intial_time in minutes>:<increment in seconds> (default: 5+3)" << std::endl;
-        std::cout << "\t--numgames - Number of games to run (default: 1)" << std::endl;
+        std::cout << "\t--format - Format of games played: time:numgames[,time:numgames[,..]] (default: 5+3:1)" << std::endl;
         std::cout << "\t--threads - Number of threads to use (default: 1)" << std::endl;
         std::cout << "\t--pgn - Path to PGN files where games will be saved (default: games.pgn)" << std::endl;
         std::cout << "\t--polyglot - Path to polyglot book used for openings (default: not used)" << std::endl;
@@ -109,22 +146,11 @@ Args parse_args(int argc, char** argv)
 
             args.engines.push_back(params);
         }
-        else if (tokens[pos] == "--time" || tokens[pos] == "-t")
+        else if (tokens[pos] == "--format" || tokens[pos] == "-f")
         {
             pos++;
-            size_t idx = tokens[pos].find("+");
-            TimeFormat time_format;
-            time_format.time_initial_ms =
-                std::stoi(tokens[pos].substr(0, idx)) * 60000;
-            time_format.time_increment_ms =
-                std::stoi(tokens[pos].substr(idx + 1)) * 1000;
-            args.time_format = time_format;
+            args.game_format = parse_game_format(tokens[pos]);
             pos++;
-        }
-        else if (tokens[pos] == "--numgames" || tokens[pos] == "-n")
-        {
-            pos++;
-            args.num_games = std::stoi(tokens[pos++]);
         }
         else if (tokens[pos] == "--threads")
         {
