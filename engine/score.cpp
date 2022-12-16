@@ -491,12 +491,12 @@ Score PositionScorer::score_pawns(const Position& position)
 
     if (found)
     {
-        return entry->second;
+        return entry->value;
     }
 
     Score score = score_pawns_for_side<WHITE>(position) -
                   score_pawns_for_side<BLACK>(position);
-    *entry = std::make_pair(key, score);
+    _pawn_hash_table.insert(key, score);
     return score;
 }
 
