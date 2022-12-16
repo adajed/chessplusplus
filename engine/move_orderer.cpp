@@ -4,25 +4,67 @@
 
 namespace engine
 {
-// bonus for caputure
+
+constexpr int PV_SCORE = 2'000'000;
+constexpr int CAPTURE_SCORE = PV_SCORE - 50;
+constexpr int PROMOTION_SCORE = CAPTURE_SCORE - 10;
+constexpr int KILLER_1_SCORE = PROMOTION_SCORE - 1;
+constexpr int KILLER_2_SCORE = KILLER_1_SCORE - 1;
+constexpr int MAX_QUIET_SCORE = KILLER_2_SCORE - 1;
+
+static_assert(CAPTURE_SCORE < PV_SCORE);
+static_assert(PROMOTION_SCORE < CAPTURE_SCORE);
+static_assert(KILLER_1_SCORE < PROMOTION_SCORE);
+static_assert(KILLER_2_SCORE < KILLER_1_SCORE);
+static_assert(MAX_QUIET_SCORE < KILLER_2_SCORE);
+
+// bonus for capture
 // first dim is PieceKind of captured piece
 // second dim is PieceKind of capturing piece
-const uint32_t CAPTURE_BONUS[PIECE_KIND_NUM][PIECE_KIND_NUM] = {
+/**
+ * @brief Bonus to order captures correctly.
+ * First consider captures where we gain material.
+ * Second consider captures of equal value.
+ * Third consider captures where we lose material.
+ * Inside each case we order by MVV-LVA
+ */
+const int CAPTURE_BONUS[PIECE_KIND_NUM][PIECE_KIND_NUM] = {
     {},
-    {0, 6, 5, 4, 3, 2, 1},  // captured pawn
-    {0, 12, 11, 10, 9, 8, 7},  // captured knight
-    {0, 18, 17, 16, 15, 14, 13},  // captured bishop
-    {0, 24, 23, 22, 21, 20, 19},  // captured rook
-    {0, 30, 29, 28, 27, 26, 25},  // captured queen
+    //   p,  n,  b,  r,  q,  k
+    {0, 14,  4,  3,  2,  1,  0},  // captured pawn
+    {0, 21, 16, 15,  7,  6,  5},  // captured knight
+    {0, 22, 18, 17, 10,  9,  8},  // captured bishop
+    {0, 25, 24, 23, 19, 12, 11},  // captured rook
+    {0, 29, 28, 27, 26, 20, 13},  // captured queen
     {}};
 
-// bonus for promotion
-const uint32_t PROMOTION_BONUS[PIECE_KIND_NUM] = {0, 0,
-                                                  1,  // knight
-                                                  2,  // bishop
-                                                  3,  // rook
-                                                  4,  // queen
-                                                  0};
+/**
+ * @brief Orders PieceKind by most value.
+ */
+constexpr int mostValue(PieceKind pieceKind)
+{
+    return static_cast<int>(pieceKind);
+}
+
+static_assert(mostValue(KING) == mostValue(QUEEN) + 1);
+static_assert(mostValue(QUEEN) == mostValue(ROOK) + 1);
+static_assert(mostValue(ROOK) == mostValue(BISHOP) + 1);
+static_assert(mostValue(BISHOP) == mostValue(KNIGHT) + 1);
+static_assert(mostValue(KNIGHT) == mostValue(PAWN) + 1);
+
+/**
+ * @brief Orders PieceKind by least value.
+ */
+constexpr int leastValue(PieceKind pieceKind)
+{
+    return mostValue(KING) - mostValue(pieceKind) + 1;
+}
+
+static_assert(leastValue(PAWN) == leastValue(KNIGHT) + 1);
+static_assert(leastValue(KNIGHT) == leastValue(BISHOP) + 1);
+static_assert(leastValue(BISHOP) == leastValue(ROOK) + 1);
+static_assert(leastValue(ROOK) == leastValue(QUEEN) + 1);
+static_assert(leastValue(QUEEN) == leastValue(KING) + 1);
 
 MoveOrderer::MoveOrderer(tt::TTable& ttable, HistoryScore& historyScore)
     : _scores(), _pos(0), _ttable(ttable), _history_score(historyScore)
@@ -35,14 +77,16 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
     Move pvMove = NO_MOVE;
     bool found = false;
     const auto entryPtr = _ttable.probe(position.hash(), found);
-    if (found) pvMove = entryPtr->second.move;
+    if (found) pvMove = entryPtr->value.move;
 
     int n_moves = static_cast<int>(end - begin);
 
     // score moves
-    for (int i = 0; i < n_moves; ++i)
+    int i = 0;
+    for (Move* it = begin; it != end; ++it, ++i)
     {
-        Move move = begin[i];
+        Move move = *it;
+        _scores[i] = 0;
 
         Castling c = castling(move);
         Piece moved_piece = c == NO_CASTLING ? position.piece_at(from(move)) : NO_PIECE;
@@ -50,20 +94,35 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
         PieceKind promotion_piece = promotion(move);
 
         if (move == pvMove)
-            _scores[i] = 1000000;
-        else if (captured_piece != NO_PIECE_KIND)
-            _scores[i] = 30000 + CAPTURE_BONUS[captured_piece][make_piece_kind(moved_piece)];
+            _scores[i] = PV_SCORE;
+        else if (captured_piece != NO_PIECE_KIND && promotion_piece == NO_PIECE_KIND)
+        {
+            // consider last move (re)captures first
+            if (to(move) == to((info - 1)->_current_move))
+            {
+                _scores[i] = CAPTURE_SCORE + 40 + leastValue(make_piece_kind(moved_piece));
+            }
+            else
+            {
+                _scores[i] = CAPTURE_SCORE + CAPTURE_BONUS[captured_piece][make_piece_kind(moved_piece)];
+            }
+            ASSERT(_scores[i] < PV_SCORE);
+        }
         else if (promotion_piece != NO_PIECE_KIND)
-            _scores[i] = 29000 + PROMOTION_BONUS[promotion_piece];
+        {
+            _scores[i] = PROMOTION_SCORE + mostValue(promotion_piece);
+            ASSERT(_scores[i] < CAPTURE_SCORE);
+        }
         else if (move == info->_killer_moves[0])
-            _scores[i] = 28000;
+            _scores[i] = KILLER_1_SCORE;
         else if (move == info->_killer_moves[1])
-            _scores[i] = 27000;
+            _scores[i] = KILLER_2_SCORE;
         else
         {
             int h = _history_score[position.color()][from(move)][to(move)];
             int c = (*(info-1)->_counter_move)[moved_piece][to(move)];
-            _scores[i] = std::min(h + c, 26999);
+            _scores[i] = std::min(h + c, MAX_QUIET_SCORE);
+            ASSERT(_scores[i] < KILLER_2_SCORE);
         }
     }
 
