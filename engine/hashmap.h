@@ -14,44 +14,54 @@ namespace engine
         static_assert(Size >= 1000, "Size must be >= 1000");
 
         public:
-            using Entry = std::pair<Key, Value>;
+            struct Entry
+            {
+                Key key;
+                uint32_t epoch;
+                Value value;
+            };
 
             HashMap() { }
 
-            Value* operator[] (const Key& key) { return &data_[key & (Size - 1)].second; }
+            Value* operator[] (const Key& key) { return &data_[key & (Size - 1)].value; }
 
             Entry* probe(const Key& key, bool& found)
             {
                 Entry* entry = &data_[key & (Size - 1)];
-                found = (entry->first == key);
+                found = (entry->key == key);
                 return entry;
             }
 
             void insert(const Key& key, const Value& value)
             {
-                data_[key & (Size - 1)] = std::make_pair(key, value);
+                data_[key & (Size - 1)] = Entry{key, epoch_, value};
             }
 
             void clear()
             {
                 for (std::size_t i = 0; i < Size; ++i)
                 {
-                    data_[i].first = 0ULL;
+                    data_[i].key = 0ULL;
                 }
             }
 
-            int32_t hashfull()
+            int32_t hashfull() const
             {
                 int32_t count = 0;
                 for (std::size_t i = 0; i < 1000; ++i)
                 {
-                    count += static_cast<int32_t>(data_[i].first != 0ULL);
+                    count += static_cast<int32_t>(data_[i].epoch == epoch_);
                 }
                 return count;
             }
 
+            void updateEpoch(uint32_t amount) { epoch_ += amount; }
+
+            bool isCurrentEpoch(uint32_t epoch) const { return epoch == epoch_; }
+
         private:
             std::vector<Entry> data_ = std::vector<Entry>(Size);
+            uint32_t epoch_ = 0;
     };
 }
 

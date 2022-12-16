@@ -358,8 +358,8 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     Value bestValue = -VALUE_INFINITE;
     bool found = false;
     const auto entryPtr = _ttable.probe(position.hash(), found);
-    if (found && (entryPtr->second.depth >= depth) &&
-        (std::find(begin, end, entryPtr->second.move) != end))
+    if (found && (entryPtr->value.depth >= depth) &&
+        (std::find(begin, end, entryPtr->value.move) != end))
     {
         _tb_hits++;
         LOG_DEBUG("[%d] CACHE HIT score=%ld depth=%d flag=%d move=%s",
@@ -367,23 +367,28 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
                 static_cast<int>(entryPtr->second.flag),
                 position.uci(entryPtr->second.move).c_str());
 
-        switch (entryPtr->second.flag)
+        const bool allowCutoff = !PV_NODE || _ttable.isCurrentEpoch(entryPtr->epoch);
+
+        if (allowCutoff)
         {
-        case tt::Flag::kEXACT:
-            set_new_pv_list(info, entryPtr->second.move);
-            EXIT_SEARCH(Value(entryPtr->second.score));
-        case tt::Flag::kLOWER_BOUND:
-            bestValue = entryPtr->second.score;
-            alpha = std::max(alpha, entryPtr->second.score);
-            break;
-        case tt::Flag::kUPPER_BOUND:
-            beta = std::min(beta, entryPtr->second.score);
-            break;
+            switch (entryPtr->value.flag)
+            {
+            case tt::Flag::kEXACT:
+                set_new_pv_list(info, entryPtr->value.move);
+                EXIT_SEARCH(Value(entryPtr->value.score));
+            case tt::Flag::kLOWER_BOUND:
+                bestValue = entryPtr->value.score;
+                alpha = std::max(alpha, entryPtr->value.score);
+                break;
+            case tt::Flag::kUPPER_BOUND:
+                beta = std::min(beta, entryPtr->value.score);
+                break;
+            }
         }
 
         if (alpha >= beta)
         {
-            EXIT_SEARCH(Value(entryPtr->second.score));
+            EXIT_SEARCH(Value(entryPtr->value.score));
         }
     }
 
