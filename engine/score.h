@@ -1,53 +1,13 @@
 #ifndef CHESS_ENGINE_SCORE_H_
 #define CHESS_ENGINE_SCORE_H_
 
+#include "hashmap.h"
 #include "movegen.h"
 #include "types.h"
-#include "hashmap.h"
+#include "value.h"
 
 namespace engine
 {
-struct Score
-{
-    Value mg, eg;
-
-    Score() : mg(0), eg(0) {}
-    Score(Value mg, Value eg) : mg(mg), eg(eg) {}
-    explicit Score(Value v) : mg(v), eg(v) {}
-    Score(const Score& other) = default;
-    Score(Score&& other) = default;
-
-    Score& operator=(const Score& other) = default;
-    Score& operator=(Score&& other) = default;
-
-    Score operator+(const Score& other) const
-    {
-        return Score(mg + other.mg, eg + other.eg);
-    }
-    Score operator-(const Score& other) const
-    {
-        return Score(mg - other.mg, eg - other.eg);
-    }
-
-    Score& operator+=(const Score& other)
-    {
-        mg += other.mg;
-        eg += other.eg;
-
-        return *this;
-    }
-};
-
-inline Score operator*(const Score& score, const Value& value)
-{
-    return Score(score.mg * value, score.eg * value);
-}
-
-inline Score operator*(const Value& value, const Score& score)
-{
-    return Score(score.mg * value, score.eg * value);
-}
-
 using PawnHashMap = HashMap<uint64_t, Score, 512 * 512>;
 
 class PositionScorer

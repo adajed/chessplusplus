@@ -117,29 +117,6 @@ enum GamePhase : uint32_t
 };
 constexpr uint32_t GAME_PHASE_NUM = 2;
 
-using Value = int64_t;
-
-constexpr Value VALUE_DRAW = 0LL;
-constexpr Value VALUE_KNOWN_WIN = 12000LL;
-constexpr Value VALUE_MATE = 64000LL;
-constexpr Value VALUE_INFINITE = 64001LL;
-constexpr Value VALUE_NONE = 64002L;
-
-constexpr Value win_in(int ply)
-{
-    return VALUE_MATE - ply;
-}
-
-constexpr Value lost_in(int ply)
-{
-    return -win_in(ply);
-}
-
-constexpr bool is_mate(Value score)
-{
-    return score <= lost_in(MAX_DEPTH) || score >= win_in(MAX_DEPTH);
-}
-
 // encoded move
 // 0-5 - from
 // 6-11 - to
@@ -375,43 +352,6 @@ constexpr PieceCountVector modify_pcv(PieceCountVector pcv, int c)
 }
 
 #undef C
-
-template <typename T, int size1, int size2>
-using Array2D = std::array<std::array<T, size2>, size1>;
-
-template <typename T, int size1, int size2, int size3>
-using Array3D = std::array<std::array<std::array<T, size3>, size2>, size1>;
-
-using PieceHistory = Array2D<int, PIECE_NUM, SQUARE_NUM>;
-
-using HistoryScore = Array3D<int, COLOR_NUM, SQUARE_NUM, SQUARE_NUM>;
-
-struct Info
-{
-    Info()
-        : _pv_list_length(0),
-          _static_eval(VALUE_NONE),
-          _ply(0),
-          _current_move(NO_MOVE),
-          _killer_moves{NO_MOVE, NO_MOVE},
-          _counter_move(nullptr)
-    {
-    }
-
-    std::array<Move, MAX_DEPTH * 2> _pv_list;
-    int _pv_list_length;
-    Value _static_eval;
-    int _ply;
-    Move _current_move;
-    Move _killer_moves[2];
-    PieceHistory* _counter_move;
-};
-
-using StackInfo = std::array<Info, MAX_DEPTH * 2>;
-
-const Value BASIC_PIECE_VALUE[PIECE_KIND_NUM] = {
-    0, 100, 300, 300, 500, 900, 0
-};
 
 }  // namespace engine
 

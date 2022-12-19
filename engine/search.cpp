@@ -9,6 +9,7 @@
 #include "transposition_table.h"
 #include "types.h"
 #include "utils.h"
+#include "value.h"
 
 #include <algorithm>
 #include <chrono>
@@ -309,7 +310,7 @@ void Search::iter_search()
         }
         previous_moves[_current_depth] = _best_move;
 
-        if (result < lost_in(MAX_DEPTH) || result > win_in(MAX_DEPTH)) break;
+        if (is_mate(result)) break;
 
         if (_current_depth >= _search_depth) break;
 
@@ -353,7 +354,16 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     if (is_in_check) depth++;
 
     if (n_moves == 0)
-        EXIT_SEARCH(is_in_check ? lost_in(info->_ply) : VALUE_DRAW);
+        EXIT_SEARCH(is_in_check ? lost_in(0) : VALUE_DRAW);
+
+    if (depth == 0 || info->_ply >= MAX_DEPTH)
+    {
+        LOG_DEBUG("[%d] START QUIESCENCE_SEARCH", info->_ply);
+        Value result = quiescence_search(position, MAX_DEPTH - 1, alpha, beta, info);
+        LOG_DEBUG("[%d] END QUIESCENCE_SEARCH", info->_ply);
+        EXIT_SEARCH(result);
+    }
+
 
     Value bestValue = -VALUE_INFINITE;
     bool found = false;
@@ -363,9 +373,9 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     {
         _tb_hits++;
         LOG_DEBUG("[%d] CACHE HIT score=%ld depth=%d flag=%d move=%s",
-                info->_ply, entryPtr->second.score, entryPtr->second.depth,
-                static_cast<int>(entryPtr->second.flag),
-                position.uci(entryPtr->second.move).c_str());
+                info->_ply, entryPtr->value.score, entryPtr->value.depth,
+                static_cast<int>(entryPtr->value.flag),
+                position.uci(entryPtr->value.move).c_str());
 
         const bool allowCutoff = !PV_NODE || _ttable.isCurrentEpoch(entryPtr->epoch);
 
@@ -390,14 +400,6 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         {
             EXIT_SEARCH(Value(entryPtr->value.score));
         }
-    }
-
-    if (depth == 0)
-    {
-        LOG_DEBUG("[%d] START QUIESCENCE_SEARCH", info->_ply);
-        Value result = quiescence_search(position, MAX_DEPTH - 1, alpha, beta, info);
-        LOG_DEBUG("[%d] END QUIESCENCE_SEARCH", info->_ply);
-        EXIT_SEARCH(result);
     }
 
     if (is_in_check)
@@ -493,6 +495,11 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
 
         position.undo_move(move, moveinfo);
         LOG_DEBUG("[%d] UNDO MOVE %s score=%ld", info->_ply, position.uci(move).c_str(), result);
+
+        if (is_mate(result))
+        {
+            result += result > VALUE_DRAW ? -1 : 1;
+        }
 
         if (result > bestValue)
         {
@@ -613,7 +620,7 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
     const int n_moves = end - begin;
 
     if (n_moves == 0)
-        EXIT_QSEARCH(is_in_check ? lost_in((info - 1)->_ply) : VALUE_DRAW);
+        EXIT_QSEARCH(is_in_check ? lost_in(0) : VALUE_DRAW);
 
     _move_orderer.order_moves(position, begin, end, info);
 
@@ -637,6 +644,12 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
 
         position.undo_move(move, moveinfo);
         LOG_DEBUG("[%d] UNDO MOVE %s score=%ld", info->_ply, position.uci(move).c_str(), result);
+
+        if (is_mate(result))
+        {
+            result += result > VALUE_DRAW ? -1 : 1;
+        }
+
 
         if (result > bestValue)
         {

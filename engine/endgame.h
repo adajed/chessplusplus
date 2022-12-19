@@ -3,6 +3,7 @@
 
 #include "position.h"
 #include "types.h"
+#include "value.h"
 
 #include <memory>
 #include <unordered_map>
