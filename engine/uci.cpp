@@ -228,6 +228,8 @@ bool Uci::moves_command(std::istringstream& istream)
         position.do_move(position.parse_uci(token));
     }
 
+    ttable.updateEpoch(1);
+
     return true;
 }
 
