@@ -1,6 +1,7 @@
 #ifndef CHESS_ENGINE_MOVE_ORDERER_H_
 #define CHESS_ENGINE_MOVE_ORDERER_H_
 
+#include "info.h"
 #include "position.h"
 #include "transposition_table.h"
 #include "types.h"
