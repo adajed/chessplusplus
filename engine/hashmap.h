@@ -61,7 +61,7 @@ namespace engine
 
         private:
             std::vector<Entry> data_ = std::vector<Entry>(Size);
-            uint32_t epoch_ = 0;
+            uint32_t epoch_ = 1;
     };
 }
 
