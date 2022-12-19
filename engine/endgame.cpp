@@ -78,6 +78,22 @@ struct SandboxPCV<kKQKR> {
     };
 };
 
+template <>
+struct SandboxPCV<kKRNKR> {
+    static constexpr PieceCountVector pcv[COLOR_NUM] = {
+        create_pcv(0, 1, 0, 1, 0, 0, 0, 0, 1, 0),
+        create_pcv(0, 0, 0, 1, 0, 0, 1, 0, 1, 0)
+    };
+};
+
+template <>
+struct SandboxPCV<kKRBKR> {
+    static constexpr PieceCountVector pcv[COLOR_NUM] = {
+        create_pcv(0, 0, 1, 1, 0, 0, 0, 0, 1, 0),
+        create_pcv(0, 0, 0, 1, 0, 0, 0, 1, 1, 0)
+    };
+};
+
 // clang-format on
 }  // namespace
 
@@ -93,14 +109,13 @@ Value Endgame<kKPK>::score(const Position& position) const
     assert(applies(position));
 
     Color side = position.color();
-    Square strongKing =
-        position.piece_position(make_piece(strongSide, KING), 0);
+    Square strongKingSq = position.piece_position(strongKing, 0);
+    Square weakKingSq = position.piece_position(weakKing, 0);
     Square strongPawn =
         position.piece_position(make_piece(strongSide, PAWN), 0);
-    Square weakKing = position.piece_position(make_piece(weakSide, KING), 0);
 
-    bitbase::normalize(strongSide, side, strongKing, strongPawn, weakKing);
-    if (!bitbase::check(side, strongKing, strongPawn, weakKing))
+    bitbase::normalize(strongSide, side, strongKingSq, strongPawn, weakKingSq);
+    if (!bitbase::check(side, strongKingSq, strongPawn, weakKingSq))
         return VALUE_DRAW;
 
     Value v = VALUE_KNOWN_WIN + Value(rank(strongPawn));
@@ -116,12 +131,12 @@ bool Endgame<kKNBK>::applies(const Position& position) const
 template <>
 Value Endgame<kKNBK>::score(const Position& position) const
 {
-    Square weakKing = position.piece_position(make_piece(weakSide, KING), 0);
+    Square weakKingSq = position.piece_position(weakKing, 0);
     Square bishop = position.piece_position(make_piece(strongSide, BISHOP), 0);
     Color bishopColor = (static_cast<int>(rank(bishop)) + static_cast<int>(file(bishop))) & 1 ? WHITE : BLACK;
 
     Square kingSquare =
-        bishopColor == WHITE ? flip_vertically(weakKing) : weakKing;
+        bishopColor == WHITE ? flip_vertically(weakKingSq) : weakKingSq;
     Value v = Value(PUSH_TO_COLOR_CORNER_BONUS[kingSquare]);
 
     v = Value(std::min(int64_t(VALUE_KNOWN_WIN + v), int64_t(VALUE_MATE - 1)));
@@ -137,13 +152,12 @@ bool Endgame<kKQKR>::applies(const Position& position) const
 template <>
 Value Endgame<kKQKR>::score(const Position& position) const
 {
-    Square strongKing =
-        position.piece_position(make_piece(strongSide, KING), 0);
-    Square weakKing = position.piece_position(make_piece(weakSide, KING), 0);
+    Square strongKingSq = position.piece_position(strongKing, 0);
+    Square weakKingSq = position.piece_position(weakKing, 0);
 
     Value v = (900 - 500);
-    v += PUSH_TO_EDGE_BONUS[weakKing] +
-         PUSH_CLOSE[distance(strongKing, weakKing)];
+    v += PUSH_TO_EDGE_BONUS[weakKingSq] +
+         PUSH_CLOSE[distance(strongKingSq, weakKingSq)];
 
     v = Value(std::min(int64_t(VALUE_KNOWN_WIN + v), int64_t(VALUE_MATE - 1)));
     return (position.color() == strongSide) ? v : (-v);
@@ -158,9 +172,8 @@ bool Endgame<kKXK>::applies(const Position& position) const
 template <>
 Value Endgame<kKXK>::score(const Position& position) const
 {
-    Square strongKing =
-        position.piece_position(make_piece(strongSide, KING), 0);
-    Square weakKing = position.piece_position(make_piece(weakSide, KING), 0);
+    const Square strongKingSq = position.piece_position(strongKing, 0);
+    const Square weakKingSq = position.piece_position(weakKing, 0);
 
     Value v = VALUE_DRAW;
     v += 100 * position.number_of_pieces(make_piece(strongSide, PAWN));
@@ -168,10 +181,38 @@ Value Endgame<kKXK>::score(const Position& position) const
     v += 300 * position.number_of_pieces(make_piece(strongSide, BISHOP));
     v += 500 * position.number_of_pieces(make_piece(strongSide, ROOK));
     v += 900 * position.number_of_pieces(make_piece(strongSide, QUEEN));
-    v += PUSH_TO_EDGE_BONUS[weakKing] +
-         PUSH_CLOSE[distance(strongKing, weakKing)];
+    v += PUSH_TO_EDGE_BONUS[weakKingSq] +
+         PUSH_CLOSE[distance(strongKingSq, weakKingSq)];
 
     v = Value(std::min(int64_t(v + VALUE_KNOWN_WIN), int64_t(VALUE_MATE - 1)));
+    return (position.color() == strongSide) ? v : (-v);
+}
+
+template <>
+bool Endgame<kKRNKR>::applies(const Position& position) const
+{
+    return position.get_pcv() == SandboxPCV<kKRNKR>::pcv[strongSide];
+}
+
+template <>
+Value Endgame<kKRNKR>::score(const Position& position) const
+{
+    const Square weakKingSq = position.piece_position(weakKing, 0);
+    Value v = VALUE_DRAW + PUSH_TO_EDGE_BONUS[weakKingSq];
+    return (position.color() == strongSide) ? v : (-v);
+}
+
+template <>
+bool Endgame<kKRBKR>::applies(const Position& position) const
+{
+    return position.get_pcv() == SandboxPCV<kKRBKR>::pcv[strongSide];
+}
+
+template <>
+Value Endgame<kKRBKR>::score(const Position& position) const
+{
+    const Square weakKingSq = position.piece_position(weakKing, 0);
+    Value v = VALUE_DRAW + PUSH_TO_EDGE_BONUS[weakKingSq];
     return (position.color() == strongSide) ? v : (-v);
 }
 
@@ -191,6 +232,10 @@ void init()
     add<kKPK>();
     add<kKQKR>();
     add<kKNBK>();
+    add<kKRNKR>();
+    add<kKRBKR>();
+
+    // kKXK must be last
     add<kKXK>();
 }
 

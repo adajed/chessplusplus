@@ -15,7 +15,9 @@ enum EndgameType : uint32_t
     kKPK = 0,
     kKNBK = 1,
     kKXK = 2,
-    kKQKR = 3
+    kKQKR = 3,
+    kKRNKR = 4,
+    kKRBKR = 5,
 };
 
 namespace bitbase
@@ -34,7 +36,11 @@ namespace endgame
 class EndgameBase
 {
   public:
-    EndgameBase(Color strong) : strongSide(strong), weakSide(!strong) {}
+    EndgameBase(Color strong)
+        : strongSide(strong), weakSide(!strong),
+          strongKing(make_piece(strongSide, KING)),
+          weakKing(make_piece(weakSide, KING))
+    {}
 
     virtual bool applies(const Position& position) const = 0;
 
@@ -44,6 +50,7 @@ class EndgameBase
 
   protected:
     Color strongSide, weakSide;
+    Piece strongKing, weakKing;
 };
 
 template <EndgameType endgameType>
