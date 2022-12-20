@@ -423,7 +423,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     {
         info->_static_eval = VALUE_NONE;
     }
-    else if (found)
+    else if (found && entryPtr->value.flag == tt::Flag::kEXACT)
     {
         info->_static_eval = entryPtr->value.score;
     }
