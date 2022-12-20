@@ -19,7 +19,7 @@ To add additional logs during runtime:
 
 LEVELS:
 - 0 - No logging.
-- 1 - Small amout of logging, mainly about iter search.
+- 1 - Additional logging in 'info' output.
 - 2 - Full logging, prints info from whole search tree. This causes massive slowdown!!!
 
 ## Implemented non-UCI commands

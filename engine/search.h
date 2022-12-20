@@ -18,6 +18,49 @@ using TimePoint = std::chrono::time_point<std::chrono::steady_clock>;
 
 std::string score2str(Value score);
 
+using NodeCount = uint64_t;
+constexpr NodeCount MAX_NODE_COUNT = 1ULL << 63;
+
+constexpr Duration INFINITE_DURATION = 1LL << 32;
+
+struct SearchStats
+{
+    SearchStats()
+        : nodes_searched(0)
+        , pv_nodes_searched(0)
+        , non_pv_nodes_searched(0)
+        , quiescence_pv_nodes_searched(0)
+        , quiescence_nonpv_nodes_searched(0)
+        , tb_hits(0)
+    {
+    }
+
+    /**
+     * @brief Total number of nodes searched.
+     */
+    NodeCount nodes_searched;
+    /**
+     * @brief Number of PV nodes searched.
+     */
+    NodeCount pv_nodes_searched;
+    /**
+     * @brief Number of nonPV nodes searched.
+     */
+    NodeCount non_pv_nodes_searched;
+    /**
+     * @brief Number of quiescence PV nodes searched.
+     */
+    NodeCount quiescence_pv_nodes_searched;
+    /**
+     * @brief Number of quiescence nonPV nodes searched.
+     */
+    NodeCount quiescence_nonpv_nodes_searched;
+    /**
+     * @brief Number of ttable hits.
+     */
+    uint64_t tb_hits;
+};
+
 class Search
 {
   public:
@@ -34,14 +77,13 @@ class Search
     void iter_search();
 
 
-    Value search(Position& position, int depth, Value alpha, Value beta,
+    Value search(Position& position, Depth depth, Value alpha, Value beta,
                  Info* info);
 
-    Value quiescence_search(Position& position, int depth, Value alpha,
+    Value quiescence_search(Position& position, Depth depth, Value alpha,
                             Value beta, Info* info);
 
-    void print_info(Value score, int depth, int64_t nodes_searched,
-                    int64_t tb_hits, int64_t elapsed, Info* info);
+    void print_info(Value score, Depth depth, int64_t elapsed, Info* info);
 
     bool check_limits();
 
@@ -53,14 +95,12 @@ class Search
     bool stop_search;
 
     Duration _search_time;
-    int64_t _search_depth;
-    int64_t _max_nodes_searched;
-    int _current_depth;
+    Depth _search_depth;
+    Depth _current_depth;
+    NodeCount _max_nodes_searched;
 
     Move _best_move;
     TimePoint _start_time;
-    int64_t _nodes_searched;
-    int64_t _tb_hits;
 
     std::vector<Move> _root_moves;
 
@@ -69,6 +109,8 @@ class Search
     HistoryScore _history_score;
     MoveOrderer _move_orderer;
     Array2D<PieceHistory, PIECE_NUM, SQUARE_NUM> _counter_move_table;
+
+    SearchStats _stats;
 };
 
 }  // namespace engine

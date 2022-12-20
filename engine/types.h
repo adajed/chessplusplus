@@ -10,8 +10,11 @@
 
 namespace engine
 {
+
+using Depth = int32_t;
+constexpr Depth MAX_DEPTH = 40;
+
 const int32_t MAX_PLIES = 800;
-constexpr int MAX_DEPTH = 40;
 constexpr int MAX_MOVES = 512;
 constexpr int MAX_PINS = 16;
 
