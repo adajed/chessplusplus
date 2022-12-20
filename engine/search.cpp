@@ -19,7 +19,7 @@
 namespace engine
 {
 
-int late_move_reduction(int /* depth */, int move_number)
+int late_move_reduction(Depth /* depth */, int move_number)
 {
     move_number = std::min(move_number, 64);
     return static_cast<int>(std::floor(1 + std::log(move_number)));
@@ -67,7 +67,7 @@ void add_bonus(int* v, int b)
 }
 
 void update_move_scores(const Position& position, Move move, Info* info,
-                        HistoryScore& historyScore, int depth)
+                        HistoryScore& historyScore, Depth depth)
 {
     Square from_sq = from(move);
     Square to_sq = to(move);
@@ -86,11 +86,11 @@ void update_move_scores(const Position& position, Move move, Info* info,
         add_bonus(&(*(info - 1)->_counter_move)[moved_piece][to_sq], bonus);
 }
 
-Value compute_search_delta(Move* previous_best_moves, int current_depth,
+Value compute_search_delta(Move* previous_best_moves, Depth current_depth,
                            Value /* current_score */)
 {
     int no_times_move_repeated = 0;
-    for (int i = current_depth - 1; i > 0; i--)
+    for (Depth i = current_depth - 1; i > 0; i--)
     {
         if (previous_best_moves[i] == previous_best_moves[i - 1])
         {
@@ -107,8 +107,6 @@ Value compute_search_delta(Move* previous_best_moves, int current_depth,
     return delta;
 }
 
-const Duration INFINITE = 1LL << 32;
-
 Search::Search(const Position& position, const Limits& limits,
                PositionScorer& scorer, tt::TTable& ttable)
     : _position(position),
@@ -118,11 +116,10 @@ Search::Search(const Position& position, const Limits& limits,
       stop_search(false),
       _search_time(0),
       _search_depth(0),
-      _max_nodes_searched(limits.nodes),
       _current_depth(0),
+      _max_nodes_searched(limits.nodes),
       _best_move(NO_MOVE),
       _start_time(),
-      _nodes_searched(0),
       _root_moves(),
       _ttable(ttable),
       _stack_info(),
@@ -146,12 +143,12 @@ Search::Search(const Position& position, const Limits& limits,
     if (limits.infinite)
     {
         _search_depth = MAX_DEPTH;
-        _search_time = INFINITE;
+        _search_time = INFINITE_DURATION;
     }
     else if (limits.depth != 0)
     {
         _search_depth = limits.depth;
-        _search_time = INFINITE;
+        _search_time = INFINITE_DURATION;
     }
     else if (limits.movetime != 0)
     {
@@ -167,10 +164,10 @@ Search::Search(const Position& position, const Limits& limits,
     else
     {
         _search_depth = 7;
-        _search_time = INFINITE;
+        _search_time = INFINITE_DURATION;
     }
 
-    if (_max_nodes_searched == 0) _max_nodes_searched = INFINITE;
+    if (_max_nodes_searched == 0) _max_nodes_searched = MAX_NODE_COUNT;
 }
 
 void Search::stop()
@@ -213,15 +210,20 @@ void Search::init_search()
     }
 }
 
-void Search::print_info(Value result, int depth, int64_t nodes_searched,
-                        int64_t tb_hits, int64_t elapsed, Info* info)
+void Search::print_info(Value result, Depth depth, int64_t elapsed, Info* info)
 {
     sync_cout << "info "
               << "depth " << depth << " "
               << "score " << score2str(result) << " "
-              << "nodes " << nodes_searched << " "
-              << "nps " << (nodes_searched * 1000 / (elapsed + 1)) << " "
-              << "tbhits " << tb_hits << " "
+              << "nodes " << _stats.nodes_searched << " "
+#if LOG_LEVEL > 0
+              << "pvnodes " << _stats.pv_nodes_searched << " "
+              << "nonpvnodes " << _stats.non_pv_nodes_searched << " "
+              << "qpvnodes " << _stats.quiescence_pv_nodes_searched << " "
+              << "qnonpvnodes " << _stats.quiescence_nonpv_nodes_searched << " "
+#endif
+              << "nps " << (_stats.nodes_searched * 1000 / (elapsed + 1)) << " "
+              << "tbhits " << _stats.tb_hits << " "
               << "hashfull " << _ttable.hashfull() << " "
               << "time " << elapsed << " "
               << "pv ";
@@ -258,7 +260,8 @@ void Search::iter_search()
     while (!stop_search)
     {
         _current_depth++;
-        _nodes_searched = 0;
+
+        _stats = SearchStats{};
 
         Value result;
         Value delta = compute_search_delta(previous_moves, _current_depth,
@@ -309,8 +312,7 @@ void Search::iter_search()
         {
             Info* realInfo = info + 1;
             ASSERT(realInfo->_pv_list_length > 0);
-            print_info(result, _current_depth, _nodes_searched, _tb_hits,
-                       elapsed, realInfo);
+            print_info(result, _current_depth, elapsed, realInfo);
             _best_move = realInfo->_pv_list[0];
         }
         previous_moves[_current_depth] = _best_move;
@@ -323,7 +325,7 @@ void Search::iter_search()
     }
 }
 
-Value Search::search(Position& position, int depth, Value alpha, Value beta,
+Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
                      Info* info)
 {
     ASSERT(alpha < beta);
@@ -369,13 +371,17 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         EXIT_SEARCH(result);
     }
 
+    // update search stats
+    _stats.nodes_searched++;
+    (PV_NODE ? _stats.pv_nodes_searched : _stats.non_pv_nodes_searched)++;
+
     Value bestValue = -VALUE_INFINITE;
     bool found = false;
     const auto entryPtr = _ttable.probe(position.hash(), found);
     if (found && (entryPtr->value.depth >= depth) &&
         (std::find(begin, end, entryPtr->value.move) != end))
     {
-        _tb_hits++;
+        _stats.tb_hits++;
         LOG_DEBUG("[%d] CACHE HIT score=%ld depth=%d flag=%d move=%s",
                   info->_ply, entryPtr->value.score, entryPtr->value.depth,
                   static_cast<int>(entryPtr->value.flag),
@@ -473,7 +479,6 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         info->_counter_move =
             &_counter_move_table[position.piece_at(from(move))][to(move)];
         MoveInfo moveinfo = position.do_move(move);
-        _nodes_searched++;
 
         PieceKind capturedPiece = captured_piece(moveinfo);
         PieceKind promotedPiece = promotion(move);
@@ -614,7 +619,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
     EXIT_SEARCH(bestValue);
 }
 
-Value Search::quiescence_search(Position& position, int depth, Value alpha,
+Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
                                 Value beta, Info* info)
 {
     ASSERT(alpha < beta);
@@ -640,9 +645,13 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
 
     if (position.is_draw()) EXIT_QSEARCH(VALUE_DRAW);
 
+    // update search stats
+    _stats.nodes_searched++;
+    (PV_NODE ? _stats.quiescence_pv_nodes_searched : _stats.quiescence_nonpv_nodes_searched)++;
+
     Value standpat = -VALUE_INFINITE;
     Value bestValue = -VALUE_INFINITE;
-    if (!is_in_check)  // && !is_queen_attacked)
+    if (!is_in_check)
     {
         standpat = bestValue = _scorer.score(position);
         LOG_DEBUG("[%d] POSITION score=%ld", info->_ply, standpat);
@@ -675,7 +684,6 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
         LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply,
                   position.uci(move).c_str(), alpha, beta);
         MoveInfo moveinfo = position.do_move(move);
-        _nodes_searched++;
 
         Value result = -quiescence_search(position, depth - 1, -(alpha + 1),
                                           -alpha, info + 1);
@@ -716,7 +724,7 @@ bool Search::check_limits()
 
     check_limits_counter = 40960;
 
-    if (_nodes_searched >= _max_nodes_searched)
+    if (_stats.nodes_searched >= _max_nodes_searched)
     {
         stop_search = true;
         return true;
