@@ -10,7 +10,7 @@ EXIT_SEARCH_REGEX = re.compile(
     r"^\[(\d+)\] EXIT (QUIESCENCE_SEARCH|SEARCH) score=(-?\d+)$")
 DO_MOVE_REGEX = re.compile(
     r"^\[(\d+)\] DO MOVE (\w+) alpha=(-?\d+) beta=(-?\d+)$")
-UNDO_MOVE_REGEX = re.compile(r"^\[(\d+)\] UNDO MOVE (\w+) score=(-?\d+)$")
+UNDO_MOVE_REGEX = re.compile(r"^\[(\d+)\] UNDO MOVE (\w+)$")
 CACHE_HIT_REGEX = re.compile(
     r"^\[(\d+)\] CACHE HIT score=(-?\d+) depth=(\d+) flag=(\d+) move=(\w+)$")
 MOVE_ORDER_REGEX = re.compile(r"^\[(\d+)\] MOVE ORDER (.*)$")

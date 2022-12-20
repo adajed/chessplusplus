@@ -435,7 +435,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         info->_counter_move = &_counter_move_table[NO_PIECE][0];  // trash
         Value result =
             -search(position, reducedDepth, -beta, -beta + 1, info + 1);
-        LOG_DEBUG("[%d] UNDO MOVE nullmove score=%ld", info->_ply, result);
+        LOG_DEBUG("[%d] UNDO MOVE nullmove", info->_ply);
         position.undo_null_move(moveinfo);
 
         if (result >= beta)
@@ -444,7 +444,7 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
             LOG_DEBUG("[%d] DO MOVE nullmove alpha=%ld beta=%ld", info->_ply,
                       alpha, beta);
             result = search(position, reducedDepth, beta - 1, beta, info + 1);
-            LOG_DEBUG("[%d] UNDO MOVE nullmove score=%ld", info->_ply, result);
+            LOG_DEBUG("[%d] UNDO MOVE nullmove", info->_ply);
             if (result >= beta)
             {
                 EXIT_SEARCH(beta);
@@ -485,6 +485,8 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
             !position.is_in_check(position.color()))
         {
             position.undo_move(move, moveinfo);
+            LOG_DEBUG("[%d] UNDO MOVE %s", info->_ply,
+                    position.uci(move).c_str());
             continue;
         }
 
@@ -527,8 +529,8 @@ Value Search::search(Position& position, int depth, Value alpha, Value beta,
         }
 
         position.undo_move(move, moveinfo);
-        LOG_DEBUG("[%d] UNDO MOVE %s score=%ld", info->_ply,
-                  position.uci(move).c_str(), result);
+        LOG_DEBUG("[%d] UNDO MOVE %s", info->_ply,
+                  position.uci(move).c_str());
 
         if (is_mate(result))
         {
@@ -684,8 +686,8 @@ Value Search::quiescence_search(Position& position, int depth, Value alpha,
         }
 
         position.undo_move(move, moveinfo);
-        LOG_DEBUG("[%d] UNDO MOVE %s score=%ld", info->_ply,
-                  position.uci(move).c_str(), result);
+        LOG_DEBUG("[%d] UNDO MOVE %s", info->_ply,
+                  position.uci(move).c_str());
 
         if (is_mate(result))
         {
