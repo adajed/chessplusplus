@@ -375,7 +375,15 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
 
     Value bestValue = -VALUE_INFINITE;
     bool found = false;
-    const auto entryPtr = _ttable.probe(position.hash(), found);
+    auto entryPtr = _ttable.probe(position.hash(), found);
+
+    // internal iterative deepening
+    if (PV_NODE && !found && depth > 5)
+    {
+        search(position, depth - 2, alpha, beta, info);
+        entryPtr = _ttable.probe(position.hash(), found);
+    }
+
     if (found && (entryPtr->value.depth >= depth) &&
         (std::find(begin, end, entryPtr->value.move) != end))
     {
@@ -414,6 +422,10 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     if (is_in_check)
     {
         info->_static_eval = VALUE_NONE;
+    }
+    else if (found)
+    {
+        info->_static_eval = entryPtr->value.score;
     }
     else
     {
