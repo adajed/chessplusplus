@@ -5,18 +5,33 @@
 namespace engine
 {
 
-constexpr int PV_SCORE = 2'000'000;
-constexpr int CAPTURE_SCORE = PV_SCORE - 50;
-constexpr int PROMOTION_SCORE = CAPTURE_SCORE - 10;
-constexpr int KILLER_1_SCORE = PROMOTION_SCORE - 1;
-constexpr int KILLER_2_SCORE = KILLER_1_SCORE - 1;
-constexpr int MAX_QUIET_SCORE = KILLER_2_SCORE - 1;
+constexpr MoveScore PV_SCORE = 2'000'000;
+constexpr MoveScore TT_SCORE = PV_SCORE - 1;
+constexpr MoveScore CAPTURE_SCORE = TT_SCORE - 50;
+constexpr MoveScore PROMOTION_SCORE = CAPTURE_SCORE - 10;
+constexpr MoveScore KILLER_1_SCORE = PROMOTION_SCORE - 1;
+constexpr MoveScore KILLER_2_SCORE = KILLER_1_SCORE - 1;
+constexpr MoveScore MAX_QUIET_SCORE = KILLER_2_SCORE - 1;
 
-static_assert(CAPTURE_SCORE < PV_SCORE);
+static_assert(TT_SCORE < PV_SCORE);
+static_assert(CAPTURE_SCORE < TT_SCORE);
 static_assert(PROMOTION_SCORE < CAPTURE_SCORE);
 static_assert(KILLER_1_SCORE < PROMOTION_SCORE);
 static_assert(KILLER_2_SCORE < KILLER_1_SCORE);
 static_assert(MAX_QUIET_SCORE < KILLER_2_SCORE);
+
+std::string moveScoreToString(MoveScore score)
+{
+    if (score == PV_SCORE) return "pv";
+    if (score == TT_SCORE) return "tt";
+    if (score >= CAPTURE_SCORE)
+        return "capture+" + std::to_string(score - CAPTURE_SCORE);
+    if (score >= PROMOTION_SCORE)
+        return "promotion+" + std::to_string(score - PROMOTION_SCORE);
+    if (score == KILLER_1_SCORE) return "killer1";
+    if (score == KILLER_2_SCORE) return "killer2";
+    return std::to_string(score);
+}
 
 // bonus for capture
 // first dim is PieceKind of captured piece
@@ -74,10 +89,11 @@ MoveOrderer::MoveOrderer(tt::TTable& ttable, HistoryScore& historyScore)
 void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
                               Info* info)
 {
-    Move pvMove = NO_MOVE;
+    Move pvMove = info->_pv_list_length > 0 ? info->_pv_list[0] : NO_MOVE;
+    Move ttMove = NO_MOVE;
     bool found = false;
     const auto entryPtr = _ttable.probe(position.hash(), found);
-    if (found) pvMove = entryPtr->value.move;
+    if (found) ttMove = entryPtr->value.move;
 
     int n_moves = static_cast<int>(end - begin);
 
@@ -95,6 +111,8 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
 
         if (move == pvMove)
             _scores[i] = PV_SCORE;
+        else if (move == ttMove)
+            _scores[i] = TT_SCORE;
         else if (captured_piece != NO_PIECE_KIND && promotion_piece == NO_PIECE_KIND)
         {
             // consider last move (re)captures first
@@ -106,7 +124,7 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
             {
                 _scores[i] = CAPTURE_SCORE + CAPTURE_BONUS[captured_piece][make_piece_kind(moved_piece)];
             }
-            ASSERT(_scores[i] < PV_SCORE);
+            ASSERT(_scores[i] < TT_SCORE);
         }
         else if (promotion_piece != NO_PIECE_KIND)
         {
@@ -145,7 +163,7 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
 #if LOG_LEVEL > 1
     std::cerr << "[" << info->_ply << "] MOVE ORDER ";
     for (int i = 0; i < n_moves; ++i)
-        std::cerr << "(" << position.uci(begin[i]) << "," << _scores[i] << ") ";
+        std::cerr << "(" << position.uci(begin[i]) << "," << moveScoreToString(_scores[i]) << ") ";
     std::cerr << "\n";
 #endif
 }

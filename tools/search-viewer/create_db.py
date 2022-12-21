@@ -5,7 +5,7 @@ import time
 from db import Database, CHUNK_FIELDS
 
 ENTER_SEARCH_REGEX = re.compile(
-    r"^\[(\d+)\] ENTER (QUIESCENCE_SEARCH|SEARCH) depth=(\d+) alpha=(-?\d+) beta=(-?\d+) fen=(.*)$")
+    r"^\[(\d+)\] ENTER (QUIESCENCE_SEARCH|SEARCH) depth=(\d+) alpha=(-?\d+) beta=(-?\d+) pvNode=([01]) fen=(.*)$")
 EXIT_SEARCH_REGEX = re.compile(
     r"^\[(\d+)\] EXIT (QUIESCENCE_SEARCH|SEARCH) score=(-?\d+)$")
 DO_MOVE_REGEX = re.compile(
@@ -96,7 +96,8 @@ class Parser:
             self._updateChunk("depth", int(m.group(3)))
             self._updateChunk("alpha", int(m.group(4)))
             self._updateChunk("beta", int(m.group(5)))
-            self._updateChunk("fen", m.group(6))
+            self._updateChunk("isPV", int(m.group(6)))
+            self._updateChunk("fen", m.group(7))
             return True
         return False
 

@@ -6,24 +6,26 @@ from chess_utils import parseMove
 from display import Display
 from db import Database, CHUNK_FIELDS
 
+from typing import Tuple
+
 FILEPATH = None
 NODES = []
 
 
-def getItemName(mainChunk: dict, chunk: dict, move_order: dict) -> str:
+def getItemName(mainChunk: dict, chunk: dict, move_order: dict) -> Tuple[str, int]:
     if (mainChunk["depth"] == 0):
-        return "quiescence"
+        return ("quiescence", chunk["isPV"])
     if chunk["move"] is None:
         depth = chunk["depth"]
-        return f"Search depth={depth}"
+        return (f"Search depth={depth}", chunk["isPV"])
     if chunk["move"] == "nullmove":
-        return "nullmove"
+        return ("nullmove", chunk["isPV"])
     move_uci = chunk["move"]
     move_san = parseMove(mainChunk["fen"], move_uci)
     if move_uci in move_order:
         s = move_order[move_uci]
-        return f"{move_san} ({move_uci})  S={s}"
-    return f"{move_san} ({move_uci})"
+        return (f"{move_san} ({move_uci})  S={s}", chunk["isPV"])
+    return (f"{move_san} ({move_uci})", chunk["isPV"])
 
 
 def run(display: Display, database: Database, chunk_id: int) -> None:
@@ -38,14 +40,14 @@ def run(display: Display, database: Database, chunk_id: int) -> None:
 
     move_order = dict()
     if chunk["move_order"] is not None:
-        for m in re.findall(r"\(([a-h][1-8][a-h][1-8][nbrq]?),(-?\d+)\)", chunk["move_order"]):
-            move_order[m[0]] = int(m[1])
+        for m in re.findall(r"\(([a-h][1-8][a-h][1-8][nbrq]?),([a-z0-9\-+]*)\)", chunk["move_order"]):
+            move_order[m[0]] = m[1]
 
     child_ids = list(map(lambda p: p[0], database.select_child_ids(chunk_id)))
     child_chunks = list(map(lambda id_: database.select_chunk(id_), child_ids))
 
     items = list(map(lambda c: getItemName(
-        chunk, c, move_order), child_chunks)) + ["Exit"]
+        chunk, c, move_order), child_chunks)) + [("Exit", 0)]
 
     display.nodeInfoView.setChunkInfo(chunk)
     if chunk is not None and chunk["move"] is not None:
@@ -98,6 +100,11 @@ def run(display: Display, database: Database, chunk_id: int) -> None:
 
 def main(stdscr):
     curses.curs_set(0)
+    curses.start_color()
+    curses.use_default_colors()
+
+    curses.init_pair(1, curses.COLOR_RED, -1)
+
     (max_y, max_x) = stdscr.getmaxyx()
 
     x = max_x
