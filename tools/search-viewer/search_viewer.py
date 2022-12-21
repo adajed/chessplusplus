@@ -69,16 +69,14 @@ def run(display: Display, database: Database, chunk_id: int) -> None:
         curses.doupdate()
 
         key = display.window.getch()
+        pos = display.menuView.position
+        isExit = pos == (len(items) - 1)
 
-        if key in [curses.KEY_ENTER, curses.KEY_RIGHT, ord("\n"), ord('l'), ord('L')]:
-            pos = display.menuView.position
-            if pos == len(items) - 1:
-                break
-            else:
-                run(display, database, child_ids[pos])
-                display.nodeInfoView.setChunkInfo(chunk)
-                display.menuView.setItems(items)
-                display.menuView.setPosition(pos)
+        if key in [curses.KEY_ENTER, ord('\n'), curses.KEY_RIGHT, ord('l'), ord('L')] and not isExit:
+            run(display, database, child_ids[pos])
+            display.nodeInfoView.setChunkInfo(chunk)
+            display.menuView.setItems(items)
+            display.menuView.setPosition(pos)
 
         elif key in [curses.KEY_UP, ord('k'), ord('K')]:
             display.menuView._move(-1)
@@ -86,7 +84,8 @@ def run(display: Display, database: Database, chunk_id: int) -> None:
         elif key in [curses.KEY_DOWN, ord('j'), ord('J')]:
             display.menuView._move(1)
 
-        elif key in [curses.KEY_BACKSPACE, curses.KEY_LEFT, ord('h'), ord('H'), ord('p'), ord('P')]:
+        elif key in [curses.KEY_ENTER, ord('\n')] and isExit or \
+                key in [curses.KEY_BACKSPACE, curses.KEY_LEFT, ord('h'), ord('H'), ord('p'), ord('P')]:
             break
 
         elif key in [ord('u'), ord('U')]:
@@ -102,7 +101,6 @@ def main(stdscr):
     curses.curs_set(0)
     curses.start_color()
     curses.use_default_colors()
-
     curses.init_pair(1, curses.COLOR_RED, -1)
 
     (max_y, max_x) = stdscr.getmaxyx()
