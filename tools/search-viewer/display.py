@@ -194,11 +194,13 @@ class MenuView(View):
             end_index = min(len(self.__items), start_index + self.height)
             for index in range(start_index, end_index):
                 i = index - start_index
-                item = self.__items[index]
+                item, isPV = self.__items[index]
                 if index == self.__position:
-                    mode = curses.A_REVERSE
+                    mode = curses.A_BOLD | curses.A_UNDERLINE
+                elif isPV:
+                    mode = curses.A_BOLD
                 else:
-                    mode = curses.A_NORMAL
+                    mode = curses.A_DIM
 
                 if self.__useIndex:
                     msg = f"{index}. {item}"

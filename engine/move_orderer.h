@@ -11,6 +11,9 @@
 
 namespace engine
 {
+
+using MoveScore = int;
+
 class MoveOrderer
 {
   public:
@@ -20,7 +23,7 @@ class MoveOrderer
                      Info* info);
 
   private:
-    int _scores[MAX_MOVES];
+    MoveScore _scores[MAX_MOVES];
     size_t _pos;
 
     tt::TTable& _ttable;
