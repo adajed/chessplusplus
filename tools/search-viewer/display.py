@@ -213,6 +213,7 @@ class MenuView(View):
 class Display(View):
     def __init__(self, window):
         View.__init__(self, window)
+        window.keypad(1)
 
         log_bar, main_window = window_split_horizontally(window, 3)
         top_bar, main_window = window_split_horizontally(main_window, 1)
