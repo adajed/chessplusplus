@@ -7,8 +7,8 @@ using namespace engine;
 
 int main()
 {
-    init_move_bitboards();
-    init_zobrist();
+    move_bitboards::init();
+    zobrist::init();
     bitbase::init();
     endgame::init();
 

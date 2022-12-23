@@ -348,7 +348,10 @@ void init_full_lines_bitboards()
 
 }  // namespace
 
-void init_move_bitboards()
+namespace move_bitboards
+{
+
+void init()
 {
     init_rays();
     init_knight_mask();
@@ -361,5 +364,7 @@ void init_move_bitboards()
     init_lines_bitboards();
     init_full_lines_bitboards();
 }
+
+}  // namespace move_bitboards
 
 }  // namespace engine

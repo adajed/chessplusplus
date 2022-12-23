@@ -12,8 +12,12 @@ uint64_t CASTLING_HASH[1 << 4];
 uint64_t SIDE_HASH;
 uint64_t ENPASSANT_HASH[FILE_NUM];
 
+namespace zobrist
+{
+
 namespace
 {
+
 uint64_t random_uint64()
 {
     static std::random_device rd;
@@ -25,7 +29,7 @@ uint64_t random_uint64()
 
 }  // namespace
 
-void init_zobrist()
+void init()
 {
     for (Piece piece = Piece(0); piece < PIECE_NUM; ++piece)
         for (Square square = SQ_A1; square <= SQ_H8; ++square)
@@ -38,6 +42,9 @@ void init_zobrist()
     for (File file = FILE_A; file <= FILE_H; ++file)
         ENPASSANT_HASH[file] = random_uint64();
 }
+
+
+}  // namespace zobrist
 
 HashKey::HashKey()
     : _piece_key(0ULL),

@@ -88,7 +88,12 @@ extern int BISHOP_INDEX_BITS[SQUARE_NUM];
 extern Bitboard ROOK_TABLE[SQUARE_NUM][4096];
 extern Bitboard BISHOP_TABLE[SQUARE_NUM][4096];
 
-void init_move_bitboards();
+namespace move_bitboards
+{
+
+void init();
+
+}  // namespace move_bitboards
 
 template <PieceKind piece>
 inline Bitboard slider_attack(Square /* sq */, Bitboard /* blockers */)
