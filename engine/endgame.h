@@ -10,16 +10,6 @@
 
 namespace engine
 {
-enum EndgameType : uint32_t
-{
-    kKPK = 0,
-    kKNBK = 1,
-    kKXK = 2,
-    kKQKR = 3,
-    kKRNKR = 4,
-    kKRBKR = 5,
-};
-
 namespace bitbase
 {
 void init();
@@ -42,45 +32,38 @@ class EndgameBase
           weakKing(make_piece(weakSide, KING))
     {}
 
+    /**
+     * @brief Verifies if endgame is applicable to given position.
+     */
     virtual bool applies(const Position& position) const = 0;
 
-    virtual Value score(const Position& position) const = 0;
+    /**
+     * @brief Scores given position.
+     * Assumes that position is applicable.
+     */
+    Value score(const Position& position) const
+    {
+        Value v = strongSideScore(position);
+        return position.color() == strongSide ? v : -v;
+    }
 
     virtual ~EndgameBase() = default;
 
   protected:
+
+    /**
+     * @brief Scores given position from the strong side perspective.
+     * Assumes that position is applicable.
+     */
+    virtual Value strongSideScore(const Position& position) const = 0;
+
     Color strongSide, weakSide;
     Piece strongKing, weakKing;
 };
 
-template <EndgameType endgameType>
-class Endgame : public EndgameBase
-{
-  public:
-    Endgame(Color strong) : EndgameBase(strong) {}
-
-    virtual bool applies(const Position& position) const;
-
-    virtual Value score(const Position& position) const;
-
-    virtual ~Endgame() = default;
-};
-
-using EndgameBasePtr = std::unique_ptr<EndgameBase>;
-
-extern std::vector<EndgameBasePtr> endgames;
-
 void init();
 
-inline Value score_endgame(const Position& position)
-{
-    for (const EndgameBasePtr& e : endgames)
-    {
-        if (e->applies(position)) return e->score(position);
-    }
-
-    return VALUE_NONE;
-}
+Value score(const Position& position);
 
 }  // namespace endgame
 
