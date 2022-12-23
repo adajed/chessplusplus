@@ -23,6 +23,7 @@ enum EndgameType : uint32_t
     kKQKR,
     kKRNKR,
     kKRBKR,
+    kKBPsK,
 };
 
 namespace
@@ -254,11 +255,39 @@ bool Endgame<kKRBKR>::applies(const Position& position) const
 }
 
 template <>
-Value Endgame<kKRBKR>::score(const Position& position) const
+bool Endgame<kKBPsK>::applies(const Position& position) const
 {
-    const Square weakKingSq = position.piece_position(weakKing, 0);
-    Value v = VALUE_DRAW + PUSH_TO_EDGE_BONUS[weakKingSq];
-    return (position.color() == strongSide) ? v : (-v);
+    return position.number_of_pieces(make_piece(strongSide, BISHOP)) == 1
+        && position.no_nonpawns(strongSide) == 1
+        && position.number_of_pieces(make_piece(strongSide, PAWN)) > 0
+        && position.pieces(weakSide) == position.pieces(weakSide, KING);
+}
+
+template <>
+Value Endgame<kKBPsK>::strongSideScore(const Position& position) const
+{
+    const Bitboard pawns = position.pieces(strongSide, PAWN);
+    const File pawnFile = file(Square(lsb(pawns)));
+    const Square queeningSq = normalize(make_square(RANK_8, pawnFile), strongSide);
+    const Square bishopSq = position.piece_position(make_piece(strongSide, BISHOP));
+    const Square weakKingSq = position.piece_position(make_piece(weakSide, KING));
+
+    // It's a draw if:
+    // 1. All pawns are on the same rook file (A or H).
+    // 2. Queening square is different color than the bishop.
+    // 3. Weak king can reach queening square.
+    if ((pawns == (pawns & fileA_bb) || pawns == (pawns & fileH_bb)) &&
+            sq_color(queeningSq) != sq_color(bishopSq) &&
+            distance(weakKingSq, queeningSq) <= 1)
+    {
+        return VALUE_POSITIVE_DRAW;
+    }
+
+    return VALUE_KNOWN_WIN
+        + PIECE_VALUE[PAWN].eg * position.number_of_pieces(make_piece(strongSide, PAWN))
+        + PIECE_VALUE[BISHOP].eg
+        + Value(rank(normalize(most_advanced_pawns(pawns, strongSide), strongSide)));
+}
 }
 
 
