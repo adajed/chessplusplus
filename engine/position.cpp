@@ -212,28 +212,17 @@ bool Position::rule50() const
 
 bool Position::enough_material() const
 {
-    if (popcount(pieces()) > 4) return true;
+    constexpr PieceCountVector notEnoughMaterialPCV[] = {
+        create_pcv(0, 0, 0, 0, 0, 0, 0, 0, 0, 0), // only kings
+        create_pcv(0, 0, 0, 0, 0, 0, 1, 0, 0, 0), // black knight
+        create_pcv(0, 0, 0, 0, 0, 0, 0, 1, 0, 0), // black bishop
+        create_pcv(0, 1, 0, 0, 0, 0, 0, 0, 0, 0), // white knight
+        create_pcv(0, 0, 1, 0, 0, 0, 0, 0, 0, 0), // white bishop
+    };
 
-    if (popcount(pieces(WHITE)) == 1)
-    {
-        if (pieces(BLACK) == pieces(B_KING, B_KNIGHT) &&
-            _piece_count[B_KNIGHT] <= 2)
-            return false;
-        if (pieces(BLACK) == pieces(B_KING, B_BISHOP) &&
-            _piece_count[B_BISHOP] <= 1)
-            return false;
-    }
-    else if (popcount(pieces(BLACK)) == 1)
-    {
-        if (pieces(WHITE) == pieces(W_KING, W_KNIGHT) &&
-            _piece_count[W_KNIGHT] <= 2)
-            return false;
-        if (pieces(WHITE) == pieces(W_KING, W_BISHOP) &&
-            _piece_count[W_BISHOP] <= 1)
-            return false;
-    }
-
-    return true;
+    return std::find(std::begin(notEnoughMaterialPCV),
+                     std::end(notEnoughMaterialPCV),
+                     get_pcv()) == std::end(notEnoughMaterialPCV);
 }
 
 Bitboard Position::pieces() const
