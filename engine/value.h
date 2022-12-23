@@ -71,6 +71,7 @@ constexpr Value VALUE_ALL_PIECES = 2 * (8 * PIECE_VALUE[PAWN] +
                                        1 * PIECE_VALUE[QUEEN]).eg;
 
 constexpr Value VALUE_DRAW = 0LL;
+constexpr Value VALUE_POSITIVE_DRAW = 10LL;
 constexpr Value VALUE_NONE = 640'002LL;
 constexpr Value VALUE_INFINITE = VALUE_NONE - 1;
 constexpr Value VALUE_MATE = VALUE_INFINITE - 1;

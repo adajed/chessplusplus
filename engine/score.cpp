@@ -46,7 +46,7 @@ Value PositionScorer::combine(const Score& score)
 
 Value PositionScorer::score(const Position& position)
 {
-    Value endgameValue = endgame::score_endgame(position);
+    Value endgameValue = endgame::score(position);
     if (endgameValue != VALUE_NONE) return endgameValue;
 
     /* if (!popcount_more_than_one(position.pieces(WHITE))) */

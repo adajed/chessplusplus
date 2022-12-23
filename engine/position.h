@@ -58,7 +58,7 @@ class Position
 
     Piece piece_at(Square square) const { return _board[square]; }
     int number_of_pieces(Piece piece) const { return _piece_count[piece]; }
-    Square piece_position(Piece piece, int pos) const
+    Square piece_position(Piece piece, int pos = 0) const
     {
         return _piece_position[piece][pos];
     }
