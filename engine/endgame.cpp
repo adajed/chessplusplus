@@ -28,6 +28,7 @@ enum EndgameType : uint32_t
     kKRKP,
     kKNNK,
     kKNNKP,
+    kKBPsKB,
 };
 
 namespace
@@ -70,7 +71,7 @@ int PUSH_TO_COLOR_CORNER_BONUS[SQUARE_NUM] = {
  */
 int PUSH_CLOSE[RANK_NUM] = {0, 7, 6, 5, 4, 3, 2, 1};
 
-Square most_advanced_pawns(Bitboard pawns, Color side)
+Square most_advanced_pawn(Bitboard pawns, Color side)
 {
     return Square(side == WHITE ? msb(pawns) : lsb(pawns));
 }
@@ -218,7 +219,7 @@ Value Endgame<kKPsK>::strongSideScore(const Position& position) const
 
     return VALUE_KNOWN_WIN
          + PIECE_VALUE[PAWN].eg * position.number_of_pieces(make_piece(strongSide, PAWN))
-         + Value(rank(normalize(most_advanced_pawns(pawns, strongSide), strongSide)));
+         + Value(rank(normalize(most_advanced_pawn(pawns, strongSide), strongSide)));
 }
 
 template <>
@@ -324,7 +325,7 @@ Value Endgame<kKBPsK>::strongSideScore(const Position& position) const
     return VALUE_KNOWN_WIN
         + PIECE_VALUE[PAWN].eg * position.number_of_pieces(make_piece(strongSide, PAWN))
         + PIECE_VALUE[BISHOP].eg
-        + Value(rank(normalize(most_advanced_pawns(pawns, strongSide), strongSide)));
+        + Value(rank(normalize(most_advanced_pawn(pawns, strongSide), strongSide)));
 }
 
 template <>
@@ -394,6 +395,76 @@ Value Endgame<kKNNKP>::strongSideScore(const Position& position) const
          + 30 * Value(rank(pawnSq));
 }
 
+template <>
+bool Endgame<kKBPsKB>::applies(const Position& position) const
+{
+    return position.number_of_pieces(make_piece(strongSide, BISHOP)) == 1
+        && position.number_of_pieces(make_piece(weakSide, BISHOP)) == 1
+        && position.number_of_pieces(make_piece(strongSide, PAWN)) >= 1
+        && position.no_nonpawns(strongSide) == 1
+        && position.no_nonpawns(weakSide) == 1;
+}
+
+template <>
+Value Endgame<kKBPsKB>::strongSideScore(const Position& position) const
+{
+    const Bitboard pawns = position.pieces(strongSide, PAWN);
+    const Square furthestPawnSq = normalize(most_advanced_pawn(pawns, strongSide), strongSide);
+    const Square weakKingSq = normalize(position.piece_position(make_piece(weakSide, KING)), strongSide);
+    const Square strongBishopSq = normalize(position.piece_position(make_piece(strongSide, BISHOP)), strongSide);
+    const Square weakBishopSq = normalize(position.piece_position(make_piece(weakSide, BISHOP)), strongSide);
+
+    /*
+     * In draw cases try to not lose pawns and push them if possible
+     */
+    if (all_on_same_file(pawns))
+    {
+        if (file(weakKingSq) == file(furthestPawnSq) &&
+                rank(weakKingSq) > rank(furthestPawnSq) && 
+                sq_color(weakKingSq) != sq_color(strongBishopSq))
+            return VALUE_POSITIVE_DRAW + 10 * Value(popcount(pawns)) + 2 * Value(rank(furthestPawnSq));
+    }
+    else if (sq_color(strongBishopSq) != sq_color(weakKingSq))
+    {
+        bool pawnOnFile[FILE_NUM] = {false};
+        File file1 = file(furthestPawnSq);
+        File file2 = file1;
+        for (int i = 0; i < position.number_of_pieces(make_piece(strongSide, PAWN)); ++i)
+        {
+            File f = file(position.piece_position(make_piece(strongSide, PAWN), i));
+            if (f != file1) file2 = f;
+            pawnOnFile[f] = true;
+        }
+
+        int fileCount = 0;
+        for (int i = 0; i < static_cast<int>(FILE_NUM); ++i)
+            fileCount += static_cast<int>(pawnOnFile[i]);
+
+        if (fileCount == 2)
+        {
+            const Square furthestPawn2Sq = normalize(most_advanced_pawn(pawns & FILES_BB[file2], strongSide), strongSide);
+            if (std::abs(file1 - file2) == 1 &&
+                    !popcount_more_than_one(pawns & FILES_BB[file1]) &&
+                    rank(furthestPawnSq) > rank(furthestPawn2Sq) &&
+                    sq_color(furthestPawnSq) == sq_color(strongBishopSq))
+            {
+                const Square block1Sq = make_square(Rank(rank(furthestPawnSq) + 1), file1);
+                const Square block2Sq = make_square(rank(furthestPawnSq), file2);
+                if (weakKingSq ==  block1Sq &&
+                        (weakBishopSq == block2Sq ||
+                         slider_attack<BISHOP>(weakBishopSq, position.pieces()) & square_bb(block2Sq)))
+                    return VALUE_POSITIVE_DRAW + 10 * Value(popcount(pawns)) + 2 * Value(rank(furthestPawnSq));
+                if (weakKingSq == block2Sq &&
+                        (weakBishopSq == block1Sq ||
+                         slider_attack<BISHOP>(weakBishopSq, position.pieces()) & square_bb(block1Sq)))
+                    return VALUE_POSITIVE_DRAW + 10 * Value(popcount(pawns)) + 2 * Value(rank(furthestPawnSq));
+            }
+        }
+    }
+
+    return popcount(pawns) * PIECE_VALUE[PAWN].eg + 10 * Value(rank(furthestPawnSq));
+}
+
 }  // namespace
 
 using EndgameBasePtr = std::unique_ptr<EndgameBase>;
@@ -420,6 +491,7 @@ void init()
     add<kKRNKR>();
     add<kKRBKR>();
     add<kKBPsK>();
+    add<kKBPsKB>();
     add<kKRKP>();
     add<kKQKP>();
 
