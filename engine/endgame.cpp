@@ -26,6 +26,7 @@ enum EndgameType : uint32_t
     kKBPsK,
     kKQKP,
     kKRKP,
+    kKNNK,
 };
 
 namespace
@@ -133,6 +134,16 @@ struct SandboxPCV<kKRKP> {
         create_pcv(1, 0, 0, 0, 0, 0, 0, 0, 1, 0)
     };
 };
+
+template <>
+struct SandboxPCV<kKNNK>
+{
+    static constexpr PieceCountVector pcv[COLOR_NUM] = {
+        create_pcv(0, 2, 0, 0, 0, 0, 0, 0, 0, 0),
+        create_pcv(0, 0, 0, 0, 0, 0, 2, 0, 0, 0)
+    };
+};
+
 
 // clang-format on
 template <EndgameType endgameType>
@@ -348,6 +359,11 @@ Value Endgame<kKRKP>::strongSideScore(const Position& position) const
     return PIECE_VALUE[ROOK].eg - PIECE_VALUE[PAWN].eg - PUSH_CLOSE[distance(pawnSq, queeningSq)];
 }
 
+template <>
+Value Endgame<kKNNK>::strongSideScore(const Position& /* position */) const
+{
+    return VALUE_DRAW;
+}
 
 }  // namespace
 
@@ -368,6 +384,7 @@ void init()
 {
     add<kKPK>();
     add<kKPsK>();
+    add<kKNNK>();
     add<kKQKR>();
     add<kKNBK>();
     add<kKRNKR>();
