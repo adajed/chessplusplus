@@ -196,6 +196,11 @@ constexpr Square flip_horizontally(Square sq)
     return make_square(rank(sq), File(FILE_H - file(sq)));
 }
 
+constexpr Square normalize(Square sq, Color side)
+{
+    return side == WHITE ? sq : flip_vertically(sq);
+}
+
 #define ENABLE_BASIC_OPERATIONS(T)                                       \
     constexpr T operator+(T v1, T v2)                                    \
     {                                                                    \
