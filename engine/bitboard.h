@@ -25,6 +25,17 @@ constexpr Bitboard rank8_bb = rank1_bb << (8 * 7);
 const Bitboard RANKS_BB[RANK_NUM] = {rank1_bb, rank2_bb, rank3_bb, rank4_bb,
                                      rank5_bb, rank6_bb, rank7_bb, rank8_bb};
 
+/**
+ * @brief Checks if bitboard is contained in single rank
+ */
+constexpr bool all_on_same_rank(Bitboard bb)
+{
+    return bb == (bb & rank1_bb) || bb == (bb & rank2_bb)
+        || bb == (bb & rank3_bb) || bb == (bb & rank4_bb)
+        || bb == (bb & rank5_bb) || bb == (bb & rank6_bb)
+        || bb == (bb & rank7_bb) || bb == (bb & rank8_bb);
+}
+
 /*
  * Bitboard containing ranks of opponent
  */
@@ -45,6 +56,17 @@ constexpr Bitboard fileG_bb = fileA_bb << 6;
 constexpr Bitboard fileH_bb = fileA_bb << 7;
 const Bitboard FILES_BB[FILE_NUM] = {fileA_bb, fileB_bb, fileC_bb, fileD_bb,
                                      fileE_bb, fileF_bb, fileG_bb, fileH_bb};
+
+/**
+ * @brief Checks if bitboard is contained in single file
+ */
+constexpr bool all_on_same_file(Bitboard bb)
+{
+    return bb == (bb & fileA_bb) || bb == (bb & fileB_bb)
+        || bb == (bb & fileC_bb) || bb == (bb & fileD_bb)
+        || bb == (bb & fileE_bb) || bb == (bb & fileF_bb)
+        || bb == (bb & fileG_bb) || bb == (bb & fileH_bb);
+}
 
 const Bitboard NEIGHBOUR_FILES_BB[FILE_NUM] = {fileB_bb,
                                                fileA_bb | fileC_bb,
