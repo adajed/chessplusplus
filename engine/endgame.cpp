@@ -25,6 +25,7 @@ enum EndgameType : uint32_t
     kKRBKR,
     kKBPsK,
     kKQKP,
+    kKRKP,
 };
 
 namespace
@@ -125,6 +126,15 @@ struct SandboxPCV<kKQKP> {
     };
 };
 
+template <>
+struct SandboxPCV<kKRKP> {
+    static constexpr PieceCountVector pcv[COLOR_NUM] = {
+        create_pcv(0, 0, 0, 1, 0, 1, 0, 0, 0, 0),
+        create_pcv(1, 0, 0, 0, 0, 0, 0, 0, 1, 0)
+    };
+};
+
+// clang-format on
 template <EndgameType endgameType>
 class Endgame : public EndgameBase
 {
@@ -315,6 +325,27 @@ Value Endgame<kKQKP>::strongSideScore(const Position& position) const
 
     return VALUE_KNOWN_WIN + PUSH_CLOSE[distance(strongKingSq, pawnSq)];
 }
+
+template <>
+Value Endgame<kKRKP>::strongSideScore(const Position& position) const
+{
+    const Square strongKingSq = normalize(position.piece_position(make_piece(strongSide, KING)), strongSide);
+    const Square weakKingSq = normalize(position.piece_position(make_piece(weakSide, KING)), strongSide);
+    /* const Square rookSq = normalize(position.piece_position(make_piece(strongSide, ROOK)), strongSide); */
+    const Square pawnSq = normalize(position.piece_position(make_piece(weakSide, PAWN)), strongSide);
+    const Square queeningSq = make_square(RANK_1, file(pawnSq));
+
+    // if strongKing is on front of the pawn
+    if (rank(strongKingSq) < rank(pawnSq) && std::abs(file(strongKingSq) - file(pawnSq)) <= 1)
+        return VALUE_KNOWN_WIN + PUSH_CLOSE[distance(strongKingSq, pawnSq)];
+
+    // if pawn is far advanced and supported by king and strongKing is far away
+    if (rank(pawnSq) < RANK_5 &&
+        distance(weakKingSq, pawnSq) <= 1 &&
+        distance(strongKingSq, pawnSq) > 2)
+        return VALUE_POSITIVE_DRAW + Value(rank(pawnSq));
+
+    return PIECE_VALUE[ROOK].eg - PIECE_VALUE[PAWN].eg - PUSH_CLOSE[distance(pawnSq, queeningSq)];
 }
 
 
