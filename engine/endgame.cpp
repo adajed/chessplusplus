@@ -390,6 +390,7 @@ void init()
     add<kKRNKR>();
     add<kKRBKR>();
     add<kKBPsK>();
+    add<kKRKP>();
     add<kKQKP>();
 
     // kKXK must be last
