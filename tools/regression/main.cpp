@@ -170,8 +170,8 @@ int main(int argc, char** argv)
 
     std::ofstream fd(args.pgn_file);
 
-    init_move_bitboards();
-    init_zobrist();
+    move_bitboards::init();
+    zobrist::init();
     bitbase::init();
     endgame::init();
 

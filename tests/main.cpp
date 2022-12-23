@@ -10,10 +10,10 @@ int main(int argc, char** argv)
 
     testing::InitGoogleTest(&argc, argv);
 
+    move_bitboards::init();
+    zobrist::init();
     bitbase::init();
     endgame::init();
-    init_move_bitboards();
-    init_zobrist();
 
     return RUN_ALL_TESTS();
 }
