@@ -17,6 +17,7 @@ namespace endgame
 enum EndgameType : uint32_t
 {
     kKPK,
+    kKPsK,
     kKNBK,
     kKXK,
     kKQKR,
@@ -63,6 +64,11 @@ int PUSH_TO_COLOR_CORNER_BONUS[SQUARE_NUM] = {
  * Weights to have both kings close to each other.
  */
 int PUSH_CLOSE[RANK_NUM] = {0, 7, 6, 5, 4, 3, 2, 1};
+
+Square most_advanced_pawns(Bitboard pawns, Color side)
+{
+    return Square(side == WHITE ? msb(pawns) : lsb(pawns));
+}
 
 template <EndgameType endgameType>
 struct SandboxPCV
@@ -146,14 +152,34 @@ Value Endgame<kKPK>::strongSideScore(const Position& position) const
     return VALUE_KNOWN_WIN + Value(rank(normalize(strongPawn, strongSide)));
 }
 
-    Value v = VALUE_KNOWN_WIN + Value(rank(strongPawn));
-    return (position.color() == strongSide) ? v : (-v);
+template <>
+bool Endgame<kKPsK>::applies(const Position& position) const
+{
+    return position.no_nonpawns(strongSide) == 0
+        && position.number_of_pieces(make_piece(strongSide, PAWN)) >= 2
+        && position.pieces(weakSide) == position.pieces(weakSide, KING);
 }
 
 template <>
-bool Endgame<kKNBK>::applies(const Position& position) const
+Value Endgame<kKPsK>::strongSideScore(const Position& position) const
 {
-    return position.get_pcv() == SandboxPCV<kKNBK>::pcv[strongSide];
+    const Bitboard pawns = position.pieces(strongSide, PAWN);
+    const File pawnFile = file(Square(lsb(pawns)));
+    const Square queeningSq = normalize(make_square(RANK_8, pawnFile), strongSide);
+    const Square weakKingSq = position.piece_position(make_piece(weakSide, KING));
+
+    // It's a draw if:
+    // 1. All pawns are on the same rook file (A or H).
+    // 2. Weak king can reach queening square.
+    if ((pawns == (pawns & fileA_bb) || pawns == (pawns & fileH_bb)) &&
+            distance(weakKingSq, queeningSq) <= 1)
+    {
+        return VALUE_POSITIVE_DRAW;
+    }
+
+    return VALUE_KNOWN_WIN
+         + PIECE_VALUE[PAWN].eg * position.number_of_pieces(make_piece(strongSide, PAWN))
+         + Value(rank(normalize(most_advanced_pawns(pawns, strongSide), strongSide)));
 }
 
 template <>
