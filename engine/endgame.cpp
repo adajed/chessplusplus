@@ -24,6 +24,7 @@ enum EndgameType : uint32_t
     kKRNKR,
     kKRBKR,
     kKBPsK,
+    kKQKP,
 };
 
 namespace
@@ -117,7 +118,13 @@ struct SandboxPCV<kKRBKR> {
 };
 
 template <>
-bool Endgame<kKPK>::applies(const Position& position) const
+struct SandboxPCV<kKQKP> {
+    static constexpr PieceCountVector pcv[COLOR_NUM] = {
+        create_pcv(0, 0, 0, 0, 1, 1, 0, 0, 0, 0),
+        create_pcv(1, 0, 0, 0, 0, 0, 0, 0, 0, 1)
+    };
+};
+
 template <EndgameType endgameType>
 class Endgame : public EndgameBase
 {
@@ -287,6 +294,26 @@ Value Endgame<kKBPsK>::strongSideScore(const Position& position) const
         + PIECE_VALUE[PAWN].eg * position.number_of_pieces(make_piece(strongSide, PAWN))
         + PIECE_VALUE[BISHOP].eg
         + Value(rank(normalize(most_advanced_pawns(pawns, strongSide), strongSide)));
+}
+
+template <>
+Value Endgame<kKQKP>::strongSideScore(const Position& position) const
+{
+    const Square strongKingSq = normalize(position.piece_position(make_piece(strongSide, KING)), strongSide);
+    const Square weakKingSq = normalize(position.piece_position(make_piece(weakSide, KING)), strongSide);
+    // const Square queenSq = normalize(position.piece_position(make_piece(strongSide, QUEEN)), strongSide);
+    const Square pawnSq = normalize(position.piece_position(make_piece(weakSide, PAWN)), strongSide);
+    const Square queeningSq = make_square(RANK_1, file(pawnSq));
+
+    // if pawn is A/C/F/H-pawn at 2nd rank and weakKing controls queening square then it's a draw
+    if (rank(pawnSq) == RANK_2 &&
+        (position.pieces(weakSide, PAWN) & (fileA_bb | fileC_bb | fileF_bb | fileH_bb)) &&
+        distance(weakKingSq, queeningSq) <= 1)
+    {
+        return VALUE_POSITIVE_DRAW + PUSH_CLOSE[distance(strongKingSq, pawnSq)];
+    }
+
+    return VALUE_KNOWN_WIN + PUSH_CLOSE[distance(strongKingSq, pawnSq)];
 }
 }
 
