@@ -27,6 +27,7 @@ enum EndgameType : uint32_t
     kKQKP,
     kKRKP,
     kKNNK,
+    kKNNKP,
 };
 
 namespace
@@ -141,6 +142,15 @@ struct SandboxPCV<kKNNK>
     static constexpr PieceCountVector pcv[COLOR_NUM] = {
         create_pcv(0, 2, 0, 0, 0, 0, 0, 0, 0, 0),
         create_pcv(0, 0, 0, 0, 0, 0, 2, 0, 0, 0)
+    };
+};
+
+template <>
+struct SandboxPCV<kKNNKP>
+{
+    static constexpr PieceCountVector pcv[COLOR_NUM] = {
+        create_pcv(0, 2, 0, 0, 0, 1, 0, 0, 0, 0),
+        create_pcv(1, 0, 0, 0, 0, 0, 2, 0, 0, 0)
     };
 };
 
@@ -365,6 +375,25 @@ Value Endgame<kKNNK>::strongSideScore(const Position& /* position */) const
     return VALUE_DRAW;
 }
 
+template <>
+Value Endgame<kKNNKP>::strongSideScore(const Position& position) const
+{
+    const Square strongKingSq = normalize(position.piece_position(make_piece(strongSide, KING)), strongSide);
+    const Square weakKingSq = normalize(position.piece_position(make_piece(weakSide, KING)), strongSide);
+    const Square pawnSq = normalize(position.piece_position(make_piece(weakSide, PAWN)), strongSide);
+    const Square knight1Sq = normalize(position.piece_position(make_piece(strongSide, KNIGHT), 0), strongSide);
+    const Square knight2Sq = normalize(position.piece_position(make_piece(strongSide, KNIGHT), 1), strongSide);
+
+    // Try to push weakKing to the corner and not allow pawn to be pushed too far.
+    // Keep strong pieces (king and knights) close to weakKing.
+    return PIECE_VALUE[PAWN].eg
+         + 5 * PUSH_CLOSE[distance(strongKingSq, weakKingSq)]
+         + 5 * PUSH_CLOSE[distance(knight1Sq, weakKingSq)]
+         + 5 * PUSH_CLOSE[distance(knight2Sq, weakKingSq)]
+         + PUSH_TO_EDGE_BONUS[weakKingSq]
+         + 30 * Value(rank(pawnSq));
+}
+
 }  // namespace
 
 using EndgameBasePtr = std::unique_ptr<EndgameBase>;
@@ -385,6 +414,7 @@ void init()
     add<kKPK>();
     add<kKPsK>();
     add<kKNNK>();
+    add<kKNNKP>();
     add<kKQKR>();
     add<kKNBK>();
     add<kKRNKR>();
