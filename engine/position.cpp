@@ -185,8 +185,7 @@ std::string Position::fen() const
 
 bool Position::is_draw() const
 {
-    if (rule50() || threefold_repetition() || !enough_material()) return true;
-    return false;
+    return rule50() || threefold_repetition() || !enough_material();
 }
 
 bool Position::threefold_repetition() const

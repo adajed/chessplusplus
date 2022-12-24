@@ -348,9 +348,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
 
     // cannot check it in ROOT_NODE as it might return
     // without any move
-    if (!ROOT_NODE && position.is_repeated()) EXIT_SEARCH(VALUE_DRAW);
-
-    if (position.is_draw()) EXIT_SEARCH(VALUE_DRAW);
+    if (!ROOT_NODE && (position.is_repeated() || position.is_draw())) EXIT_SEARCH(VALUE_DRAW);
 
     Move* begin = ROOT_NODE ? &(*_root_moves.begin()) : MOVE_LIST[info->_ply];
     Move* end = ROOT_NODE ? &(*_root_moves.end())
