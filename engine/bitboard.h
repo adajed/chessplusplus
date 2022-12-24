@@ -164,6 +164,12 @@ Bitboard pawn_attacks(Bitboard bb)
                          : (shift<SOUTHWEST>(bb) | shift<SOUTHEAST>(bb));
 }
 
+inline Bitboard pawn_attacks(Bitboard bb, Color side)
+{
+    return side == WHITE ? pawn_attacks<WHITE>(bb)
+                         : pawn_attacks<BLACK>(bb);
+}
+
 /*
  * Returns bb with squares that are attacked by at least two pawns.
  * \input bb Bitboard with position of pawns.
