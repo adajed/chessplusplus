@@ -29,6 +29,8 @@ enum EndgameType : uint32_t
     kKNNK,
     kKNNKP,
     kKBPsKB,
+    kKRKB,
+    kKRKN,
 };
 
 namespace
@@ -152,6 +154,22 @@ struct SandboxPCV<kKNNKP>
     static constexpr PieceCountVector pcv[COLOR_NUM] = {
         create_pcv(0, 2, 0, 0, 0, 1, 0, 0, 0, 0),
         create_pcv(1, 0, 0, 0, 0, 0, 2, 0, 0, 0)
+    };
+};
+
+template <>
+struct SandboxPCV<kKRKB> {
+    static constexpr PieceCountVector pcv[COLOR_NUM] = {
+        create_pcv(0, 0, 0, 1, 0, 0, 0, 1, 0, 0),
+        create_pcv(0, 0, 1, 0, 0, 0, 0, 0, 1, 0)
+    };
+};
+
+template <>
+struct SandboxPCV<kKRKN> {
+    static constexpr PieceCountVector pcv[COLOR_NUM] = {
+        create_pcv(0, 0, 0, 1, 0, 0, 1, 0, 0, 0),
+        create_pcv(0, 1, 0, 0, 0, 0, 0, 0, 1, 0)
     };
 };
 
@@ -465,6 +483,21 @@ Value Endgame<kKBPsKB>::strongSideScore(const Position& position) const
     return popcount(pawns) * PIECE_VALUE[PAWN].eg + 10 * Value(rank(furthestPawnSq));
 }
 
+template <>
+Value Endgame<kKRKB>::strongSideScore(const Position& position) const
+{
+    const Square weakKingSq = normalize(position.piece_position(make_piece(weakSide, KING)), strongSide);
+    return VALUE_POSITIVE_DRAW + PUSH_TO_EDGE_BONUS[weakKingSq];
+}
+
+template <>
+Value Endgame<kKRKN>::strongSideScore(const Position& position) const
+{
+    const Square weakKingSq = normalize(position.piece_position(make_piece(weakSide, KING)), strongSide);
+    const Square knightSq = normalize(position.piece_position(make_piece(weakSide, KNIGHT)), strongSide);
+    return VALUE_POSITIVE_DRAW + PUSH_TO_EDGE_BONUS[weakKingSq] + 10 * distance(weakKingSq, knightSq);
+}
+
 }  // namespace
 
 using EndgameBasePtr = std::unique_ptr<EndgameBase>;
@@ -484,6 +517,8 @@ void init()
 {
     add<kKPK>();
     add<kKPsK>();
+    add<kKRKB>();
+    add<kKRKN>();
     add<kKNNK>();
     add<kKNNKP>();
     add<kKQKR>();
