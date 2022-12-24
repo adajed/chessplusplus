@@ -31,6 +31,7 @@ enum EndgameType : uint32_t
     kKBPsKB,
     kKRKB,
     kKRKN,
+    kKQKRPs,
 };
 
 namespace
@@ -419,6 +420,7 @@ bool Endgame<kKBPsKB>::applies(const Position& position) const
     return position.number_of_pieces(make_piece(strongSide, BISHOP)) == 1
         && position.number_of_pieces(make_piece(weakSide, BISHOP)) == 1
         && position.number_of_pieces(make_piece(strongSide, PAWN)) >= 1
+        && position.number_of_pieces(make_piece(weakSide, PAWN)) == 0
         && position.no_nonpawns(strongSide) == 1
         && position.no_nonpawns(weakSide) == 1;
 }
@@ -498,6 +500,33 @@ Value Endgame<kKRKN>::strongSideScore(const Position& position) const
     return VALUE_POSITIVE_DRAW + PUSH_TO_EDGE_BONUS[weakKingSq] + 10 * distance(weakKingSq, knightSq);
 }
 
+template <>
+bool Endgame<kKQKRPs>::applies(const Position& position) const
+{
+    return position.number_of_pieces(make_piece(strongSide, QUEEN)) == 1
+        && position.number_of_pieces(make_piece(weakSide, ROOK)) == 1
+        && position.number_of_pieces(make_piece(strongSide, PAWN)) == 0
+        && position.number_of_pieces(make_piece(weakSide, PAWN)) >= 1
+        && position.no_nonpawns(strongSide) == 1
+        && position.no_nonpawns(weakSide) == 1;
+}
+
+template <>
+Value Endgame<kKQKRPs>::strongSideScore(const Position& position) const
+{
+    const Bitboard pawns = position.pieces(weakSide, PAWN);
+    const Square weakKingSq = position.piece_position(make_piece(weakSide, KING));
+    /* const Square strongKingSq = position.piece_position(make_piece(strongSide, KING)); */
+    const Square rookSq = position.piece_position(make_piece(weakSide, ROOK));
+
+    if ((pawn_attacks(pawns, weakSide) & square_bb(rookSq)) && // pawns defend the rook
+        (KING_MASK[weakKingSq] & pawns)) // king defends some pawn
+        return VALUE_POSITIVE_DRAW + 10 * Value(rank(normalize(most_advanced_pawn(pawns, weakSide), strongSide)));
+
+    return PIECE_VALUE[QUEEN].eg - PIECE_VALUE[ROOK].eg
+         - popcount(pawns) * PIECE_VALUE[PAWN].eg;
+}
+
 }  // namespace
 
 using EndgameBasePtr = std::unique_ptr<EndgameBase>;
@@ -529,6 +558,7 @@ void init()
     add<kKBPsKB>();
     add<kKRKP>();
     add<kKQKP>();
+    add<kKQKRPs>();
 
     // kKXK must be last
     add<kKXK>();
