@@ -2,6 +2,7 @@
 #define CHESS_ENGINE_TYPES_H_
 
 #include <array>
+#include <cassert>
 #include <cinttypes>
 #include <cstdlib>
 #include <iostream>
@@ -132,11 +133,33 @@ Square to(Move move);
 PieceKind promotion(Move move);
 Castling castling(Move move);
 
-constexpr Move NO_MOVE = 0;
+constexpr Move create_move(Square from, Square to)
+{
+    assert(from != NO_SQUARE);
+    assert(to != NO_SQUARE);
+    return to << 6 | from;
+}
 
-Move create_move(Square from, Square to);
-Move create_promotion(Square from, Square to, PieceKind promotion);
-Move create_castling(Castling castling);
+constexpr Move create_promotion(Square from, Square to, PieceKind promotion)
+{
+    assert(from != NO_SQUARE);
+    assert(to != NO_SQUARE);
+    assert(promotion != PAWN);
+    assert(promotion != KING);
+    return promotion << 12 | to << 6 | from;
+}
+
+constexpr Move create_castling(Castling castling)
+{
+    assert(castling == KING_CASTLING || castling == QUEEN_CASTLING);
+    return (castling == KING_CASTLING ? 1 : 2) << 15;
+}
+
+
+constexpr Move NO_MOVE = 0;
+constexpr Move KING_CASTLING_MOVE = create_castling(KING_CASTLING);
+constexpr Move QUEEN_CASTLING_MOVE = create_castling(QUEEN_CASTLING);
+
 
 // encoded move information
 // 0-2 - captured piece
