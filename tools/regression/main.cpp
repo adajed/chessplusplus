@@ -2,6 +2,7 @@
 #include "elo_utils.h"
 #include "endgame.h"
 #include "engine_wrapper.h"
+#include "extended_position.h"
 #include "movegen.h"
 #include "polyglot.h"
 #include "timer.h"
@@ -13,14 +14,10 @@
 #include <fstream>
 #include <set>
 
-constexpr int WIN_WHITE = 0;
-constexpr int WIN_BLACK = 1;
-constexpr int DRAW = 2;
-
 const std::string DRAW_NAME = "__draw__";
 
 // result, pgn string
-using GameResult = std::tuple<int, std::string>;
+using Result = std::tuple<GameResult, std::string>;
 
 using OpeningLine = std::vector<Move>;
 
@@ -41,7 +38,7 @@ struct GameParams
     bool debug;
 };
 
-GameResult game(int id, GameParams params)
+Result game(int id, GameParams params)
 {
     EngineWrapper engine1(params.engine_white.command, params.engine_white.name,
                           id, params.debug);
@@ -71,11 +68,11 @@ GameResult game(int id, GameParams params)
     engines[WHITE]->ucinewgame();
     engines[BLACK]->ucinewgame();
 
-    Position position;
+    ExtendedPosition position(engines[WHITE]->get_name(),
+                              engines[BLACK]->get_name(),
+                              params.time_format.time_initial_ms,
+                              params.time_format.time_increment_ms);
     std::vector<Move> moves;
-    // bookmove, time left, engine eval
-    std::vector<std::tuple<bool, std::string, std::string>> moves_info;
-
     uint32_t depth = 0;
 
     while (!position.is_checkmate() && !position.is_draw() &&
@@ -103,9 +100,14 @@ GameResult game(int id, GameParams params)
             move = engines[side]->go(params, side, score);
         }
         timers[side].end();
-        moves.push_back(move);
-        moves_info.push_back(std::make_tuple(bookmove, timers[side].get_time_left_human(), score));
+
+        if (move == NO_MOVE) std::exit(1);
+        std::cout << position.fen() << " " << position.uci(move) << " " << position.san(move) << std::endl;
+
+        std::string timeLeft = timers[side].get_time_left_human();
+        position.push_back({move, score, timeLeft, bookmove});
         position.do_move(move);
+        moves.push_back(move);
 
         depth++;
     }
@@ -113,49 +115,15 @@ GameResult game(int id, GameParams params)
     engine1.quit();
     engine2.quit();
 
-    int result = DRAW;
-    if (timers[WHITE].get_time_left_ms() == 0) result = WIN_BLACK;
-    if (timers[BLACK].get_time_left_ms() == 0) result = WIN_WHITE;
+    GameResult result = GameResult::DRAW;
+    if (timers[WHITE].get_time_left_ms() == 0) result = GameResult::BLACK_WIN;
+    if (timers[BLACK].get_time_left_ms() == 0) result = GameResult::WHITE_WIN;
     if (position.is_checkmate())
-        result = position.color() == WHITE ? WIN_BLACK : WIN_WHITE;
+        result = position.color() == WHITE ? GameResult::BLACK_WIN : GameResult::WHITE_WIN;
 
-    std::string resultString = "";
-    if (result == DRAW)
-        resultString = "1/2-1/2";
-    else if (result == WIN_WHITE)
-        resultString = "1-0";
-    else if (result == WIN_BLACK)
-        resultString = "0-1";
+    position.setGameResult(result);
 
-    std::stringstream ss;
-    ss << "[Event \"?\"]" << std::endl;
-    ss << "[Site \"?\"]" << std::endl;
-    ss << "[White \"" << engines[WHITE]->get_name() << "\"]" << std::endl;
-    ss << "[Black \"" << engines[BLACK]->get_name() << "\"]" << std::endl;
-    ss << "[Result \"" << resultString << "\"]" << std::endl;
-    ss << std::endl;
-    Position temp_position;
-    for (uint32_t i = 0; i < moves.size(); i++)
-    {
-        if (i % 2 == 0)
-        {
-            ss << (i / 2) + 1 << ". ";
-        }
-        ss << temp_position.san(moves[i]) << " ";
-        if (std::get<0>(moves_info[i]))
-            ss << "{ book } ";
-
-        ss << "{ ";
-        if (!std::get<0>(moves_info[i]))
-            ss << "[%eval " << std::get<2>(moves_info[i]) << "] ";
-
-        ss << "[%clk " << std::get<1>(moves_info[i]) << "] } ";
-
-        temp_position.do_move(moves[i]);
-    }
-    ss << resultString << std::endl << std::endl;
-
-    return std::make_tuple(result, ss.str());
+    return std::make_tuple(result, position.pgn());
 }
 
 int main(int argc, char** argv)
@@ -184,7 +152,7 @@ int main(int argc, char** argv)
     points[DRAW_NAME] = 0.0;
 
     ctpl::thread_pool p(args.num_threads);
-    std::vector<std::future<GameResult>> results(args.getTotalNumGames());
+    std::vector<std::future<Result>> results(args.getTotalNumGames());
     std::vector<GameParams> gameParams;
     std::set<OpeningLine> openingLines;
 
@@ -225,14 +193,14 @@ int main(int argc, char** argv)
 
     for (int i = 0; i < args.getTotalNumGames(); ++i)
     {
-        GameResult gameResult = results[i].get();
+        Result result = results[i].get();
 
-        if (std::get<0>(gameResult) == WIN_WHITE)
+        if (std::get<0>(result) == GameResult::WHITE_WIN)
         {
             points[gameParams[i].engine_white.name] += 1.0;
             std::cout << gameParams[i].engine_white.name << "(white) won" << std::endl;
         }
-        else if (std::get<0>(gameResult) == WIN_BLACK)
+        else if (std::get<0>(result) == GameResult::BLACK_WIN)
         {
             points[gameParams[i].engine_black.name] += 1.0;
             std::cout << gameParams[i].engine_black.name << "(black) won" << std::endl;
@@ -251,7 +219,7 @@ int main(int argc, char** argv)
         double marginError = computeErrorMargin(points[args.engines[0].name], points[DRAW_NAME], points[args.engines[1].name]);
         std::cout << "ELO difference = " << eloDiff << " +- " << marginError << " ELO" << std::endl;
 
-        fd << std::get<1>(gameResult);
+        fd << std::get<1>(result);
     }
 
     std::cout << "Final score: "
