@@ -4,28 +4,6 @@
 
 namespace engine
 {
-Move create_move(Square from, Square to)
-{
-    assert(from != NO_SQUARE);
-    assert(to != NO_SQUARE);
-    return to << 6 | from;
-}
-
-Move create_promotion(Square from, Square to, PieceKind promotion)
-{
-    assert(from != NO_SQUARE);
-    assert(to != NO_SQUARE);
-    assert(promotion != PAWN);
-    assert(promotion != KING);
-    return promotion << 12 | to << 6 | from;
-}
-
-Move create_castling(Castling castling)
-{
-    assert(castling == KING_CASTLING || castling == QUEEN_CASTLING);
-    return (castling == KING_CASTLING ? 1 : 2) << 15;
-}
-
 Square from(Move move)
 {
     return Square(move & 0x3F);

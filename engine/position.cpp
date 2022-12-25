@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "zobrist_hash.h"
 
+#include <optional>
 #include <sstream>
 
 namespace engine
@@ -602,6 +603,65 @@ Move Position::parse_uci(const std::string& str)
         move = create_castling(QUEEN_CASTLING);
 
     return move;
+}
+
+Move Position::parse_san(const std::string& str)
+{
+    Move movelist[MAX_MOVES];
+    Move* begin = movelist;
+    Move* end = generate_moves(*this, color(), begin);
+
+    if (str == "0-0" || str == "O-O")
+        return std::find(begin, end, KING_CASTLING_MOVE) != end ? KING_CASTLING_MOVE : NO_MOVE;
+    if (str == "0-0-0" || str == "O-O-O")
+        return std::find(begin, end, QUEEN_CASTLING_MOVE) != end ? QUEEN_CASTLING_MOVE : NO_MOVE;
+
+    std::smatch match;
+    if (!std::regex_match(str, match, SAN_REGEX))
+        return NO_MOVE;
+
+     auto parse_piece_kind = [](std::string s) {
+         if (s == "n" || s == "N") return KNIGHT;
+         if (s == "b" || s == "B") return BISHOP;
+         if (s == "r" || s == "R") return ROOK;
+         if (s == "q" || s == "Q") return QUEEN;
+         if (s == "k" || s == "K") return KING;
+         return PAWN;
+     };
+
+    PieceKind moved_piece = parse_piece_kind(match[1]);
+    std::optional<File> from_file;
+    if (match[2].length() > 0) from_file = File(match[2].str().at(0) - 'a');
+    std::optional<Rank> from_rank;
+    if (match[3].length() > 0) from_rank = Rank(match[3].str().at(0) - '1');
+    Square to_square = make_square(Rank(match[4].str().at(1) - '1'), File(match[4].str().at(0) - 'a'));
+    std::optional<PieceKind> promotion_piece_kind;
+    if (match[5].length() > 0) promotion_piece_kind = parse_piece_kind(match[5]);
+
+    if (promotion_piece_kind &&
+            (promotion_piece_kind == PAWN || promotion_piece_kind == KING))
+        return NO_MOVE;
+
+    Move matching_move = NO_MOVE;
+    int matching_move_count = 0;
+    for (Move* it = begin; it != end; ++it)
+    {
+        Move move = *it;
+        if (make_piece_kind(piece_at(from(move))) == moved_piece &&
+                (!from_file || file(from(move)) == from_file.value()) &&
+                (!from_rank || rank(from(move)) == from_rank.value()) &&
+                to(move) == to_square &&
+                (!promotion_piece_kind || promotion(move) == promotion_piece_kind))
+        {
+            matching_move = move;
+            matching_move_count++;
+        }
+    }
+
+    if (matching_move_count != 1)
+        return NO_MOVE;
+
+    return matching_move;
 }
 
 std::string Position::san(Move move) const

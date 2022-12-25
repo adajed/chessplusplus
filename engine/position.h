@@ -85,8 +85,9 @@ class Position
     int no_nonpawns(Color c) const;
 
     Move parse_uci(const std::string& str);
-    std::string uci(Move move) const;
+    Move parse_san(const std::string& str);
 
+    std::string uci(Move move) const;
     std::string san(Move move) const;
 
   private:

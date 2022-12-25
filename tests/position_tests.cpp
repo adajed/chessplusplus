@@ -185,6 +185,68 @@ TEST(PositionTest, threefold_repetition)
     }
 }
 
+TEST(PositionTest, parse_san)
+{
+    using TestCase = std::tuple<std::string, std::string, Move>;
+    std::vector<TestCase> test_cases = {
+        // positive tests
+        {"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "e4", create_move(SQ_E2, SQ_E4)},
+        {"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "Nf3", create_move(SQ_G1, SQ_F3)},
+        {"6k1/5ppp/8/8/8/8/8/1RK5 w - - 0 1", "Rb8#", create_move(SQ_B1, SQ_B8)},
+        {"r5k1/5ppp/8/8/8/8/1R6/1RK5 w - - 0 1", "Rb8+", create_move(SQ_B2, SQ_B8)},
+        {"rr4k1/5ppp/8/8/8/2R5/2R5/2RK4 w - - 0 1", "Rc8+", create_move(SQ_C3, SQ_C8)},
+        {"1k1r4/pp1b1R2/3q2pp/4p3/2B5/4Q3/PPP2B2/2K5 b - - 0 1", "Qd1+", create_move(SQ_D6, SQ_D1)},
+        {"3r1k2/4npp1/1ppr3p/p6P/P2PPPP1/1NR5/5K2/2R5 w - - 0 1", "d5", create_move(SQ_D4, SQ_D5)},
+        {"2q1rr1k/3bbnnp/p2p1pp1/2pPp3/PpP1P1P1/1P2BNNP/2BQ1PRK/7R b - - 0 1", "f5", create_move(SQ_F6, SQ_F5)},
+        {"rnbqkbnr/ppp2ppp/8/3pp3/3P4/5N2/PPP1PPPP/RNBQKB1R w KQkq - 0 3", "Nbd2", create_move(SQ_B1, SQ_D2)},
+        {"rnbqkbnr/ppp2ppp/8/3pp3/3P4/5N2/PPP1PPPP/RNBQKB1R w KQkq - 0 3", "Nfd2", create_move(SQ_F3, SQ_D2)},
+        {"r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4", "0-0", create_castling(KING_CASTLING)},
+        {"rnbqkbnr/ppp2ppp/8/3pp3/2P1P3/8/PP1P1PPP/RNBQKBNR w KQkq - 0 3", "exd5", create_move(SQ_E4, SQ_D5)},
+        {"rnbqkbnr/ppp2ppp/8/3pp3/2P1P3/8/PP1P1PPP/RNBQKBNR w KQkq - 0 3", "cxd5", create_move(SQ_C4, SQ_D5)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "bxa8=N", create_promotion(SQ_B7, SQ_A8, KNIGHT)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "bxa8=B", create_promotion(SQ_B7, SQ_A8, BISHOP)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "bxa8=R", create_promotion(SQ_B7, SQ_A8, ROOK)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "bxa8=Q", create_promotion(SQ_B7, SQ_A8, QUEEN)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "b8=N", create_promotion(SQ_B7, SQ_B8, KNIGHT)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "b8=B", create_promotion(SQ_B7, SQ_B8, BISHOP)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "b8=R", create_promotion(SQ_B7, SQ_B8, ROOK)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "b8=Q", create_promotion(SQ_B7, SQ_B8, QUEEN)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "bxc8=N+", create_promotion(SQ_B7, SQ_C8, KNIGHT)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "bxc8=B+", create_promotion(SQ_B7, SQ_C8, BISHOP)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "bxc8=R+", create_promotion(SQ_B7, SQ_C8, ROOK)},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "bxc8=Q+", create_promotion(SQ_B7, SQ_C8, QUEEN)},
+        {"5k2/8/8/8/8/2R5/1R6/4K3 w - - 0 1", "Rbc2", create_move(SQ_B2, SQ_C2)},
+        {"5k2/8/8/8/8/2R5/1R6/4K3 w - - 0 1", "Rcc2", create_move(SQ_C3, SQ_C2)},
+        {"5k2/8/8/2N5/8/2N5/8/4K3 w - - 0 1", "N3e4", create_move(SQ_C3, SQ_E4)},
+        {"5k2/8/8/2N5/8/2N5/8/4K3 w - - 0 1", "N5e4", create_move(SQ_C5, SQ_E4)},
+        {"5k2/8/8/2N5/8/2N5/8/4K3 w - - 0 1", "Nc3e4", create_move(SQ_C3, SQ_E4)},
+        {"5k2/8/8/2N5/8/2N5/8/4K3 w - - 0 1", "Nc5e4", create_move(SQ_C5, SQ_E4)},
+        {"r3k2r/pppq1ppp/2npbn2/2b1p3/2B1P3/2NPBN2/PPPQ1PPP/R3K2R w KQkq - 4 8", "0-0", KING_CASTLING_MOVE},
+        {"r3k2r/pppq1ppp/2npbn2/2b1p3/2B1P3/2NPBN2/PPPQ1PPP/R3K2R w KQkq - 4 8", "0-0-0", QUEEN_CASTLING_MOVE},
+        {"r3k2r/pppq1ppp/2npbn2/2b1p3/2B1P3/2NPBN2/PPPQ1PPP/R4RK1 b kq - 5 8", "0-0", KING_CASTLING_MOVE},
+        {"r3k2r/pppq1ppp/2npbn2/2b1p3/2B1P3/2NPBN2/PPPQ1PPP/R4RK1 b kq - 5 8", "0-0-0", QUEEN_CASTLING_MOVE},
+
+        // negative tests
+        {"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "e5", NO_MOVE},
+        {"rnbqkbnr/ppp2ppp/8/3pp3/3P4/5N2/PPP1PPPP/RNBQKB1R w KQkq - 0 3", "Nd2", NO_MOVE},
+        {"r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4", "0-0-0", NO_MOVE},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "bxa8=P", NO_MOVE},
+        { "r1b1kbnr/pPpp1ppp/4pq2/8/8/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1", "bxa8=K", NO_MOVE},
+        {"rnbqkbnr/ppp2ppp/8/3pp3/2P1P3/8/PP1P1PPP/RNBQKBNR w KQkq - 0 3", "bxd5", NO_MOVE},
+        {"5k2/8/8/2N5/8/2N5/8/4K3 w - - 0 1", "Ne4", NO_MOVE},
+        {"5k2/8/8/2N5/8/2N5/8/4K3 w - - 0 1", "Nce4", NO_MOVE},
+        {"r4rk1/pppq1ppp/2npbn2/2b1p3/2B1P3/2NPBN2/PPPQ1PPP/R4RK1 w - - 6 9", "0-0", NO_MOVE},
+        {"r4rk1/pppq1ppp/2npbn2/2b1p3/2B1P3/2NPBN2/PPPQ1PPP/R4RK1 w - - 6 9", "0-0-0", NO_MOVE},
+    };
+
+    for (const TestCase& test_case : test_cases)
+    {
+        Position position(std::get<0>(test_case));
+        EXPECT_EQ(position.parse_san(std::get<1>(test_case)), std::get<2>(test_case))
+            << "FEN: \"" << std::get<0>(test_case) << "\" SAN: \"" << std::get<1>(test_case) << "\"";
+    }
+}
+
 TEST(PositionTest, hash)
 {
     using TestCase = std::tuple<std::string, Move>;
