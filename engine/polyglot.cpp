@@ -412,7 +412,7 @@ bool PolyglotBook::contains(uint64_t key) const
     return _hashmap.find(key) != _hashmap.end();
 }
 
-Move PolyglotBook::sample_move(uint64_t key, const Position& position) const
+Move PolyglotBook::get_random_move(uint64_t key, const Position& position) const
 {
     assert(contains(key));
 
@@ -430,6 +430,18 @@ Move PolyglotBook::sample_move(uint64_t key, const Position& position) const
         w += moves[i].second;
 
     return decode_move(moves[i].first, position);
+}
+
+Move PolyglotBook::get_best_move(uint64_t key, const Position& position) const
+{
+    assert(contains(key));
+
+    const std::vector<WeightedMove>& moves = _hashmap.at(key);
+
+    WeightedMove best_move = *std::max_element(moves.begin(), moves.end(),
+            [](const auto& m1, const auto& m2) { return m1.second < m2.second; });
+
+    return decode_move(best_move.first, position);
 }
 
 Move PolyglotBook::decode_move(Move move, const Position& position) const
