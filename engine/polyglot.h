@@ -24,7 +24,8 @@ class PolyglotBook
 
     bool contains(uint64_t key) const;
 
-    Move sample_move(uint64_t key, const Position& position) const;
+    Move get_random_move(uint64_t key, const Position& position) const;
+    Move get_best_move(uint64_t key, const Position& position) const;
 
   private:
     Move decode_move(Move move, const Position& position) const;
