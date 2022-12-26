@@ -434,16 +434,16 @@ Move PolyglotBook::sample_move(uint64_t key, const Position& position) const
 
 Move PolyglotBook::decode_move(Move move, const Position& position) const
 {
-    if (from(move) == SQ_E1 && to(move) == SQ_H1 &&
+    if (from(move) == SQ_E1 && (to(move) == SQ_H1 || to(move) == SQ_G1) &&
         position.piece_at(from(move)) == W_KING)
         return create_castling(KING_CASTLING);
-    if (from(move) == SQ_E1 && to(move) == SQ_A1 &&
+    if (from(move) == SQ_E1 && (to(move) == SQ_A1 || to(move) == SQ_C1) &&
         position.piece_at(from(move)) == W_KING)
         return create_castling(QUEEN_CASTLING);
-    if (from(move) == SQ_E8 && to(move) == SQ_H8 &&
+    if (from(move) == SQ_E8 && (to(move) == SQ_H8 || to(move) == SQ_G8) &&
         position.piece_at(from(move)) == B_KING)
         return create_castling(KING_CASTLING);
-    if (from(move) == SQ_E8 && to(move) == SQ_A8 &&
+    if (from(move) == SQ_E8 && (to(move) == SQ_A8 || to(move) == SQ_C8) &&
         position.piece_at(from(move)) == B_KING)
         return create_castling(QUEEN_CASTLING);
     return move;
