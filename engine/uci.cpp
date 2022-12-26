@@ -8,7 +8,7 @@
 
 namespace engine
 {
-Uci::Uci() : search(nullptr), position(), quit(false), options(), polyglot()
+Uci::Uci() : search(nullptr), position(), quit(false), options(), polyglot(), polyglot_sample_random_move(true)
 {
     options["Polyglot Book"] = UciOption("", [this](std::string path) {
         if (path == "")
@@ -16,6 +16,14 @@ Uci::Uci() : search(nullptr), position(), quit(false), options(), polyglot()
         else
             this->polyglot = PolyglotBook(path);
     });
+    options["Polyglot Sample"] = UciOption("random", {"random", "best"},
+            [this](std::string option) {
+                if (option != "random" && option != "best")
+                {
+                    sync_cout << "Wrong value" << sync_endl;
+                }
+                this->polyglot_sample_random_move = option == "random";
+            });
     options["Logfile"] = UciOption("", [](std::string path) {
         if (path == "")
             logger.close_file();
@@ -238,7 +246,9 @@ void start_searching(Uci* uci)
     uint64_t key = PolyglotBook::hash(uci->position);
     if (uci->polyglot.contains(key))
     {
-        Move move = uci->polyglot.sample_move(key, uci->position);
+        Move move = uci->polyglot_sample_random_move 
+            ? uci->polyglot.get_random_move(key, uci->position)
+            : uci->polyglot.get_best_move(key, uci->position);
         sync_cout << "bestmove " << uci->position.uci(move) << sync_endl;
     }
     else

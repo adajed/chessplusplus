@@ -186,7 +186,7 @@ int main(int argc, char** argv)
                     int depth = 0;
                     while (depth < args.book_depth && polyglot.contains(hash))
                     {
-                        Move move = polyglot.sample_move(hash, position);
+                        Move move = polyglot.get_random_move(hash, position);
                         position.do_move(move);
                         params.intial_moves.push_back(move);
                         hash = PolyglotBook::hash(position);
