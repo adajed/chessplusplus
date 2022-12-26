@@ -1,5 +1,6 @@
 #pragma once
 
+#include "eco_codes.h"
 #include "position.h"
 #include "types.h"
 #include <string>
@@ -11,6 +12,7 @@ struct ExtendedMove
     std::string eval;
     std::string timeLeft;
     bool isBookMove;
+    std::string san;
 };
 
 enum class GameResult
@@ -48,6 +50,8 @@ class ExtendedPosition : public engine::Position, public std::vector<ExtendedMov
 
         std::string pgn() const
         {
+            eco::Code eco = eco::get(*this);
+
             std::stringstream ss;
             ss << "[Event \"Regression Test\"]" << std::endl;
             ss << "[Site \"chessplusplus regression framework\"]" << std::endl;
@@ -55,10 +59,11 @@ class ExtendedPosition : public engine::Position, public std::vector<ExtendedMov
             ss << "[Black \"" << blackName << "\"]" << std::endl;
             ss << "[TimeControl \"" << time_initial_ms / 60000 << "+"
                                     << time_increment_ms / 1000 << "\"]" << std::endl;
+            ss << "[ECO \"" << eco.code << "\"]" << std::endl;
+            ss << "[Opening \"" << eco.openingName << "\"]" << std::endl;
             ss << "[Result \"" << gameResultString << "\"]" << std::endl;
             ss << std::endl;
 
-            Position temp_position;
             int moveIndex = 0;
             for (uint32_t i = 0; i < size(); i++)
             {
@@ -66,7 +71,7 @@ class ExtendedPosition : public engine::Position, public std::vector<ExtendedMov
 
                 if (i % 2 == 0)
                     ss << ++moveIndex << ". ";
-                ss << temp_position.san(extMove.move) << " ";
+                ss << extMove.san << " ";
 
                 if (extMove.isBookMove) ss << "{ book } ";
 
@@ -75,8 +80,6 @@ class ExtendedPosition : public engine::Position, public std::vector<ExtendedMov
                     ss << "[%eval " << extMove.eval << "] ";
 
                 ss << "[%clk " << extMove.timeLeft << "] } ";
-
-                temp_position.do_move(extMove.move);
             }
             ss << gameResultString << std::endl << std::endl;
 
