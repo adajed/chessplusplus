@@ -357,7 +357,7 @@ PolyglotBook::PolyglotBook(std::string path, size_t seed)
         int promotion_code = (move_code >> 12) & 0x7;
 
         PieceKind promotion = NO_PIECE_KIND;
-        if (promotion != 0) promotion = PAWN + PieceKind(promotion_code);
+        if (promotion_code != 0) promotion = PAWN + PieceKind(promotion_code);
 
         Move move = create_promotion(make_square(fromRank, fromFile),
                                      make_square(toRank, toFile), promotion);
@@ -389,14 +389,7 @@ uint64_t PolyglotBook::hash(const Position& position)
     if (position.enpassant_square() != NO_SQUARE)
     {
         Bitboard enpassant_bb = square_bb(position.enpassant_square());
-        Bitboard possible_attackers = 0ULL;
-
-        if (position.color() == WHITE)
-            possible_attackers =
-                shift<SOUTHEAST>(enpassant_bb) | shift<SOUTHWEST>(enpassant_bb);
-        else
-            possible_attackers =
-                shift<NORTHEAST>(enpassant_bb) | shift<NORTHWEST>(enpassant_bb);
+        Bitboard possible_attackers = pawn_attacks(enpassant_bb, !position.color());
 
         if (possible_attackers & position.pieces(position.color(), PAWN))
             key ^= POLYGLOT_ENPASSANT[file(position.enpassant_square())];
@@ -424,10 +417,9 @@ Move PolyglotBook::get_random_move(uint64_t key, const Position& position) const
 
     int sample = _dist(_gen) % sum_of_weights;
     int w = 0;
-    int i = 0;
-    for (; i < static_cast<int>(moves.size()) && w + moves[i].second < sample;
-         ++i)
-        w += moves[i].second;
+    uint32_t i = 0;
+    while (i < moves.size() && w + moves[i].second < sample)
+        w += moves[i++].second;
 
     return decode_move(moves[i].first, position);
 }
