@@ -63,7 +63,15 @@ Result game(int id, GameParams params)
     std::cout << "New game: white=" << engines[WHITE]->get_name()
               << " black=" << engines[BLACK]->get_name()
               << " time=" << params.time_format.time_initial_ms << "+"
-              << params.time_format.time_increment_ms << std::endl;
+              << params.time_format.time_increment_ms
+              << " moves=";
+    engine::Position p{};
+    for (Move m : params.intial_moves)
+    {
+        std::cout << p.san(m) << " ";
+        p.do_move(m);
+    }
+    std::cout << std::endl;
 
     engines[WHITE]->ucinewgame();
     engines[BLACK]->ucinewgame();
@@ -101,11 +109,14 @@ Result game(int id, GameParams params)
         }
         timers[side].end();
 
-        if (move == NO_MOVE) std::exit(1);
-        std::cout << position.fen() << " " << position.uci(move) << " " << position.san(move) << std::endl;
+        if (move == NO_MOVE)
+        {
+            std::cerr << "ERROR: got NO_MOVE in \"" << position.fen() << "\"" << std::endl;
+            std::exit(1);
+        }
 
         std::string timeLeft = timers[side].get_time_left_human();
-        position.push_back({move, score, timeLeft, bookmove});
+        position.push_back({move, score, timeLeft, bookmove, position.san(move)});
         position.do_move(move);
         moves.push_back(move);
 
@@ -142,6 +153,7 @@ int main(int argc, char** argv)
     zobrist::init();
     bitbase::init();
     endgame::init();
+    eco::init();
 
     PolyglotBook polyglot(args.polyglot, args.seed);
     GameParams params(args.engines[0], args.engines[1], args.debug);

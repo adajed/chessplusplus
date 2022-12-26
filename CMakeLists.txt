@@ -8,6 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" "RelWithDebInfo")
 set(LOG_LEVEL 0 CACHE STRING "Logging level")
+set(ECO_CODES_FILE "${PROJECT_SOURCE_DIR}/tools/regression/scid.eco" CACHE STRING "File with ECO codes")
 
 add_compile_options(-Wall -Wextra -pedantic -Werror -flto -march=native -mtune=native)
 add_compile_options("-DLOG_LEVEL=${LOG_LEVEL}")
@@ -44,6 +45,7 @@ target_include_directories(chessplusplus
 # regression
 file(GLOB regression_src "tools/regression/*.cpp")
 add_executable(regression ${regression_src})
+target_compile_options(regression PRIVATE "-DECO_CODES_FILE=\"${ECO_CODES_FILE}\"")
 target_link_libraries(regression PUBLIC engine_objs)
 target_include_directories(regression
     PUBLIC
