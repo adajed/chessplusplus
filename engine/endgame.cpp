@@ -32,6 +32,7 @@ enum EndgameType : uint32_t
     kKRKB,
     kKRKN,
     kKQKRPs,
+    kKmmKm,
 };
 
 namespace
@@ -527,6 +528,34 @@ Value Endgame<kKQKRPs>::strongSideScore(const Position& position) const
          - popcount(pawns) * PIECE_VALUE[PAWN].eg;
 }
 
+template <>
+bool Endgame<kKmmKm>::applies(const Position& position) const
+{
+    const int strongMinorsCount = position.number_of_pieces(make_piece(strongSide, KNIGHT))
+                                + position.number_of_pieces(make_piece(strongSide, BISHOP));
+    const int weakMinorsCount = position.number_of_pieces(make_piece(weakSide, KNIGHT))
+                              + position.number_of_pieces(make_piece(weakSide, BISHOP));
+    return strongMinorsCount == 2 && weakMinorsCount == 1
+        && position.number_of_pieces(make_piece(strongSide, PAWN)) == 0
+        && position.number_of_pieces(make_piece(weakSide, PAWN)) == 0
+        && position.no_nonpawns(strongSide) == 2
+        && position.no_nonpawns(weakSide) == 1;
+}
+
+template <>
+Value Endgame<kKmmKm>::strongSideScore(const Position& position) const
+{
+    if (!(position.number_of_pieces(make_piece(strongSide, BISHOP)) == 2 &&
+            position.number_of_pieces(make_piece(weakSide, KNIGHT)) == 1))
+        return VALUE_POSITIVE_DRAW;
+    const Square bishop1Sq = position.piece_position(make_piece(strongSide, BISHOP), 0);
+    const Square bishop2Sq = position.piece_position(make_piece(strongSide, BISHOP), 1);
+    return sq_color(bishop1Sq) != sq_color(bishop2Sq)
+         ? 2 * PIECE_VALUE[BISHOP].eg - PIECE_VALUE[KNIGHT].eg
+         : VALUE_POSITIVE_DRAW;
+}
+
+
 }  // namespace
 
 using EndgameBasePtr = std::unique_ptr<EndgameBase>;
@@ -559,6 +588,7 @@ void init()
     add<kKRKP>();
     add<kKQKP>();
     add<kKQKRPs>();
+    add<kKmmKm>();
 
     // kKXK must be last
     add<kKXK>();
