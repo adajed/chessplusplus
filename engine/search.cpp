@@ -425,11 +425,11 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
      * 2)->_static_eval == VALUE_NONE); */
 
     // null move pruning
-    if (!IS_NULL && !is_in_check &&
-        position.no_nonpawns(position.color()) > 0 && depth > 4 &&
-        info->_static_eval >= beta)
+    if (!PV_NODE && !IS_NULL && !is_in_check &&
+        info->_static_eval >= beta &&
+        position.no_nonpawns(position.color()) > 0 && depth > 4)
     {
-        int reducedDepth = 3 + depth / 4 - (info->_static_eval - beta) / 300;
+        int reducedDepth = 3 + depth / 4 - (info->_static_eval - beta) / PIECE_VALUE[PAWN].eg;
         reducedDepth = std::max(reducedDepth, 0);
 
         LOG_DEBUG("[%d] DO MOVE nullmove alpha=%ld beta=%ld", info->_ply, alpha,
@@ -441,6 +441,11 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
             -search(position, reducedDepth, -beta, -beta + 1, info + 1);
         LOG_DEBUG("[%d] UNDO MOVE nullmove", info->_ply);
         position.undo_null_move(moveinfo);
+
+        if (result >= beta && depth < 14)
+        {
+            EXIT_SEARCH(beta);
+        }
 
         if (result >= beta)
         {
