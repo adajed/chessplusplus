@@ -16,7 +16,7 @@ struct Score
 
     constexpr Score() : mg(0), eg(0) {}
     constexpr Score(Value mg, Value eg) : mg(mg), eg(eg) {}
-    constexpr explicit Score(Value v) : mg(v), eg(v) {}
+    constexpr Score(Value v) : mg(v), eg(v) {}
     Score(const Score& other) = default;
     Score(Score&& other) = default;
 
@@ -31,6 +31,14 @@ struct Score
     {
         return Score(mg - other.mg, eg - other.eg);
     }
+    constexpr Score operator*(const Score& other) const
+    {
+        return Score(mg * other.mg, eg * other.eg);
+    }
+    constexpr Score operator/(const Score& other) const
+    {
+        return Score(mg / other.mg, eg / other.eg);
+    }
 
     constexpr Score& operator+=(const Score& other)
     {
@@ -40,11 +48,6 @@ struct Score
         return *this;
     }
 };
-
-constexpr Score operator*(const Score& score, const Value& value)
-{
-    return Score(score.mg * value, score.eg * value);
-}
 
 constexpr Score operator*(const Value& value, const Score& score)
 {
@@ -61,7 +64,7 @@ inline std::ostream& operator<< (std::ostream& os, Score s)
 
 constexpr Score PIECE_VALUE[PIECE_KIND_NUM] = {
     //     ,       pawn ,     knight ,     bishop ,         rook ,        queen ,     king
-    S(0, 0), S(300, 370), S(890, 890), S(950, 900), S(1500, 1500), S(2700, 2700), S(0, 0)};
+    S(0, 0), S(300, 370), S(890, 880), S(900, 950), S(1400, 1550), S(2900, 2800), S(0, 0)};
 
 
 constexpr Value VALUE_ALL_PIECES = 2 * (8 * PIECE_VALUE[PAWN] +
@@ -102,10 +105,12 @@ constexpr bool is_mate(Value score)
 }
 
 constexpr Score MOBILITY_BONUS[PIECE_KIND_NUM] = {
+    //           pawn,   knight,  bishop,     rook,   queen,    king
     S(0, 0), S(5, 10), S(6, 12), S(9, 4), S(2, 12), S(2, 6), S(0, 5)};
 
 constexpr Score PINNED_PENALTY[PIECE_KIND_NUM] = {
-    S(0, 0), S(-20, -20), S(-10, -15), S(-10, -20), S(0, 0), S(0, 0)};
+    //              pawn,      knight,      bishop,    rook,   queen,    king
+    S(0, 0), S(-20, -20), S(-10, -15), S(-10, -20), S(0, 0), S(0, 0), S(0, 0)};
 
 // bonus for rook on semiopen file
 constexpr Score ROOK_SEMIOPEN_FILE_BONUS = S(10, 11);
@@ -118,31 +123,21 @@ constexpr Score TRAPPED_ROOK_PENALTY = S(-50, -10);
 // bonus for bishop pair
 constexpr Score BISHOP_PAIR_BONUS = S(50, 60);
 
-// bonus for passed pawn
-constexpr Score PASSED_PAWN_BONUS = S(20, 40);
-
 // bonus for connecting rooks
 constexpr Score CONNECTED_ROOKS_BONUS = S(20, 10);
-
-constexpr Score OUTPOST_BONUS = S(20, 10);
 
 constexpr Score OUTPOST_KNIGHT_BONUS = S(25, 10);
 
 constexpr Score OUTPOST_BISHOP_BONUS = S(20, 10);
 
+// bonus for passed pawn
+constexpr Score PASSED_PAWN_BONUS = S(20, 40);
+
 // penalty for double pawns
 constexpr Score DOUBLE_PAWN_PENALTY = S(-15, -45);
 
-// penalty for tripled pawns
-constexpr Score TRIPLE_PAWN_PENALTY = S(-35, -100);
-
-constexpr Score PAWN_CHAIN_BONUS[FILE_NUM] = {S(0, 0),  S(0, 0),  S(2, 4),
-                                          S(4, 10), S(5, 15), S(5, 20),
-                                          S(6, 20), S(7, 20)};
-
-constexpr Value CONNECTED_PAWNS_BONUS[FILE_NUM] = {Value(0),  Value(0),  Value(2),
-                                               Value(5),  Value(20), Value(40),
-                                               Value(80), Value(0)};
+constexpr Value CONNECTED_PAWNS_BONUS[RANK_NUM] = {
+    0, 0, 2, 5, 20, 40, 80, 0};
 
 constexpr Score BACKWARD_PAWN_PENALTY = S(-30, -100);
 
@@ -152,22 +147,23 @@ constexpr Score KING_SAFETY_BONUS = S(30, 0);
 constexpr Score SAFE_KNIGHT = S(10, 2);
 constexpr Score CONTROL_CENTER_KNIGHT = S(10, 10);
 
-constexpr Score CONTROL_SPACE[PIECE_KIND_NUM] = {S(20, 30), S(0, 0),   S(10, 5),
-                                             S(10, 10), S(10, 20), S(0, 0)};
+constexpr Score CONTROL_SPACE[PIECE_KIND_NUM] = {
+    //            pawn,  knight,   bishop,      rook,     queen,    king
+    S(0, 0), S(20, 30), S(0, 0), S(10, 5), S(10, 10), S(10, 20), S(0, 0)};
 
 constexpr Score KING_PROTECTOR_PENALTY[PIECE_KIND_NUM] = {
-    S(0, 0), S(-6, -4), S(-5, -3), S(0, 0), S(0, 0), S(0, 0)};
+    //          pawn,    knight,    bishop,    rook,   queen,    king
+    S(0, 0), S(0, 0), S(-6, -4), S(-5, -3), S(0, 0), S(0, 0), S(0, 0)};
 
 constexpr Score KING_ATTACKER_PENALTY[PIECE_KIND_NUM] = {
-    S(0, 0), S(-7, -4), S(-4, -3), S(0, 0), S(0, 0), S(0, 0)};
+    //          pawn,    knight,    bishop,    rook,   queen,    king
+    S(0, 0), S(0, 0), S(-7, -4), S(-4, -3), S(0, 0), S(0, 0), S(0, 0)};
 
 constexpr Score PAWN_ISLAND_PENALTY = S(-10, -20);
 
 constexpr Score VULNERABLE_QUEEN_PENALTY = S(-30, -15);
 
-constexpr Score WEAK_BACKRANK_PENALTY = S(-50, -50);
-
-constexpr Score WEAK_KING_RAYS_PENALTY = S(-15, -20);
+constexpr Score WEAK_BACKRANK_PENALTY = S(-75, -100);
 
 constexpr Score WEAK_KING_DIAGONALS = S(-5, 0);
 constexpr Score WEAK_KING_LINES = S(-7, 0);
