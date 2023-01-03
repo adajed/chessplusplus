@@ -235,14 +235,16 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             Square sq = position.piece_position(piece, i);
 
             Bitboard file_bb = FILES_BB[file(sq)];
+            Bitboard rank_bb = FILES_BB[rank(sq)];
             if (!(file_bb & position.pieces(PAWN)))
                 _piece_scores[side][ROOK] += ROOK_OPEN_FILE_BONUS;
             if (!(file_bb & position.pieces(side, PAWN)) &&
                 file_bb & position.pieces(!side, PAWN))
                 _piece_scores[side][ROOK] += ROOK_SEMIOPEN_FILE_BONUS;
 
-            if (popcount_more_than_one(file_bb & position.pieces(piece)))
-                _piece_scores[side][ROOK] += CONNECTED_ROOKS_BONUS;
+            if (popcount_more_than_one(file_bb & position.pieces(piece)) ||
+                    popcount_more_than_one(rank_bb & position.pieces(piece)))
+                _piece_scores[side][ROOK] += CONNECTED_ROOKS_BONUS / 2;
 
             Bitboard attacking = slider_attack<ROOK>(sq, position.pieces());
 
@@ -253,8 +255,8 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             {
                 if ((file(ownKing) < FILE_E) == (file(sq) < file(ownKing)))
                 {
-                    const bool canCastle = position.castling_rights() & (side == WHITE ? W_CASTLING : B_CASTLING);
-                    _piece_scores[side][ROOK] += TRAPPED_ROOK_PENALTY * Value(1 + !!canCastle);
+                    const bool canCastle = position.castling_rights() & CASTLING_RIGHTS[side];
+                    _piece_scores[side][ROOK] += TRAPPED_ROOK_PENALTY * Value(1 + Value(!canCastle));
                 }
             }
         }
@@ -365,8 +367,10 @@ Score PositionScorer::score_king(const Position& position)
     Score value;
 
     Bitboard king_area = KING_MASK[ownKing] | square_bb(ownKing);
+    Bitboard moves = KING_MASK[ownKing] & ~attacked_squares(position, !side);
 
     value += score_king_safety<side>(position);
+    value += MOBILITY_BONUS[KING] * Value(popcount(moves));
 
     if (rank(ownKing) == first_rank && position.pieces(!side, ROOK, QUEEN))
     {
@@ -378,10 +382,6 @@ Score PositionScorer::score_king(const Position& position)
         if ((backrank_area & blocked) == backrank_area)
             value += WEAK_BACKRANK_PENALTY;
     }
-
-    /* value += WEAK_KING_RAYS_PENALTY * */
-    /*          Value(popcount(_blockers_for_king[side] & */
-    /*                         ~(position.pieces(side, PAWN)))); */
 
     Bitboard possible_bishop_check =
         slider_attack<BISHOP>(ownKing, position.pieces() & ~_blockers_for_king[side]);
