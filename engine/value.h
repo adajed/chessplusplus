@@ -130,6 +130,9 @@ constexpr Score OUTPOST_KNIGHT_BONUS = S(25, 10);
 
 constexpr Score OUTPOST_BISHOP_BONUS = S(20, 10);
 
+// bonus for pawns controlling center
+constexpr Score PAWN_CONTROL_CENTER_BONUS = S(30, 30);
+
 // bonus for passed pawn
 constexpr Score PASSED_PAWN_BONUS = S(20, 40);
 
@@ -149,7 +152,7 @@ constexpr Score CONTROL_CENTER_KNIGHT = S(10, 10);
 
 constexpr Score CONTROL_SPACE[PIECE_KIND_NUM] = {
     //            pawn,  knight,   bishop,      rook,     queen,    king
-    S(0, 0), S(20, 30), S(0, 0), S(10, 5), S(10, 10), S(10, 20), S(0, 0)};
+    S(0, 0), S(20, 30), S(20, 0), S(10, 5), S(10, 10), S(10, 20), S(0, 0)};
 
 constexpr Score KING_PROTECTOR_PENALTY[PIECE_KIND_NUM] = {
     //          pawn,    knight,    bishop,    rook,   queen,    king
