@@ -39,6 +39,7 @@ class Position
 
     bool is_in_check(Color side) const;
     bool is_checkmate() const;
+    bool is_stalemate() const;
 
     Color color() const { return _current_side; }
 
