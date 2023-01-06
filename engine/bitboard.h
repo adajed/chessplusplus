@@ -12,7 +12,7 @@ constexpr Bitboard all_squares_bb = ~no_squares_bb;
 constexpr Bitboard white_squares_bb = 0x55aa55aa55aa55aaULL;
 constexpr Bitboard black_squares_bb = ~white_squares_bb;
 
-const Bitboard color_squares[COLOR_NUM] = {white_squares_bb, black_squares_bb};
+const Bitboard color_squares_bb[COLOR_NUM] = {white_squares_bb, black_squares_bb};
 
 constexpr Bitboard rank1_bb = 0x00000000000000ffULL;
 constexpr Bitboard rank2_bb = rank1_bb << (8 * 1);
@@ -39,11 +39,11 @@ constexpr bool all_on_same_rank(Bitboard bb)
 /*
  * Bitboard containing ranks of opponent
  */
-const Bitboard OPPONENT_RANKS[COLOR_NUM] = {
+const Bitboard OPPONENT_RANKS_BB[COLOR_NUM] = {
     rank5_bb | rank6_bb | rank7_bb | rank8_bb,
     rank1_bb | rank2_bb | rank3_bb | rank4_bb};
 
-constexpr Bitboard middle_ranks =
+constexpr Bitboard middle_ranks_bb =
     rank2_bb | rank3_bb | rank4_bb | rank5_bb | rank6_bb | rank7_bb;
 
 constexpr Bitboard fileA_bb = 0x0101010101010101ULL;
@@ -77,7 +77,11 @@ const Bitboard NEIGHBOUR_FILES_BB[FILE_NUM] = {fileB_bb,
                                                fileF_bb | fileH_bb,
                                                fileG_bb};
 
-constexpr Bitboard center_bb = (fileD_bb | fileE_bb) & (rank4_bb & rank5_bb);
+constexpr Bitboard center_bb = (fileD_bb | fileE_bb) & (rank4_bb | rank5_bb);
+const Bitboard opponents_center_bb[COLOR_NUM] = {
+    (fileC_bb | fileD_bb | fileE_bb | fileF_bb) & (rank5_bb | rank6_bb),
+    (fileC_bb | fileD_bb | fileE_bb | fileF_bb) & (rank3_bb | rank4_bb),
+};
 
 /*
  * Returns bb with ranks in front of the given square

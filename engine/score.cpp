@@ -190,7 +190,7 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
         _piece_scores[side][BISHOP] += PIECE_VALUE[BISHOP] * Value(no_pieces);
         _piece_scores[side][BISHOP] += CONTROL_SPACE[BISHOP] *
                  Value(popcount(_attacked_by_bb[side][BISHOP] &
-                                OPPONENT_RANKS[side]));
+                                OPPONENT_RANKS_BB[side]));
         for (int i = 0; i < no_pieces; ++i)
         {
             Square sq = position.piece_position(piece, i);
@@ -206,7 +206,7 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
 
             _piece_scores[side][BISHOP] += PAWNS_ON_SAME_COLOR_AS_BISHOP_PENALTY *
                      Value(popcount(position.pieces(side, PAWN) &
-                                    color_squares[sq_color(sq)]));
+                                    color_squares_bb[sq_color(sq)]));
 
             if (_outposts_bb[side] & square_bb(sq))
             {
@@ -229,7 +229,7 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
         _piece_scores[side][ROOK] += PIECE_VALUE[ROOK] * Value(no_pieces);
         _piece_scores[side][ROOK] +=
             CONTROL_SPACE[ROOK] *
-            Value(popcount(_attacked_by_bb[side][ROOK] & OPPONENT_RANKS[side]));
+            Value(popcount(_attacked_by_bb[side][ROOK] & OPPONENT_RANKS_BB[side]));
         for (int i = 0; i < no_pieces; ++i)
         {
             Square sq = position.piece_position(piece, i);
@@ -273,7 +273,7 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
         _piece_scores[side][QUEEN] += PIECE_VALUE[QUEEN] * Value(no_pieces);
         _piece_scores[side][QUEEN] +=
             CONTROL_SPACE[QUEEN] * Value(popcount(_attacked_by_bb[side][QUEEN] &
-                                                  OPPONENT_RANKS[side]));
+                                                  OPPONENT_RANKS_BB[side]));
         for (int i = 0; i < no_pieces; ++i)
         {
             Square sq = position.piece_position(piece, i);
@@ -386,7 +386,7 @@ Score PositionScorer::score_king(const Position& position)
     Bitboard possible_bishop_check =
         slider_attack<BISHOP>(ownKing, position.pieces() & ~_blockers_for_king[side]);
     if (position.pieces(!side, QUEEN) ||
-        (position.pieces(!side, BISHOP) & color_squares[sq_color(ownKing)]))
+        (position.pieces(!side, BISHOP) & color_squares_bb[sq_color(ownKing)]))
         value += WEAK_KING_DIAGONALS * Value(popcount(possible_bishop_check));
     Bitboard possible_rook_check =
         slider_attack<ROOK>(ownKing, position.pieces() & ~_blockers_for_king[side]);

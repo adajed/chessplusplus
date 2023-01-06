@@ -44,6 +44,47 @@ Bitboard bb_from_function(std::function<bool(int, int)> pred)
     return bb;
 }
 
+TEST(Bitboard, ranks_bb)
+{
+    for (int rank = 0; rank < 8; rank++)
+    {
+        check_bb(RANKS_BB[rank], [rank](int x, int /* y */){ return x == rank; });
+    }
+}
+
+TEST(Bitboard, files_bb)
+{
+    for (int file = 0; file < 8; file++)
+    {
+        check_bb(FILES_BB[file], [file](int /* x */, int y){ return y == file; });
+    }
+}
+
+TEST(Bitboard, opponent_ranks_bb)
+{
+    check_bb(OPPONENT_RANKS_BB[WHITE], [](int x, int /* y */){ return x >= 4; });
+    check_bb(OPPONENT_RANKS_BB[BLACK], [](int x, int /* y */){ return x < 4; });
+}
+
+TEST(Bitboard, middle_ranks_bb)
+{
+    check_bb(middle_ranks_bb, [](int x, int /* y */){ return x > 0 && x < 7; });
+}
+
+TEST(Bitboard, center_bb)
+{
+    check_bb(center_bb, [](int x, int y){ return x >= 3 && x <= 4 && y >= 3 && y <= 4; });
+    check_bb(opponents_center_bb[WHITE], [](int x, int y){ return x >= 4 && x <= 5 && y >= 2 && y <= 5; });
+    check_bb(opponents_center_bb[BLACK], [](int x, int y){ return x >= 2 && x <= 3 && y >= 2 && y <= 5; });
+}
+
+TEST(Bitboard, color_squares_bb)
+{
+    check_bb(color_squares_bb[WHITE], [](int x, int y){ return (x + y) % 2 == 1; });
+    check_bb(color_squares_bb[BLACK], [](int x, int y){ return (x + y) % 2 == 0; });
+}
+
+
 TEST(Bitboard, forward_ranks_bb)
 {
     for (int rank = 0; rank < 8; rank++)
@@ -358,7 +399,7 @@ const std::vector<Bitboard> testCases = {
     NEIGHBOUR_FILES_BB[6],
     NEIGHBOUR_FILES_BB[7],
 
-    middle_ranks,
+    middle_ranks_bb,
 };
 
 const std::vector<Direction> ALL_DIRECTIONS = {
