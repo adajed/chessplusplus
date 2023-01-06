@@ -76,6 +76,8 @@ class PositionScorer
 
     Score _side_scores[COLOR_NUM];
     Score _piece_scores[COLOR_NUM][PIECE_KIND_NUM];
+
+    std::pair<Piece, Score> _square_scores[SQUARE_NUM] = {std::make_pair(NO_PIECE, Score{})};
 };
 
 }  // namespace engine
