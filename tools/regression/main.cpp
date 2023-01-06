@@ -83,9 +83,11 @@ Result game(int id, GameParams params)
     std::vector<Move> moves;
     uint32_t depth = 0;
 
-    while (!position.is_checkmate() && !position.is_draw() &&
-           timers[WHITE].get_time_left_ms() > 0 &&
-           timers[BLACK].get_time_left_ms() > 0)
+    while (!position.is_checkmate()
+             && !position.is_draw()
+             && !position.is_stalemate()
+             && timers[WHITE].get_time_left_ms() > 0
+             && timers[BLACK].get_time_left_ms() > 0)
     {
         const Color side = position.color();
         engines[side]->position(Position::STARTPOS_FEN, moves);

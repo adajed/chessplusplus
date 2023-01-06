@@ -534,6 +534,14 @@ bool Position::is_checkmate() const
     return (begin == end) && is_in_check(_current_side);
 }
 
+bool Position::is_stalemate() const
+{
+    Move* begin = MOVE_LIST[0];
+    Move* end = generate_moves(*this, _current_side, begin);
+
+    return (begin == end) && !is_in_check(_current_side);
+}
+
 PieceCountVector Position::get_pcv() const
 {
     return create_pcv(_piece_count[W_PAWN], _piece_count[W_KNIGHT],
