@@ -476,6 +476,7 @@ Score PositionScorer::score_pawns_for_side(const Position& position)
             (!(opposed ^ leverPush) &&
              popcount(phalanx) >= popcount(leverPush));
 
+        score += popcount(attacks & opponents_center_bb[side]) * PAWN_CONTROL_CENTER_BONUS;
         if (doubled) score += DOUBLE_PAWN_PENALTY;
         if (support | phalanx)
         {
