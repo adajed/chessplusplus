@@ -121,15 +121,23 @@ class PreviewView(View):
         static_eval = self.tryNegate(self.static_eval) if self.negate else self.static_eval
         cache_score = self.tryNegate(self.cache_score) if self.negate else self.cache_score
 
+        line = 0
         if self.fen is not None:
+            print_centered(self.window, line, "NODE")
+            line += 1
             print_centered(
-                self.window, 1, f"NODE best move : {parseMove(self.fen, self.best_move)}")
+                    self.window, line, f"best: {parseMove(self.fen, self.best_move)} ply: {self.ply} depth: {self.depth}")
+            line += 1
             print_centered(
-                self.window, 2, f"ply : {self.ply}  depth : {self.depth}")
-            print_centered(
-                self.window, 3, f"alpha = {alpha}  beta = {beta}")
-            print_centered(
-                self.window, 4, f"result = {score} position = {static_eval}")
+                    self.window, line, f"alpha: {alpha}  beta: {beta}")
+            line += 1
+            text = f"result: {score} position: {static_eval} nodes: {self.nodes_searched}"
+            if self.razoring == 1:
+                text += " RAZORING"
+            if self.futility == 1:
+                text += " FUTILITY PRUNING"
+            print_centered(self.window, line, text)
+            line += 1
             if (self.pv_list is not None):
                 pv_list_san = []
                 board = chess.Board(fen=self.fen)
@@ -137,22 +145,26 @@ class PreviewView(View):
                     pv_list_san.append(board.san(board.parse_uci(move_uci)))
                     board.push_uci(move_uci)
                 pv_list_san = " ".join(pv_list_san)
-                print_centered(self.window, 5, f"pv = {pv_list_san}")
-
-            print_centered(self.window, 6, f"FEN {self.fen}")
+                print_centered(self.window, line, f"pv = {pv_list_san}")
+            line += 1
+            print_centered(self.window, line, f"FEN {self.fen}")
+            line += 1
 
             board = chess.Board(fen=self.fen)
             board_str = board.__str__()
             ranks = board_str.split("\n")
             for i, rank in enumerate(ranks):
-                print_centered(self.window, 7 + i, rank)
+                print_centered(self.window, line, rank)
+                line += 1
+            line += 1
             if board.turn == chess.WHITE:
-                print_centered(self.window, 16, "WHITE TO MOVE")
+                print_centered(self.window, line, "WHITE TO MOVE")
             else:
-                print_centered(self.window, 16, "BLACK TO MOVE")
+                print_centered(self.window, line, "BLACK TO MOVE")
+            line += 2
 
             if (self.cache_move is None):
-                print_centered(self.window, 18, "CACHE MISS")
+                print_centered(self.window, line, "CACHE MISS")
             else:
                 flag = "UNKNOWN"
                 if (self.cache_flag == 0):
@@ -161,7 +173,7 @@ class PreviewView(View):
                     flag = "LOWER BOUND"
                 elif (self.cache_flag == 2):
                     flag = "UPPER BOUND"
-                print_centered(self.window, 18,
+                print_centered(self.window, line,
                                f"CACHE Move {parseMove(self.fen, self.cache_move)} Depth {self.cache_depth} Score {cache_score} Flag {flag}")
 
 
