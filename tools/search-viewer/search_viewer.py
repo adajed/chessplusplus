@@ -18,14 +18,15 @@ def getItemName(mainChunk: dict, chunk: dict, move_order: dict) -> Tuple[str, in
     if chunk["move"] is None:
         depth = chunk["depth"]
         return (f"Search depth={depth}", chunk["isPV"])
+    perc = 100 * (chunk["nodes_searched"] / mainChunk["nodes_searched"])
     if chunk["move"] == "nullmove":
-        return ("nullmove", chunk["isPV"])
+        return (f"nullmove time={perc:.1f}%", chunk["isPV"])
     move_uci = chunk["move"]
     move_san = parseMove(mainChunk["fen"], move_uci)
     if move_uci in move_order:
         s = move_order[move_uci]
-        return (f"{move_san} ({move_uci})  S={s}", chunk["isPV"])
-    return (f"{move_san} ({move_uci})", chunk["isPV"])
+        return (f"{move_san} ({move_uci}) S={s} time={perc:.1f}%", chunk["isPV"])
+    return (f"{move_san} ({move_uci}) time={perc:.1f}%", chunk["isPV"])
 
 
 def run(display: Display, database: Database, chunk_id: int) -> None:

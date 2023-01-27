@@ -32,7 +32,7 @@ std::string score2str(Value score)
     else if (score >= win_in(MAX_DEPTH))
         return "mate " + std::to_string(VALUE_MATE - score);
     else
-        return "cp " + std::to_string(score * 100LL / 300LL);
+        return "cp " + std::to_string(score * 100LL / PIECE_VALUE[PAWN].eg);
 }
 
 void clear_pv_list(Info* info)
@@ -372,6 +372,9 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     // update search stats
     _stats.nodes_searched++;
     (PV_NODE ? _stats.pv_nodes_searched : _stats.non_pv_nodes_searched)++;
+#if LOG_LEVEL >= 2
+    uint64_t savedNumNodesSearched = _stats.nodes_searched;
+#endif
 
     Value bestValue = -VALUE_INFINITE;
     bool found = false;
@@ -402,6 +405,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
             {
             case tt::Flag::kEXACT:
                 set_new_pv_list(info, entryPtr->value.move);
+                LOG_DEBUG("[%d] NODES SEARCHED %lu", info->_ply, _stats.nodes_searched - savedNumNodesSearched);
                 EXIT_SEARCH(Value(entryPtr->value.score));
             case tt::Flag::kLOWER_BOUND:
                 bestValue = entryPtr->value.score;
@@ -415,6 +419,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
 
         if (alpha >= beta)
         {
+            LOG_DEBUG("[%d] NODES SEARCHED %lu", info->_ply, _stats.nodes_searched - savedNumNodesSearched);
             EXIT_SEARCH(Value(entryPtr->value.score));
         }
     }
@@ -456,6 +461,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
 
         if (result >= beta && depth < 14)
         {
+            LOG_DEBUG("[%d] NODES SEARCHED %lu", info->_ply, _stats.nodes_searched - savedNumNodesSearched);
             EXIT_SEARCH(beta);
         }
 
@@ -468,6 +474,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
             LOG_DEBUG("[%d] UNDO MOVE nullmove", info->_ply);
             if (result >= beta)
             {
+                LOG_DEBUG("[%d] NODES SEARCHED %lu", info->_ply, _stats.nodes_searched - savedNumNodesSearched);
                 EXIT_SEARCH(beta);
             }
         }
@@ -596,6 +603,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
 
                     LOG_DEBUG("[%d] BEST MOVE %s", info->_ply,
                               position.uci(move).c_str());
+                    LOG_DEBUG("[%d] NODES SEARCHED %lu", info->_ply, _stats.nodes_searched - savedNumNodesSearched);
                     EXIT_SEARCH(result);
                 }
             }
@@ -631,6 +639,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     }
 #endif
 
+    LOG_DEBUG("[%d] NODES SEARCHED %lu", info->_ply, _stats.nodes_searched - savedNumNodesSearched);
     EXIT_SEARCH(bestValue);
 }
 
@@ -663,6 +672,9 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
     // update search stats
     _stats.nodes_searched++;
     (PV_NODE ? _stats.quiescence_pv_nodes_searched : _stats.quiescence_nonpv_nodes_searched)++;
+#if LOG_LEVEL >= 2
+    uint64_t savedNumNodesSearched = _stats.nodes_searched;
+#endif
 
     Value standpat = -VALUE_INFINITE;
     Value bestValue = -VALUE_INFINITE;
@@ -724,11 +736,16 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
             {
                 add_new_move_to_pv_list(info, move, info + 1);
                 alpha = result;
-                if (result >= beta) EXIT_QSEARCH(result);
+                if (result >= beta)
+                {
+                    LOG_DEBUG("[%d] NODES SEARCHED %lu", info->_ply, _stats.nodes_searched - savedNumNodesSearched);
+                    EXIT_QSEARCH(result);
+                }
             }
         }
     }
 
+    LOG_DEBUG("[%d] NODES SEARCHED %lu", info->_ply, _stats.nodes_searched - savedNumNodesSearched);
     EXIT_QSEARCH(bestValue);
 }
 

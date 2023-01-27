@@ -17,6 +17,9 @@ MOVE_ORDER_REGEX = re.compile(r"^\[(\d+)\] MOVE ORDER (.*)$")
 POSITION_REGEX = re.compile(r"^\[(\d+)\] POSITION score=(-?\d+)$")
 BEST_MOVE_REGEX = re.compile(r"\[(\d+)\] BEST MOVE (\w+)$")
 PV_LIST_REGEX = re.compile(r"\[(\d+)\] PV LIST (.*)$")
+RAZORING_REGEX = re.compile(r"\[(\d+)\] RAZORING$")
+FUTILITY_REGEX = re.compile(r"\[(\d+)\] FUTILITY PRUNING$")
+NODES_SEARCHED_REGEX = re.compile(r"\[(\d+)\] NODES SEARCHED (\d+)$")
 
 
 def parseArguments():
@@ -78,6 +81,12 @@ class Parser:
                 pass
             elif (self._tryParseBestMove(line)):
                 pass
+            elif (self._tryParseRazoring(line)):
+                pass
+            elif (self._tryParseFutilityPruning(line)):
+                pass
+            elif (self._tryParseNodesSearched(line)):
+                pass
 
         return nodeIds
 
@@ -98,6 +107,9 @@ class Parser:
             self._updateChunk("beta", int(m.group(5)))
             self._updateChunk("isPV", int(m.group(6)))
             self._updateChunk("fen", m.group(7))
+            self._updateChunk("razoring", 0)
+            self._updateChunk("futility", 0)
+            self._updateChunk("nodes_searched", 0)
             return True
         return False
 
@@ -160,6 +172,27 @@ class Parser:
         if (m := BEST_MOVE_REGEX.match(line)):
             if (int(m.group(1)) == self._get("ply")):
                 self._updateChunk("best_move", m.group(2))
+                return True
+        return False
+
+    def _tryParseRazoring(self, line):
+        if (m := RAZORING_REGEX.match(line)):
+            if (int(m.group(1)) == self._get("ply")):
+                self._updateChunk("razoring", 1)
+                return True
+        return False
+
+    def _tryParseFutilityPruning(self, line):
+        if (m := FUTILITY_REGEX.match(line)):
+            if (int(m.group(1)) == self._get("ply")):
+                self._updateChunk("futility", 1)
+                return True
+        return False
+
+    def _tryParseNodesSearched(self, line):
+        if (m := NODES_SEARCHED_REGEX.match(line)):
+            if (int(m.group(1)) == self._get("ply")):
+                self._updateChunk("nodes_searched", int(m.group(2)))
                 return True
         return False
 
