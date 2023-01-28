@@ -51,6 +51,10 @@ class Position
     bool rule50() const;
     bool enough_material() const;
 
+    bool move_is_quiet(Move move) const;
+    bool move_is_capture(Move move) const;
+    bool move_gives_check(Move move) const;
+
     /*
      * Checks if current position was ever reached
      * (faster then checking for threefold_repetition).
