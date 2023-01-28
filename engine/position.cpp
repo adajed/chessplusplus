@@ -1,5 +1,6 @@
 #include "position.h"
 
+#include "bitboard.h"
 #include "movegen.h"
 #include "types.h"
 #include "utils.h"
@@ -223,6 +224,108 @@ bool Position::enough_material() const
     return std::find(std::begin(notEnoughMaterialPCV),
                      std::end(notEnoughMaterialPCV),
                      get_pcv()) == std::end(notEnoughMaterialPCV);
+}
+
+bool Position::move_is_quiet(Move move) const
+{
+    if (castling(move) != NO_CASTLING)
+        return true;
+
+    if (promotion(move) != NO_PIECE_KIND)
+        return false;
+
+    if (to(move) == enpassant_square() && make_piece_kind(piece_at(from(move))) == PAWN)
+        return false;
+
+    if (piece_at(to(move)) == NO_PIECE)
+        return true;
+
+    return false;
+}
+
+bool Position::move_is_capture(Move move) const
+{
+    return castling(move) == NO_CASTLING
+        && (piece_at(to(move)) != NO_PIECE
+                || (make_piece_kind(piece_at(from(move))) == PAWN
+                        && to(move) == enpassant_square()));
+}
+
+bool Position::move_gives_check(Move move) const
+{
+    const Square from_sq = from(move);
+    const Square to_sq = to(move);
+    const PieceKind moved_piece_kind = make_piece_kind(piece_at(from_sq));
+    const Square king_sq = piece_position(make_piece(!color(), KING));
+    const Bitboard from_bb = square_bb(from_sq);
+    const Bitboard to_bb = square_bb(to_sq);
+    const Bitboard king_bb = square_bb(king_sq);
+    Bitboard blockers = pieces();
+
+    // direct check
+    switch (moved_piece_kind)
+    {
+        case PAWN:
+            if (pawn_attacks(square_bb(to_sq), color()) & king_bb)
+                return true;
+            break;
+        case KNIGHT:
+            if (KNIGHT_MASK[to_sq] & square_bb(king_sq))
+                return true;
+            break;
+        case BISHOP:
+            if (slider_attack<BISHOP>(to_sq, blockers) & king_bb)
+                return true;
+            break;
+        case ROOK:
+            if (slider_attack<ROOK>(to_sq, blockers) & king_bb)
+                return true;
+            break;
+        case QUEEN:
+            if (slider_attack<QUEEN>(to_sq, blockers) & king_bb)
+                return true;
+            break;
+        case KING: break;
+        default: assert(false);
+    }
+
+    blockers = (blockers ^ from_bb) | to_bb;
+
+    // discovered check
+    if (slider_attack<BISHOP>(king_sq, blockers) & pieces(color(), BISHOP, QUEEN))
+        return true;
+    if (slider_attack<ROOK>(king_sq, blockers) & pieces(color(), ROOK, QUEEN))
+        return true;
+
+    // enpassant
+    if (moved_piece_kind == PAWN && to_sq == enpassant_square())
+    {
+        const Bitboard captured_bb = square_bb(make_square(rank(from_sq), file(to_sq)));
+        blockers = blockers ^ captured_bb;
+
+        if (slider_attack<BISHOP>(king_sq, blockers) & pieces(color(), BISHOP, QUEEN))
+            return true;
+        if (slider_attack<ROOK>(king_sq, blockers) & pieces(color(), ROOK, QUEEN))
+            return true;
+    }
+
+    // castling
+    if (castling(move) != NO_CASTLING)
+    {
+        Square old_king_sq = piece_position(make_piece(color(), KING));
+        Square old_rook_sq = make_square(color() == WHITE ? RANK_1 : RANK_8,
+                                        castling(move) & KING_CASTLING ? FILE_H : FILE_A);
+        Square my_king_sq = make_square(color() == WHITE ? RANK_1 : RANK_8,
+                                        castling(move) & KING_CASTLING ? FILE_G : FILE_C);
+        Square my_rook_sq = make_square(color() == WHITE ? RANK_1 : RANK_8,
+                                        castling(move) & KING_CASTLING ? FILE_F : FILE_D);
+
+        blockers = pieces() ^ square_bb(old_king_sq) ^ square_bb(old_rook_sq) ^ square_bb(my_king_sq) ^ square_bb(my_rook_sq);
+        if (slider_attack<ROOK>(my_rook_sq, blockers) & king_bb)
+            return true;
+    }
+
+    return false;
 }
 
 Bitboard Position::pieces() const

@@ -488,47 +488,48 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
         std::abs(info->_static_eval) < VALUE_ALL_PIECES &&
         ((depth == 1 && info->_static_eval + FUTILITY_DEPTH_1_MARGIN < alpha) ||
          (depth == 2 && info->_static_eval + FUTILITY_DEPTH_2_MARGIN < alpha));
+    if (doFutilityPruning)
+    {
+        LOG_DEBUG("[%d] FUTILITY PRUNING", info->_ply);
+    }
 
     Move best_move = NO_MOVE;
     _move_orderer.order_moves(position, begin, end, info);
 
     for (int move_count = 0; move_count < n_moves; ++move_count)
     {
-        Move move = begin[move_count];
-        LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply,
-                  position.uci(move).c_str(), alpha, beta);
-        info->_current_move = move;
-        info->_counter_move =
-            &_counter_move_table[position.piece_at(from(move))][to(move)];
-        MoveInfo moveinfo = position.do_move(move);
+        const Move move = begin[move_count];
+        const bool moveIsQuiet = position.move_is_quiet(move);
 
-        PieceKind capturedPiece = captured_piece(moveinfo);
-        PieceKind promotedPiece = promotion(move);
-
-        bool isQuiet =
-            capturedPiece == NO_PIECE_KIND && promotedPiece == NO_PIECE_KIND;
-
-        if (doFutilityPruning && isQuiet &&
-            !position.is_in_check(position.color()))
+        if (doFutilityPruning && moveIsQuiet
+                && !position.move_gives_check(move))
         {
-            position.undo_move(move, moveinfo);
-            LOG_DEBUG("[%d] UNDO MOVE %s", info->_ply,
-                    position.uci(move).c_str());
             continue;
         }
 
+        LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply,
+                  position.uci(move).c_str(), alpha, beta);
+        const MoveInfo moveinfo = position.do_move(move);
+
+        info->_current_move = move;
+        info->_counter_move =
+            &_counter_move_table[position.piece_at(from(move))][to(move)];
+
+        const PieceKind capturedPiece = captured_piece(moveinfo);
+        const PieceKind promotedPiece = promotion(move);
+
         Value result = VALUE_NONE;
         int reduction = 0;
-        Value updated_score = info->_static_eval +
-                              PIECE_VALUE[capturedPiece].eg +
-                              PIECE_VALUE[promotedPiece].eg;
+        const Value updated_score = info->_static_eval
+                                  + PIECE_VALUE[capturedPiece].eg
+                                  + PIECE_VALUE[promotedPiece].eg;
 
-        if (depth > 3 && (isQuiet || updated_score <= alpha))
+        if (depth > 3 && (moveIsQuiet || updated_score <= alpha))
         {
             reduction = late_move_reduction(depth, move_count + 1);
             reduction -= 2 * static_cast<int>(PV_NODE);
 
-            if (isQuiet)
+            if (moveIsQuiet)
             {
                 if (move == info->_killer_moves[0] ||
                     move == info->_killer_moves[1])
@@ -577,7 +578,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
                 if (result >= beta)
                 {
                     ASSERT(move != NO_MOVE);
-                    if (isQuiet)
+                    if (moveIsQuiet)
                     {
                         update_move_scores(position, move, info, _history_score,
                                            depth);
@@ -705,9 +706,12 @@ Value Search::quiescence_search(Position& position, Depth depth, Value alpha,
         info->_current_move = move;
         info->_counter_move =
             &_counter_move_table[position.piece_at(from(move))][to(move)];
-        if (!is_in_check && position.piece_at(to(move)) == NO_PIECE &&
-            promotion(move) == NO_PIECE_KIND)
+
+        if (!is_in_check && position.move_is_quiet(move))
+        {
             continue;
+        }
+
         LOG_DEBUG("[%d] DO MOVE %s alpha=%ld beta=%ld", info->_ply,
                   position.uci(move).c_str(), alpha, beta);
         MoveInfo moveinfo = position.do_move(move);
