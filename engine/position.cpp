@@ -625,8 +625,18 @@ void Position::undo_null_move(MoveInfo moveinfo)
 
 bool Position::is_in_check(Color side) const
 {
-    Bitboard attacked = attacked_squares(*this, side);
-    return attacked & pieces(side, KING);
+    const Square king_sq = piece_position(make_piece(side, KING));
+
+    if (pawn_attacks(square_bb(king_sq), side) & pieces(!side, PAWN))
+        return true;
+    if (KNIGHT_MASK[king_sq] & pieces(!side, KNIGHT))
+        return true;
+    if (slider_attack<BISHOP>(king_sq, pieces()) & pieces(!side, BISHOP, QUEEN))
+        return true;
+    if (slider_attack<ROOK>(king_sq, pieces()) & pieces(!side, ROOK, QUEEN))
+        return true;
+
+    return false;
 }
 
 bool Position::is_checkmate() const
