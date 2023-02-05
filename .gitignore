@@ -4,7 +4,7 @@ weights/*
 !weights/test_weights.w
 compile_commands.json
 .cache/
-.clangd/
+.clangd
 Logfile.log
 examples.txt
 
