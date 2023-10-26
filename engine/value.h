@@ -106,7 +106,7 @@ constexpr bool is_mate(Value score)
 
 constexpr Score MOBILITY_BONUS[PIECE_KIND_NUM] = {
     //           pawn,   knight,  bishop,     rook,   queen,    king
-    S(0, 0), S(5, 10), S(6, 12), S(9, 4), S(2, 12), S(2, 6), S(0, 5)};
+    S(0, 0), S(5, 10), S(12, 24), S(18, 8), S(6, 24), S(4, 12), S(0, 10)};
 
 constexpr Score PINNED_PENALTY[PIECE_KIND_NUM] = {
     //              pawn,      knight,      bishop,    rook,   queen,    king
