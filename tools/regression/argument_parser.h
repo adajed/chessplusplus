@@ -3,8 +3,11 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
+
+using EngineOption = std::pair<std::string, std::optional<std::string>>;
 
 struct TimeFormat
 {
@@ -16,6 +19,7 @@ struct EngineParams
 {
     std::string command;
     std::string name;
+    std::vector<EngineOption> options;
 };
 
 struct Args
@@ -110,6 +114,7 @@ inline Args parse_args(int argc, char** argv)
         std::cout << "Engine options:" << std::endl;
         std::cout << "\tcommand=<command> - command used to run engine" << std::endl;
         std::cout << "\tname=<name> - name of the engine" << std::endl;
+        std::cout << "\toption=<name>[:<value>] - option for the engine" << std::endl;
         std::cout << std::endl;
         exit(0);
     }
@@ -135,6 +140,17 @@ inline Args parse_args(int argc, char** argv)
                 else if (cmd == "name")
                 {
                     params.name = value;
+                }
+                else if (cmd == "option")
+                {
+                    bool contains_value = value.find_first_of(':') != std::string::npos;
+                    std::string option_name = contains_value
+                        ? value.substr(0, value.find_first_of(':'))
+                        : value;
+                    std::optional<std::string> option_value = contains_value
+                        ? std::optional<std::string>{value.substr(value.find_first_of(':') + 1)}
+                        : std::nullopt;
+                    params.options.push_back(std::make_pair(option_name, option_value));
                 }
                 else
                 {
