@@ -7,7 +7,6 @@
 #include "position_bitboards.h"
 #include "types.h"
 
-#include <iostream>
 #include <iomanip>
 
 namespace engine
@@ -162,13 +161,18 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             {
                 score += SAFE_KNIGHT;
             }
-            score += CONTROL_SPACE[KNIGHT] * Value(popcount(attacking & OPPONENT_RANKS_BB[side]));
-            score += CONTROL_CENTER_KNIGHT * Value(popcount(attacking & center_bb));
+            score += CONTROL_SPACE[KNIGHT] *
+                     Value(popcount(attacking & OPPONENT_RANKS_BB[side]));
+            score +=
+                CONTROL_CENTER_KNIGHT * Value(popcount(attacking & center_bb));
 
-            score += KING_PROTECTOR_PENALTY[KNIGHT] * Value(distance(ownKing, sq));
-            score += KING_ATTACKER_PENALTY[KNIGHT] * Value(distance(opponentsKing, sq));
+            score +=
+                KING_PROTECTOR_PENALTY[KNIGHT] * Value(distance(ownKing, sq));
+            score += KING_ATTACKER_PENALTY[KNIGHT] *
+                     Value(distance(opponentsKing, sq));
 
-            Bitboard moves = get_real_possible_moves<side>(position, sq, attacking);
+            Bitboard moves =
+                get_real_possible_moves<side>(position, sq, attacking);
             score += MOBILITY_BONUS[KNIGHT] * Value(popcount(moves));
 
             if (_outposts_bb[side] & square_bb(sq))
@@ -176,7 +180,8 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
                 score += OUTPOST_KNIGHT_BONUS;
             }
 
-            _square_scores[sq] = std::make_pair(make_piece(side, KNIGHT), score);
+            _square_scores[sq] =
+                std::make_pair(make_piece(side, KNIGHT), score);
             _piece_scores[side][KNIGHT] += score;
         }
         value += _piece_scores[side][KNIGHT];
@@ -194,16 +199,20 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             Square sq = position.piece_position(piece, i);
             Bitboard attacking = slider_attack<BISHOP>(sq, position.pieces());
 
-            Bitboard blockers = position.pieces()
-                              & ~position.pieces(side, BISHOP, QUEEN);
+            Bitboard blockers =
+                position.pieces() & ~position.pieces(side, BISHOP, QUEEN);
             Bitboard control_bb = slider_attack<BISHOP>(sq, blockers);
-            score += CONTROL_SPACE[BISHOP] * Value(popcount(control_bb & OPPONENT_RANKS_BB[side]));
+            score += CONTROL_SPACE[BISHOP] *
+                     Value(popcount(control_bb & OPPONENT_RANKS_BB[side]));
 
-            Bitboard moves = get_real_possible_moves<side>(position, sq, attacking);
+            Bitboard moves =
+                get_real_possible_moves<side>(position, sq, attacking);
             score += MOBILITY_BONUS[BISHOP] * Value(popcount(moves));
 
-            score += KING_PROTECTOR_PENALTY[BISHOP] * Value(distance(ownKing, sq));
-            score += KING_ATTACKER_PENALTY[BISHOP] * Value(distance(opponentsKing, sq));
+            score +=
+                KING_PROTECTOR_PENALTY[BISHOP] * Value(distance(ownKing, sq));
+            score += KING_ATTACKER_PENALTY[BISHOP] *
+                     Value(distance(opponentsKing, sq));
 
             score += PAWNS_ON_SAME_COLOR_AS_BISHOP_PENALTY *
                      Value(popcount(position.pieces(side, PAWN) &
@@ -214,7 +223,8 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
                 score += OUTPOST_BISHOP_BONUS;
             }
 
-            _square_scores[sq] = std::make_pair(make_piece(side, BISHOP), score);
+            _square_scores[sq] =
+                std::make_pair(make_piece(side, BISHOP), score);
             _piece_scores[side][BISHOP] += score;
         }
         if ((position.pieces(side, BISHOP) & white_squares_bb) &&
@@ -235,10 +245,11 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             Score score = PIECE_VALUE[ROOK];
             Square sq = position.piece_position(piece, i);
 
-            Bitboard blockers = position.pieces()
-                & ~position.pieces(side, ROOK, QUEEN);
+            Bitboard blockers =
+                position.pieces() & ~position.pieces(side, ROOK, QUEEN);
             Bitboard control_bb = slider_attack<ROOK>(sq, blockers);
-            score += CONTROL_SPACE[ROOK] * Value(popcount(control_bb & OPPONENT_RANKS_BB[side]));
+            score += CONTROL_SPACE[ROOK] *
+                     Value(popcount(control_bb & OPPONENT_RANKS_BB[side]));
 
             Bitboard file_bb = FILES_BB[file(sq)];
             Bitboard rank_bb = FILES_BB[rank(sq)];
@@ -249,20 +260,23 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
                 score += ROOK_SEMIOPEN_FILE_BONUS;
 
             if (popcount_more_than_one(file_bb & position.pieces(piece)) ||
-                    popcount_more_than_one(rank_bb & position.pieces(piece)))
+                popcount_more_than_one(rank_bb & position.pieces(piece)))
                 score += CONNECTED_ROOKS_BONUS / 2;
 
             Bitboard attacking = slider_attack<ROOK>(sq, position.pieces());
 
-            Bitboard moves = get_real_possible_moves<side>(position, sq, attacking);
+            Bitboard moves =
+                get_real_possible_moves<side>(position, sq, attacking);
             score += MOBILITY_BONUS[ROOK] * Value(popcount(moves));
 
             if (popcount(moves) <= 3)
             {
                 if ((file(ownKing) < FILE_E) == (file(sq) < file(ownKing)))
                 {
-                    const bool canCastle = position.castling_rights() & CASTLING_RIGHTS[side];
-                    score += TRAPPED_ROOK_PENALTY * Value(1 + Value(!canCastle));
+                    const bool canCastle =
+                        position.castling_rights() & CASTLING_RIGHTS[side];
+                    score +=
+                        TRAPPED_ROOK_PENALTY * Value(1 + Value(!canCastle));
                 }
             }
 
@@ -284,15 +298,16 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             Score score = PIECE_VALUE[QUEEN];
             Square sq = position.piece_position(piece, i);
 
-            Bitboard blockers = position.pieces()
-                & ~position.pieces(side, BISHOP, QUEEN);
+            Bitboard blockers =
+                position.pieces() & ~position.pieces(side, BISHOP, QUEEN);
             Bitboard control_bb = slider_attack<BISHOP>(sq, blockers);
-            score += CONTROL_SPACE[QUEEN] * Value(popcount(control_bb & OPPONENT_RANKS_BB[side]));
+            score += CONTROL_SPACE[QUEEN] *
+                     Value(popcount(control_bb & OPPONENT_RANKS_BB[side]));
 
-            blockers = position.pieces()
-                & ~position.pieces(side, ROOK, QUEEN);
+            blockers = position.pieces() & ~position.pieces(side, ROOK, QUEEN);
             control_bb = slider_attack<ROOK>(sq, blockers);
-            score += CONTROL_SPACE[QUEEN] * Value(popcount(control_bb & OPPONENT_RANKS_BB[side]));
+            score += CONTROL_SPACE[QUEEN] *
+                     Value(popcount(control_bb & OPPONENT_RANKS_BB[side]));
 
             Bitboard snipers =
                 (pseudoattacks<BISHOP>(sq) & position.pieces(!side, BISHOP)) |
@@ -313,7 +328,8 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
             }
 
             Bitboard attacking = slider_attack<QUEEN>(sq, position.pieces());
-            Bitboard moves = get_real_possible_moves<side>(position, sq, attacking);
+            Bitboard moves =
+                get_real_possible_moves<side>(position, sq, attacking);
             score += MOBILITY_BONUS[QUEEN] * Value(popcount(moves));
 
             _square_scores[sq] = std::make_pair(make_piece(side, QUEEN), score);
@@ -324,16 +340,19 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
     }
 
     _piece_scores[side][KING] = score_king<side>(position);
-    _square_scores[ownKing] = std::make_pair(make_piece(side, KING), _piece_scores[side][KING]);
+    _square_scores[ownKing] =
+        std::make_pair(make_piece(side, KING), _piece_scores[side][KING]);
     value += _piece_scores[side][KING];
 
     return value;
 }
 
 template <Color side>
-Score PositionScorer::score_king_shelter(const Position& position, Square king_sq)
+Score PositionScorer::score_king_shelter(const Position& position,
+                                         Square king_sq)
 {
-    Bitboard pawns_in_king_area = KING_MASK[king_sq] & position.pieces(side, PAWN);
+    Bitboard pawns_in_king_area =
+        KING_MASK[king_sq] & position.pieces(side, PAWN);
     return Value(popcount(pawns_in_king_area)) * KING_SAFETY_BONUS;
 }
 
@@ -341,7 +360,7 @@ template <Color side>
 Score PositionScorer::score_king_safety(const Position& position)
 {
     const Square ownKing = position.piece_position(make_piece(side, KING), 0);
-        position.piece_position(make_piece(!side, KING), 0);
+    position.piece_position(make_piece(!side, KING), 0);
     const Castling kingCastling = side == WHITE ? W_OO : B_OO;
     const Castling queenCastling = side == WHITE ? W_OOO : B_OOO;
 
@@ -352,14 +371,24 @@ Score PositionScorer::score_king_safety(const Position& position)
     // if we can castle kingside check if there is better shelter
     if (position.castling_rights() & kingCastling)
     {
-        score = std::max(score, score_king_shelter<side>(position, relative_square<side>(SQ_G1)), compareScores);
+        score = std::max(
+            score,
+            score_king_shelter<side>(position, relative_square<side>(SQ_G1)),
+            compareScores);
     }
 
-    // if we can castle queenside check if there is better shelter (both c1 and b1)
+    // if we can castle queenside check if there is better shelter (both c1 and
+    // b1)
     if (position.castling_rights() & queenCastling)
     {
-        score = std::max(score, score_king_shelter<side>(position, relative_square<side>(SQ_C1)), compareScores);
-        score = std::max(score, score_king_shelter<side>(position, relative_square<side>(SQ_B1)), compareScores);
+        score = std::max(
+            score,
+            score_king_shelter<side>(position, relative_square<side>(SQ_C1)),
+            compareScores);
+        score = std::max(
+            score,
+            score_king_shelter<side>(position, relative_square<side>(SQ_B1)),
+            compareScores);
     }
 
     // penalty for distance from own pawns in endgame
@@ -368,7 +397,8 @@ Score PositionScorer::score_king_safety(const Position& position)
     int no_pawns = position.number_of_pieces(MY_PAWN);
     for (int i = 0; i < no_pawns; ++i)
     {
-        score += Value(distance(ownKing, position.piece_position(MY_PAWN, i))) * KING_PAWN_PROXIMITY_PENALTY;
+        score += Value(distance(ownKing, position.piece_position(MY_PAWN, i))) *
+                 KING_PAWN_PROXIMITY_PENALTY;
     }
 
     return score;
@@ -403,13 +433,13 @@ Score PositionScorer::score_king(const Position& position)
             value += WEAK_BACKRANK_PENALTY;
     }
 
-    Bitboard possible_bishop_check =
-        slider_attack<BISHOP>(ownKing, position.pieces() & ~_blockers_for_king[side]);
+    Bitboard possible_bishop_check = slider_attack<BISHOP>(
+        ownKing, position.pieces() & ~_blockers_for_king[side]);
     if (position.pieces(!side, QUEEN) ||
         (position.pieces(!side, BISHOP) & color_squares_bb[sq_color(ownKing)]))
         value += WEAK_KING_DIAGONALS * Value(popcount(possible_bishop_check));
-    Bitboard possible_rook_check =
-        slider_attack<ROOK>(ownKing, position.pieces() & ~_blockers_for_king[side]);
+    Bitboard possible_rook_check = slider_attack<ROOK>(
+        ownKing, position.pieces() & ~_blockers_for_king[side]);
     if (position.pieces(!side, QUEEN) || position.pieces(!side, ROOK))
         value += WEAK_KING_LINES * Value(popcount(possible_rook_check));
 
@@ -464,19 +494,17 @@ Score PositionScorer::score_pawns_for_side(const Position& position)
         const Bitboard leverPush = theirPawns & shift<up_dir>(attacks);
         const Bitboard opposed = theirPawns & passed_pawn_bb<side>(sq);
 
-        bool blocked =
-            static_cast<bool>(theirPawns & shift<up_dir>(square_bb(sq)));
-        bool doubled =
-            static_cast<bool>(ourPawns & shift<down_dir>(square_bb(sq)));
-        bool backward =
-            static_cast<bool>(neighbours &
-                    passed_pawn_bb<!side>(Square(sq + 8 * up))) &&
+        const bool blocked = theirPawns & shift<up_dir>(square_bb(sq));
+        const bool doubled = ourPawns & shift<down_dir>(square_bb(sq));
+        const bool backward =
+            !(neighbours & passed_pawn_bb<!side>(Square(sq + 8 * up))) &&
             (blocked || leverPush);
-        bool passed = !opposed || !(opposed ^ lever) ||
-            (!(opposed ^ leverPush) &&
-             popcount(phalanx) >= popcount(leverPush));
+        const bool passed = !opposed || !(opposed ^ lever) ||
+                            (!(opposed ^ leverPush) &&
+                             popcount(phalanx) >= popcount(leverPush));
 
-        score += popcount(attacks & opponents_center_bb[side]) * PAWN_CONTROL_CENTER_BONUS;
+        score += popcount(attacks & opponents_center_bb[side]) *
+                 PAWN_CONTROL_CENTER_BONUS;
         if (doubled) score += DOUBLE_PAWN_PENALTY;
         if (support | phalanx)
         {
@@ -490,7 +518,8 @@ Score PositionScorer::score_pawns_for_side(const Position& position)
         else if (backward)
             score += BACKWARD_PAWN_PENALTY;
 
-        if (passed) score += PASSED_PAWN_BONUS * Value(rel_rank);
+        if (passed)
+            score += PASSED_PAWN_BONUS * PASSED_PAWN_RANK_WEIGHT[rel_rank];
 
         _square_scores[sq] = std::make_pair(pawn, score);
         value += score;
@@ -545,7 +574,8 @@ Bitboard PositionScorer::blockers_for_square(const Position& position,
 }
 
 template <Color side>
-Bitboard PositionScorer::get_real_possible_moves(const Position& position, Square sq, Bitboard moves)
+Bitboard PositionScorer::get_real_possible_moves(const Position& position,
+                                                 Square sq, Bitboard moves)
 {
     const Square ownKing = position.piece_position(make_piece(side, KING), 0);
 
@@ -560,10 +590,12 @@ Bitboard PositionScorer::get_real_possible_moves(const Position& position, Squar
     // cannot move into square with our piece
     moves &= ~position.pieces(side);
 
-    // don't count squares attacked by opponents pawns with nothing valueable there
+    // don't count squares attacked by opponents pawns with nothing valueable
+    // there
     moves &= ~(_attacked_by_bb[!side][PAWN] & ~opponent_pieces);
 
-    // don't count squares attacked by opponents piece and not defended by our pawns
+    // don't count squares attacked by opponents piece and not defended by our
+    // pawns
     /* moves &= */
     /*     ~(_attacked_by_piece[!side] & ~_attacked_by_bb[side][PAWN]); */
 
@@ -581,20 +613,19 @@ void PositionScorer::print_stats()
     const std::string pieceChar = " PNBRQKpnbrqk";
     const std::string colorReset = "\033[m";
     const std::string colorBold = "\033[1m";
-    const std::string sideColor[COLOR_NUM] = {
-        colorBold, colorReset
-    };
+    const std::string sideColor[COLOR_NUM] = {colorBold, colorReset};
     const std::string pieceKindColor[PIECE_KIND_NUM] = {
         "",
-        "\033[31m", // pawn
-        "\033[32m", // knight
-        "\033[33m", // bishop
-        "\033[34m", // rook
-        "\033[35m", // queen
-        "\033[36m", // king
+        "\033[31m",  // pawn
+        "\033[32m",  // knight
+        "\033[33m",  // bishop
+        "\033[34m",  // rook
+        "\033[35m",  // queen
+        "\033[36m",  // king
     };
 
-    const std::string horizontalLine = "+-----+-----+-----+-----+-----+-----+-----+-----+";
+    const std::string horizontalLine =
+        "+-----+-----+-----+-----+-----+-----+-----+-----+";
 
     for (Rank rank = RANK_8; rank >= RANK_1; --rank)
     {
@@ -611,29 +642,51 @@ void PositionScorer::print_stats()
         {
             const auto [piece, score] = _square_scores[make_square(rank, file)];
             std::cout << "|" << sideColor[get_color(piece)]
-                      << pieceKindColor[get_piece_kind(piece)]
-                      << std::setw(5) << std::setfill(' ')
-                      << (piece != NO_PIECE ? std::to_string(combine(score)) : "")
+                      << pieceKindColor[get_piece_kind(piece)] << std::setw(5)
+                      << std::setfill(' ')
+                      << (piece != NO_PIECE ? std::to_string(combine(score))
+                                            : "")
                       << colorReset;
         }
         std::cout << "|" << std::endl;
     }
     std::cout << horizontalLine << std::endl;
 
-    std::cout << std::showpoint << std::noshowpos << std::fixed << std::setprecision(2)
-              << "+---------+--------------+--------------+--------------+" << std::endl
-              << "|  TYPE   |     White    |     Black    |     Total    |" << std::endl
-              << "|         |   Mg    Eg   |   Mg    Eg   |   Mg    Eg   |" << std::endl
-              << "+---------+--------------+--------------+--------------+" << std::endl
-              << "|   PAWNS |" << TERM(_piece_scores[WHITE][PAWN], _piece_scores[BLACK][PAWN]) << std::endl
-              << "| KNIGHTS |" << TERM(_piece_scores[WHITE][KNIGHT], _piece_scores[BLACK][KNIGHT]) << std::endl
-              << "| BISHOPS |" << TERM(_piece_scores[WHITE][BISHOP], _piece_scores[BLACK][BISHOP]) << std::endl
-              << "|   ROOKS |" << TERM(_piece_scores[WHITE][ROOK], _piece_scores[BLACK][ROOK]) << std::endl
-              << "|  QUEENS |" << TERM(_piece_scores[WHITE][QUEEN], _piece_scores[BLACK][QUEEN]) << std::endl
-              << "|    KING |" << TERM(_piece_scores[WHITE][KING], _piece_scores[BLACK][KING]) << std::endl
+    std::cout << std::showpoint << std::noshowpos << std::fixed
+              << std::setprecision(2)
+              << "+---------+--------------+--------------+--------------+"
+              << std::endl
+              << "|  TYPE   |     White    |     Black    |     Total    |"
+              << std::endl
+              << "|         |   Mg    Eg   |   Mg    Eg   |   Mg    Eg   |"
+              << std::endl
+              << "+---------+--------------+--------------+--------------+"
+              << std::endl
+              << "|   PAWNS |"
+              << TERM(_piece_scores[WHITE][PAWN], _piece_scores[BLACK][PAWN])
+              << std::endl
+              << "| KNIGHTS |"
+              << TERM(_piece_scores[WHITE][KNIGHT],
+                      _piece_scores[BLACK][KNIGHT])
+              << std::endl
+              << "| BISHOPS |"
+              << TERM(_piece_scores[WHITE][BISHOP],
+                      _piece_scores[BLACK][BISHOP])
+              << std::endl
+              << "|   ROOKS |"
+              << TERM(_piece_scores[WHITE][ROOK], _piece_scores[BLACK][ROOK])
+              << std::endl
+              << "|  QUEENS |"
+              << TERM(_piece_scores[WHITE][QUEEN], _piece_scores[BLACK][QUEEN])
+              << std::endl
+              << "|    KING |"
+              << TERM(_piece_scores[WHITE][KING], _piece_scores[BLACK][KING])
+              << std::endl
               << "|   TOTAL |" << TERM(total_white, total_black) << std::endl
-              << "|  WEIGHT |" << Score(_weight, MAX_PIECE_WEIGTHS) << "|              |              |" << std::endl
-              << "+---------+--------------+--------------+--------------+" << std::endl;
+              << "|  WEIGHT |" << Score(_weight, MAX_PIECE_WEIGTHS)
+              << "|              |              |" << std::endl
+              << "+---------+--------------+--------------+--------------+"
+              << std::endl;
 }
 
 }  // namespace engine

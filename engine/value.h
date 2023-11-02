@@ -135,6 +135,9 @@ constexpr Score PAWN_CONTROL_CENTER_BONUS = S(30, 30);
 
 // bonus for passed pawn
 constexpr Score PASSED_PAWN_BONUS = S(20, 40);
+constexpr Value PASSED_PAWN_RANK_WEIGHT[RANK_NUM] = {
+    // 0, 1, 2, 3, 4, 5,  6, 7
+       0, 1, 1, 2, 3, 6, 10, 0};
 
 // penalty for double pawns
 constexpr Score DOUBLE_PAWN_PENALTY = S(-15, -45);
