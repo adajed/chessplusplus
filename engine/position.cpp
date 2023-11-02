@@ -705,10 +705,20 @@ Move Position::parse_uci(const std::string& str)
     {
         switch (str[4])
         {
-        case 'n': promotion = KNIGHT; break;
-        case 'b': promotion = BISHOP; break;
-        case 'r': promotion = ROOK; break;
-        case 'q': promotion = QUEEN; break;
+        case 'n':
+        case 'N':
+            promotion = KNIGHT; break;
+        case 'b':
+        case 'B':
+            promotion = BISHOP; break;
+        case 'r':
+        case 'R':
+            promotion = ROOK; break;
+        case 'q':
+        case 'Q':
+            promotion = QUEEN; break;
+        default:
+            throw std::runtime_error("Unknown promotion piece: " + str.substr(4));
         }
     }
 
