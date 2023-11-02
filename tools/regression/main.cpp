@@ -1,4 +1,5 @@
 #include "argument_parser.h"
+#include "eco_codes.h"
 #include "elo_utils.h"
 #include "endgame.h"
 #include "engine_wrapper.h"
@@ -60,28 +61,30 @@ Result game(int id, GameParams params)
     engines[WHITE] = &engine1;
     engines[BLACK] = &engine2;
 
-    std::cout << "New game: white=" << engines[WHITE]->get_name()
-              << " black=" << engines[BLACK]->get_name()
-              << " time=" << params.time_format.time_initial_ms << "+"
-              << params.time_format.time_increment_ms
-              << " moves=";
-    engine::Position p{};
-    for (Move m : params.intial_moves)
-    {
-        std::cout << p.san(m) << " ";
-        p.do_move(m);
-    }
-    std::cout << std::endl;
-
     engines[WHITE]->ucinewgame();
     engines[BLACK]->ucinewgame();
 
+    std::vector<Move> moves;
+    std::stringstream moves_ss;
     ExtendedPosition position(engines[WHITE]->get_name(),
                               engines[BLACK]->get_name(),
                               params.time_format.time_initial_ms,
                               params.time_format.time_increment_ms);
-    std::vector<Move> moves;
-    uint32_t depth = 0;
+    for (auto move : params.intial_moves)
+    {
+        moves_ss << position.san(move) << " ";
+        position.push_back({move, "", timers[position.color()].get_time_left_human(), true, position.san(move)});
+        position.do_move(move);
+        moves.push_back(move);
+    }
+    eco::Code openingCode = eco::get(position);
+    std::cout << "New game: white=" << engines[WHITE]->get_name()
+              << " black=" << engines[BLACK]->get_name()
+              << " time=" << params.time_format.time_initial_ms << "+"
+              << params.time_format.time_increment_ms
+              << " eco=" << openingCode.code
+              << " name=\"" << openingCode.openingName << "\""
+              << " moves=" << moves_ss.str() << std::endl;
 
     while (!position.is_checkmate()
              && !position.is_draw()
@@ -94,21 +97,13 @@ Result game(int id, GameParams params)
 
         Move move = NO_MOVE;
         timers[side].start();
-        bool bookmove = depth < params.intial_moves.size();
         std::string score = "";
-        if (bookmove)
-        {
-            move = params.intial_moves[depth];
-        }
-        else
-        {
-            CommandGoParams params;
-            params.time[WHITE] = timers[WHITE].get_time_left_ms();
-            params.time_inc[WHITE] = timers[WHITE].get_time_inc_ms();
-            params.time[BLACK] = timers[BLACK].get_time_left_ms();
-            params.time_inc[BLACK] = timers[BLACK].get_time_inc_ms();
-            move = engines[side]->go(params, side, score);
-        }
+        CommandGoParams params;
+        params.time[WHITE] = timers[WHITE].get_time_left_ms();
+        params.time_inc[WHITE] = timers[WHITE].get_time_inc_ms();
+        params.time[BLACK] = timers[BLACK].get_time_left_ms();
+        params.time_inc[BLACK] = timers[BLACK].get_time_inc_ms();
+        move = engines[side]->go(params, side, score);
         timers[side].end();
 
         if (move == NO_MOVE)
@@ -118,11 +113,9 @@ Result game(int id, GameParams params)
         }
 
         std::string timeLeft = timers[side].get_time_left_human();
-        position.push_back({move, score, timeLeft, bookmove, position.san(move)});
+        position.push_back({move, score, timeLeft, false, position.san(move)});
         position.do_move(move);
         moves.push_back(move);
-
-        depth++;
     }
 
     engine1.quit();
