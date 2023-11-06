@@ -3,6 +3,8 @@
 #include "eco_codes.h"
 #include "position.h"
 #include "types.h"
+
+#include <sstream>
 #include <string>
 #include <vector>
 

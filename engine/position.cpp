@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "zobrist_hash.h"
 
+#include <functional>
 #include <optional>
 #include <sstream>
 
