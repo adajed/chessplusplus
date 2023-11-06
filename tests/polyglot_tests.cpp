@@ -1,4 +1,8 @@
+#if defined(_WIN32)
+#include <stdint.h>
+#else
 #include <bits/stdint-uintn.h>
+#endif
 #include <gtest/gtest.h>
 
 #include "polyglot.h"

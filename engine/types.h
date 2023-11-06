@@ -152,7 +152,7 @@ constexpr Move create_promotion(Square from, Square to, PieceKind promotion)
 constexpr Move create_castling(Castling castling)
 {
     assert(castling == KING_CASTLING || castling == QUEEN_CASTLING);
-    return (castling == KING_CASTLING ? 1 : 2) << 15;
+    return static_cast<Move>((castling == KING_CASTLING ? 1 : 2) << 15);
 }
 
 

@@ -10,48 +10,66 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" "RelWithD
 set(LOG_LEVEL 0 CACHE STRING "Logging level")
 set(ECO_CODES_FILE "${PROJECT_SOURCE_DIR}/tools/regression/scid.eco" CACHE STRING "File with ECO codes")
 
-add_compile_options(-Wall -Wextra -pedantic -Werror -flto -march=native -mtune=native)
-add_compile_options("-DLOG_LEVEL=${LOG_LEVEL}")
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set(BUILD_FOR_WINDOWS True)
+endif()
+
+if (MSVC)
+    add_compile_options(/W4)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror -flto -march=native -mtune=native)
+endif()
+add_compile_definitions("LOG_LEVEL=${LOG_LEVEL}")
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_compile_options(-g -DDEBUG)
+    if (MSVC)
+        add_compile_options(/Od /Ob1)
+    else()
+        add_compile_options(-g)
+    endif()
+	add_compile_definitions(DEBUG)
 elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
-    add_compile_options(-Ofast -DDEBUG -g)
+    if (MSVC)
+        add_compile_options(/O2 /Ot /Ob2)
+    else()
+        add_compile_options(-Ofast -g)
+    endif()
+	add_compile_definitions(DEBUG)
 elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_compile_options(-Ofast -DNDEBUG)
+    if (MSVC)
+        add_compile_options(/O2 /Ot /Ob2)
+    else()
+        add_compile_options(-Ofast)
+    endif()
+	add_compile_definitions(NDEBUG)
 else()
     message("Unknown build type : ${CMAKE_BUILD_TYPE}")
 endif()
-
-configure_file(chessplusplusConfig.h.in chessplusplusConfig.h)
 
 file(GLOB engine_src "engine/*.cpp")
 list(REMOVE_ITEM engine_src "${PROJECT_SOURCE_DIR}/engine/main.cpp")
 
 add_library(engine_objs OBJECT ${engine_src})
 target_include_directories(engine_objs
-    PUBLIC
-        "${PROJECT_BINARY_DIR}"
-        "${PROJECT_SOURCE_DIR}/engine")
+    PUBLIC "${PROJECT_SOURCE_DIR}/engine")
 
 # engine
 add_executable(chessplusplus engine/main.cpp)
 target_link_libraries(chessplusplus PUBLIC engine_objs)
 target_include_directories(chessplusplus
-    PUBLIC
-        "${PROJECT_BINARY_DIR}"
-        "${PROJECT_SOURCE_DIR}/engine")
+    PUBLIC "${PROJECT_SOURCE_DIR}/engine")
 
 # regression
-file(GLOB regression_src "tools/regression/*.cpp")
-add_executable(regression ${regression_src})
-target_compile_options(regression PRIVATE "-DECO_CODES_FILE=\"${ECO_CODES_FILE}\"")
-target_link_libraries(regression PUBLIC engine_objs)
-target_include_directories(regression
-    PUBLIC
-        "${PROJECT_BINARY_DIR}"
-        "${PROJECT_SOURCE_DIR}/tools/regression"
-        "${PROJECT_SOURCE_DIR}/engine")
+if (NOT BUILD_FOR_WINDOWS)
+    file(GLOB regression_src "tools/regression/*.cpp")
+    add_executable(regression ${regression_src})
+    target_compile_options(regression PRIVATE "-DECO_CODES_FILE=\"${ECO_CODES_FILE}\"")
+    target_link_libraries(regression PUBLIC engine_objs)
+    target_include_directories(regression
+        PUBLIC
+            "${PROJECT_SOURCE_DIR}/tools/regression"
+            "${PROJECT_SOURCE_DIR}/engine")
+endif()
 
 enable_testing()
 
