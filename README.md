@@ -6,16 +6,27 @@
 
 ## Building
 
+### Using CMake
 ```
-mkdir build
+cmake -S. -Bbuild
 cd build
-cmake ..
 make chessplusplus -j8
 ```
 
+### Using Make
+There is also Makefile available (for those who can't use CMake).  
+It only compiles the engine in Release mode.  
+Tested on msys2 with g++.
+
+```
+make
+```
+
+Engine binary will be generated in `.\build` directory.
+
 ### LOG\_LEVEL
 To add additional logs during runtime:
-`cmake -DLOG_LEVEL=2 ..`
+`cmake -S. -Bbuild -DLOG_LEVEL=2`
 
 LEVELS:
 - 0 - No logging.
