@@ -1,6 +1,5 @@
 #include "search.h"
 
-#include "endgame.h"
 #include "logger.h"
 #include "movegen.h"
 #include "score.h"
@@ -387,8 +386,8 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
         entryPtr = _ttable.probe(position.hash(), found);
     }
 
-    if (found && (entryPtr->value.depth >= depth) &&
-        (std::find(begin, end, entryPtr->value.move) != end))
+    if (found && (entryPtr->value.depth() >= depth) &&
+        (std::find(begin, end, entryPtr->value.move()) != end))
     {
         _stats.tt_hits++;
         LOG_DEBUG("[%d] CACHE HIT score=%ld depth=%d flag=%d move=%s",
@@ -401,18 +400,18 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
 
         if (allowCutoff)
         {
-            switch (entryPtr->value.flag)
+            switch (entryPtr->value.flag())
             {
             case tt::Flag::kEXACT:
-                set_new_pv_list(info, entryPtr->value.move);
+                set_new_pv_list(info, entryPtr->value.move());
                 LOG_DEBUG("[%d] NODES SEARCHED %lu", info->_ply, _stats.nodes_searched - savedNumNodesSearched);
-                EXIT_SEARCH(Value(entryPtr->value.score));
+                EXIT_SEARCH(Value(entryPtr->value.score()));
             case tt::Flag::kLOWER_BOUND:
-                bestValue = entryPtr->value.score;
-                alpha = std::max(alpha, entryPtr->value.score);
+                bestValue = entryPtr->value.score();
+                alpha = std::max(alpha, entryPtr->value.score());
                 break;
             case tt::Flag::kUPPER_BOUND:
-                beta = std::min(beta, entryPtr->value.score);
+                beta = std::min(beta, entryPtr->value.score());
                 break;
             }
         }
@@ -420,7 +419,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
         if (alpha >= beta)
         {
             LOG_DEBUG("[%d] NODES SEARCHED %lu", info->_ply, _stats.nodes_searched - savedNumNodesSearched);
-            EXIT_SEARCH(Value(entryPtr->value.score));
+            EXIT_SEARCH(Value(entryPtr->value.score()));
         }
     }
 
@@ -428,9 +427,9 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     {
         info->_static_eval = VALUE_NONE;
     }
-    else if (found && entryPtr->value.flag == tt::Flag::kEXACT)
+    else if (found && entryPtr->value.flag() == tt::Flag::kEXACT)
     {
-        info->_static_eval = entryPtr->value.score;
+        info->_static_eval = entryPtr->value.score();
     }
     else
     {

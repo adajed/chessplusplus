@@ -69,7 +69,7 @@ EngineWrapper::EngineWrapper(const std::string& command,
         close(CHILD_STDERR_READ);
 
         // Execute the program
-        execl(command_.c_str(), "engine", (char*)NULL);
+        execl(command_.c_str(), command_.c_str(), (char*)NULL);
     }
     else if (pid > pid_t(0))
     {
@@ -211,7 +211,7 @@ Move EngineWrapper::go(const CommandGoParams& params, Color color, std::string& 
 void EngineWrapper::set_option(const std::string& name,
                                const std::string& value)
 {
-    SEND("set_option name " << name << " value " << value);
+    SEND("setoption name " << name << " value " << value);
     SEND("isready");
     std::string message = "";
     do

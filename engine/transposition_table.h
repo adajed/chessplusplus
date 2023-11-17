@@ -21,17 +21,23 @@ struct TTEntry
 {
     TTEntry() {}
     TTEntry(int64_t score, int32_t depth, Flag flag, Move move)
-        : score(score), depth(depth), flag(flag), move(move)
+        : score_(score), depth_flag_score_(depth << 19 | static_cast<uint32_t>(flag) << 17 | move)
     {
     }
 
-    int64_t score;
-    int32_t depth;
-    Flag flag;
-    Move move;
+    int64_t score() const { return score_; }
+    int32_t depth() const { return depth_flag_score_ >> 19; }
+    Flag flag() const { return static_cast<Flag>((depth_flag_score_ >> 17) & 0x3); }
+    Move move() const { return depth_flag_score_ & 0x1FFFF; }
+
+private:
+    int64_t score_;
+    uint32_t depth_flag_score_;
+    /* Flag flag_; */
+    /* Move move_; */
 };
 
-using TTable = HashMap<uint64_t, TTEntry, 4 * 1024 * 1024>;
+using TTable = HashMap<uint64_t, TTEntry>;
 
 }  // namespace tt
 }  // namespace engine

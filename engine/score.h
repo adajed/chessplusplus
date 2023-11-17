@@ -8,7 +8,7 @@
 
 namespace engine
 {
-using PawnHashMap = HashMap<uint64_t, Score, 512 * 512>;
+using PawnHashMap = HashMap<uint64_t, Score>;
 
 class PositionScorer
 {

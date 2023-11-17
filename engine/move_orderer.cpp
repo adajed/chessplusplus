@@ -93,7 +93,7 @@ void MoveOrderer::order_moves(const Position& position, Move* begin, Move* end,
     Move ttMove = NO_MOVE;
     bool found = false;
     const auto entryPtr = _ttable.probe(position.hash(), found);
-    if (found) ttMove = entryPtr->value.move;
+    if (found) ttMove = entryPtr->value.move();
 
     int n_moves = static_cast<int>(end - begin);
 

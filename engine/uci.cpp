@@ -10,6 +10,9 @@ namespace engine
 {
 Uci::Uci() : search(nullptr), position(), quit(false), options(), polyglot(), polyglot_sample_random_move(true)
 {
+    options["Hash"] = UciOption(DEFAULT_TT_HASHMAP_SIZE_MB, 1, 65532, [this](int hashSizeMB) {
+        this->ttable = tt::TTable(hashSizeMB * 1024ULL * 1024ULL);
+    });
     options["Polyglot Book"] = UciOption("", [this](std::string path) {
         if (path == "")
             this->polyglot = PolyglotBook();

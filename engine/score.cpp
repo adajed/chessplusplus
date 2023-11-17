@@ -29,7 +29,7 @@ const Value MAX_PIECE_WEIGTHS =
     2 * (2 * PIECE_WEIGHTS[KNIGHT] + 2 * PIECE_WEIGHTS[BISHOP] +
          2 * PIECE_WEIGHTS[ROOK] + 1 * PIECE_WEIGHTS[QUEEN]);
 
-PositionScorer::PositionScorer() : _pawn_hash_table(), _weight(-1) {}
+PositionScorer::PositionScorer() : _pawn_hash_table(512 * 512 * sizeof(PawnHashMap::Entry)), _weight(-1) {}
 
 void PositionScorer::clear()
 {
