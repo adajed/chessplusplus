@@ -47,9 +47,23 @@ Result game(int id, GameParams params)
                           id, params.debug);
 
     engine1.uci();
+    for (auto const& option : params.engine_white.options)
+    {
+        if (option.second)
+            engine1.set_option(option.first, *option.second);
+        else
+            engine1.set_option(option.first);
+    }
     engine1.ucinewgame();
 
     engine2.uci();
+    for (auto const& option : params.engine_black.options)
+    {
+        if (option.second)
+            engine2.set_option(option.first, *option.second);
+        else
+            engine2.set_option(option.first);
+    }
     engine2.ucinewgame();
 
     Timer timers[COLOR_NUM] = {Timer(params.time_format.time_initial_ms,
