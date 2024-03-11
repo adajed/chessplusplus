@@ -43,6 +43,30 @@ void init()
         ENPASSANT_HASH[file] = random_uint64();
 }
 
+PieceCountVector build_pcv(const std::string& code, Color c)
+{
+    std::string codeWhite = code.substr(0, std::min(code.find('v'), code.find('K', 1)));
+    std::string codeBlack = code.substr(code.find('K', 1));
+
+    if (c == BLACK)
+        std::swap(codeWhite, codeBlack);
+
+    PieceCountVector pcv = 0ULL;
+
+    pcv = modify_pcv(pcv, std::count(codeWhite.begin(), codeWhite.end(), 'P'), W_PAWN);
+    pcv = modify_pcv(pcv, std::count(codeWhite.begin(), codeWhite.end(), 'N'), W_KNIGHT);
+    pcv = modify_pcv(pcv, std::count(codeWhite.begin(), codeWhite.end(), 'B'), W_BISHOP);
+    pcv = modify_pcv(pcv, std::count(codeWhite.begin(), codeWhite.end(), 'R'), W_ROOK);
+    pcv = modify_pcv(pcv, std::count(codeWhite.begin(), codeWhite.end(), 'Q'), W_QUEEN);
+
+    pcv = modify_pcv(pcv, std::count(codeBlack.begin(), codeBlack.end(), 'P'), B_PAWN);
+    pcv = modify_pcv(pcv, std::count(codeBlack.begin(), codeBlack.end(), 'N'), B_KNIGHT);
+    pcv = modify_pcv(pcv, std::count(codeBlack.begin(), codeBlack.end(), 'B'), B_BISHOP);
+    pcv = modify_pcv(pcv, std::count(codeBlack.begin(), codeBlack.end(), 'R'), B_ROOK);
+    pcv = modify_pcv(pcv, std::count(codeBlack.begin(), codeBlack.end(), 'Q'), B_QUEEN);
+
+    return pcv;
+}
 
 }  // namespace zobrist
 
@@ -52,6 +76,31 @@ HashKey::HashKey()
       _enpassant_key(0ULL),
       _castling_key(0ULL),
       _color_key(0ULL)
+{
+}
+
+HashKey::HashKey(PieceCountVector pcv)
+    : _piece_key(0ULL),
+      _pawn_key(0ULL),
+      _enpassant_key(0ULL),
+      _castling_key(0ULL),
+      _color_key(0ULL)
+{
+    for (Color c : {WHITE, BLACK})
+    {
+        _piece_key ^= PIECE_HASH[make_piece(c, KING)][0];
+        for (PieceKind pk : {PAWN, KNIGHT, BISHOP, ROOK, QUEEN})
+        {
+            Piece p = make_piece(c, pk);
+            int count = get_count_pcv(pcv, p);
+            for (int i = 0; i < count; ++i)
+                _piece_key ^= PIECE_HASH[p][i];
+        }
+    }
+}
+
+HashKey::HashKey(const std::string& code, Color c)
+    : HashKey(zobrist::build_pcv(code, c))
 {
 }
 

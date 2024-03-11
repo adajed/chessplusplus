@@ -29,6 +29,7 @@ class Position
 
     explicit Position();
     explicit Position(std::string fen);
+    Position(const std::vector<std::pair<Piece, Square>>& pieces);
 
     bool operator==(const Position& other) const;
 
@@ -55,6 +56,8 @@ class Position
     bool rule50() const;
     bool enough_material() const;
 
+    bool is_legal() const;
+
     bool move_is_quiet(Move move) const;
     bool move_is_capture(Move move) const;
     bool move_gives_check(Move move) const;
@@ -77,6 +80,7 @@ class Position
 
     uint64_t hash() const { return _zobrist_hash.get_key(); }
     uint64_t pawn_hash() const { return _zobrist_hash.get_pawnkey(); }
+    uint64_t material_hash() const { return HashKey(get_pcv()).get_key(); }
 
     Bitboard pieces() const;
     Bitboard pieces(Color c) const;

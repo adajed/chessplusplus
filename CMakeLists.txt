@@ -5,10 +5,13 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type")
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Release" "Debug" "RelWithDebInfo")
 set(LOG_LEVEL 0 CACHE STRING "Logging level")
 set(ECO_CODES_FILE "${PROJECT_SOURCE_DIR}/tools/regression/scid.eco" CACHE STRING "File with ECO codes")
+set(SYZYGY_TEST_DIR "${PROJECT_SOURCE_DIR}/tests/syzygy" CACHE STRING "Directory with syzygy tablebases for unit tests")
+
+message(STATUS "${SYZYGY_TEST_DIR}")
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set(BUILD_FOR_WINDOWS True)
@@ -17,37 +20,45 @@ endif()
 if (MSVC)
     add_compile_options(/W4)
 else()
-    add_compile_options(-Wall -Wextra -Wpedantic -Werror -flto -march=native -mtune=native)
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror -flto -march=native -mtune=native -mpopcnt)
 endif()
 add_compile_definitions("LOG_LEVEL=${LOG_LEVEL}")
 
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     if (MSVC)
         add_compile_options(/Od /Ob1)
     else()
-        add_compile_options(-g)
+        add_compile_options(-g -O0)
     endif()
-	add_compile_definitions(DEBUG)
+    add_compile_definitions(DEBUG)
 elseif (CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
     if (MSVC)
         add_compile_options(/O2 /Ot /Ob2)
     else()
         add_compile_options(-Ofast -g)
     endif()
-	add_compile_definitions(DEBUG)
+    add_compile_definitions(DEBUG)
 elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
     if (MSVC)
         add_compile_options(/O2 /Ot /Ob2)
     else()
         add_compile_options(-Ofast)
     endif()
-	add_compile_definitions(NDEBUG)
+    add_compile_definitions(NDEBUG)
 else()
-    message("Unknown build type : ${CMAKE_BUILD_TYPE}")
+    message(FATAL_ERROR "Unknown build type : ${CMAKE_BUILD_TYPE}")
+
 endif()
+
 
 file(GLOB engine_src "engine/*.cpp")
 list(REMOVE_ITEM engine_src "${PROJECT_SOURCE_DIR}/engine/main.cpp")
+list(APPEND engine_src "${PROJECT_SOURCE_DIR}/engine/syzygy/tbprobe.cpp")
 
 add_library(engine_objs OBJECT ${engine_src})
 target_include_directories(engine_objs
@@ -58,6 +69,9 @@ add_executable(chessplusplus engine/main.cpp)
 target_link_libraries(chessplusplus PUBLIC engine_objs)
 target_include_directories(chessplusplus
     PUBLIC "${PROJECT_SOURCE_DIR}/engine")
+
+get_target_property(CHESSPLUSPLUS_CFLAGS chessplusplus COMPILE_OPTIONS)
+message(STATUS "chessplusplus compile flags: ${CHESSPLUSPLUS_CFLAGS}")
 
 # regression
 if (NOT BUILD_FOR_WINDOWS)
@@ -87,6 +101,7 @@ target_link_libraries(GTest::GTest INTERFACE gtest_main)
 # tests
 file(GLOB tests_src "tests/*.cpp")
 add_executable(unitTests ${tests_src})
+target_compile_options(unitTests PRIVATE "-DSYZYGY_TEST_DIR=\"${SYZYGY_TEST_DIR}\"")
 target_link_libraries(unitTests
     PUBLIC
         engine_objs

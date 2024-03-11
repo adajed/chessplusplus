@@ -3,6 +3,7 @@
 #include <thread>
 
 #include "logger.h"
+#include "syzygy/tbprobe.h"
 #include "transposition_table.h"
 #include "chessplusplusConfig.h"
 
@@ -25,6 +26,19 @@ Uci::Uci() : search(nullptr), position(), quit(false), options(), polyglot(), po
             logger.close_file();
         else
             logger.open_file(path);
+    });
+
+    options["SyzygyPath"] = UciOption("", [](std::string path) {
+        Tablebases::init(path);
+    });
+    options["SyzygyProbeDepth"] = UciOption(1, 1, 100, [](int syzygyProbeDepth) {
+        Tablebases::ProbeDepth = syzygyProbeDepth;
+    });
+    options["Syzygy50MoveRule"] = UciOption(true, [](bool syzygy50MoveRule) {
+        Tablebases::Use50Rule = syzygy50MoveRule;
+    });
+    options["SyzygyProbeLimit"] = UciOption(7, 0, 7, [](int syzygyProbeLimit) {
+        Tablebases::ProbeLimit = syzygyProbeLimit;
     });
 }
 

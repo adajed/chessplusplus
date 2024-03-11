@@ -11,6 +11,8 @@
 #include "utils.h"
 #include "value.h"
 
+#include "syzygy/tbprobe.h"
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -223,7 +225,7 @@ void Search::print_info(Value result, Depth depth, int64_t elapsed, Info* info)
               << "qnonpvnodes " << _stats.quiescence_nonpv_nodes_searched << " "
 #endif
               << "nps " << (_stats.nodes_searched * 1000 / (elapsed + 1)) << " "
-              /* << "tthits " << _stats.tt_hits << " " */
+              << "tbhits " << _stats.tb_hits << " "
               << "hashfull " << _ttable.hashfull() << " "
               << "time " << elapsed << " "
               << "pv ";
@@ -421,6 +423,63 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
         {
             LOG_DEBUG("[%d] NODES SEARCHED %lu", info->_ply, _stats.nodes_searched - savedNumNodesSearched);
             EXIT_SEARCH(Value(entryPtr->value.score));
+        }
+    }
+
+    // Step 5. Tablebases probe
+    if (!ROOT_NODE && Tablebases::ProbeLimit)
+    {
+        int piecesCount = popcount(position.pieces());
+
+        if (    piecesCount <= Tablebases::ProbeLimit
+            && (piecesCount <  Tablebases::ProbeLimit || depth >= Tablebases::ProbeDepth)
+            /* &&  position.half_moves() == 0 */
+            &&  position.castling_rights() == NO_CASTLING)
+        {
+            Tablebases::ProbeState err;
+            Tablebases::WDLScore wdl = Tablebases::probe_wdl(position, &err);
+
+            // Force check of time on the next occasion
+            /* if (thisThread == Threads.main()) */
+            /*     static_cast<MainThread*>(thisThread)->callsCnt = 0; */
+
+            if (err != Tablebases::ProbeState::FAIL)
+            {
+                _stats.tb_hits++;
+
+                int drawScore = Tablebases::Use50Rule ? 1 : 0;
+
+                // use the range VALUE_MATE_IN_MAX_PLY to VALUE_TB_WIN_IN_MAX_PLY to score
+                Value value =  wdl < -drawScore ? lost_in(info->_ply + 1)
+                            :  wdl >  drawScore ? win_in(info->_ply - 1)
+                            : VALUE_DRAW + 2 * wdl * drawScore;
+
+                tt::Flag b =  wdl < -drawScore ? tt::Flag::kUPPER_BOUND
+                         : wdl >  drawScore ? tt::Flag::kLOWER_BOUND : tt::Flag::kEXACT;
+
+                if (    b == tt::Flag::kEXACT
+                    || (b == tt::Flag::kLOWER_BOUND ? value >= beta : value <= alpha))
+                {
+                    tt::TTEntry entry(value, std::min(MAX_PLIES - 1, depth + 6), b,
+                                      NO_MOVE);
+                    _ttable.insert(position.hash(), entry);
+
+                    return value;
+                }
+
+                if (PV_NODE)
+                {
+                    if (b == tt::Flag::kLOWER_BOUND)
+                    {
+                        bestValue = value;
+                        alpha = std::max(alpha, value);
+                    }
+                    else
+                    {
+                        beta = std::min(beta, value);
+                    }
+                }
+            }
         }
     }
 
