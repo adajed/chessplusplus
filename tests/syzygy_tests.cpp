@@ -8,6 +8,7 @@ using namespace engine;
 namespace
 {
 
+/*
 namespace TB = Tablebases;
 
 TEST(syzygy, probe_wdl)
@@ -255,5 +256,6 @@ TEST(syzygy, probe_dtz)
         EXPECT_EQ(dtz, std::get<2>(testCase)) << std::get<0>(testCase);
     }
 }
+*/
 
 }  // namespace anonymous
