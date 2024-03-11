@@ -3,7 +3,11 @@
 #include "endgame.h"
 #include "types.h"
 
+#if defined(_WIN32)
+#include <stdint.h>
+#else
 #include <bits/stdint-uintn.h>
+#endif
 #include <cassert>
 #include <math.h>
 #include <vector>
