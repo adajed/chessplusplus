@@ -19,6 +19,10 @@ class HashKey
   public:
     HashKey();
 
+    HashKey(PieceCountVector pcv);
+
+    HashKey(const std::string& syzygyCode, Color c);
+
     void init(const Position& position);
 
     uint64_t get_key() const;

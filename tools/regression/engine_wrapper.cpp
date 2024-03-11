@@ -211,7 +211,7 @@ Move EngineWrapper::go(const CommandGoParams& params, Color color, std::string& 
 void EngineWrapper::set_option(const std::string& name,
                                const std::string& value)
 {
-    SEND("set_option name " << name << " value " << value);
+    SEND("setoption name " << name << " value " << value);
     SEND("isready");
     std::string message = "";
     do

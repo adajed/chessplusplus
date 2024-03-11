@@ -308,6 +308,13 @@ constexpr PieceKind get_piece_kind(Piece piece)
     return PieceKind((piece - 1) % 6 + 1);
 }
 
+constexpr Piece piece_flip_color(Piece piece, bool doFlip)
+{
+    return doFlip
+         ? make_piece(!get_color(piece), get_piece_kind(piece))
+         : piece;
+}
+
 constexpr bool is_piece_slider(Piece piece)
 {
     PieceKind piece_kind = get_piece_kind(piece);
@@ -372,13 +379,26 @@ constexpr PieceCountVector create_pcv(int wp, int wn, int wb, int wr, int wq,
 template <Piece piece>
 constexpr int get_count_pcv(PieceCountVector pcv)
 {
-    ASSERT(piece != NO_PIECE);
+    ASSERT(piece != NO_PIECE && piece != W_KING && piece != B_KING);
+    return static_cast<int>((pcv >> C(4 * piece)) & 0xF);
+}
+
+constexpr int get_count_pcv(PieceCountVector pcv, Piece piece)
+{
+    ASSERT(piece != NO_PIECE && piece != W_KING && piece != B_KING);
     return static_cast<int>((pcv >> C(4 * piece)) & 0xF);
 }
 
 template <Piece piece>
 constexpr PieceCountVector modify_pcv(PieceCountVector pcv, int c)
 {
+    ASSERT(piece != NO_PIECE && piece != W_KING && piece != B_KING);
+    return (pcv & ~(C(0xF) << C(4 * piece))) | (C(c) << C(4 * piece));
+}
+
+constexpr PieceCountVector modify_pcv(PieceCountVector pcv, int c, Piece piece)
+{
+    ASSERT(piece != NO_PIECE && piece != W_KING && piece != B_KING);
     return (pcv & ~(C(0xF) << C(4 * piece))) | (C(c) << C(4 * piece));
 }
 

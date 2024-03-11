@@ -117,6 +117,34 @@ Position::Position(std::string fen) : _zobrist_hash()
     _history_counter = 1;
 }
 
+Position::Position(const std::vector<std::pair<Piece, Square>>& pieces) : _zobrist_hash()
+{
+    _current_side = WHITE;
+    std::fill_n(_board, SQUARE_NUM, NO_PIECE);
+    std::fill_n(_piece_count, PIECE_NUM, 0);
+    std::fill_n(_by_piece_kind_bb, PIECE_KIND_NUM, 0ULL);
+    std::fill_n(_by_color_bb, COLOR_NUM, 0ULL);
+    _castling_rights = NO_CASTLING;
+    set_enpassant_square(NO_SQUARE);
+
+    for (const auto& [piece, sq] : pieces)
+    {
+        _board[sq] = piece;
+        _by_color_bb[get_color(piece)] |= square_bb(sq);
+        _by_piece_kind_bb[get_piece_kind(piece)] |= square_bb(sq);
+        _piece_position[piece][_piece_count[piece]++] = sq;
+
+    }
+
+    _half_move_counter = 0;
+    _ply_counter = 1;
+
+    _zobrist_hash.init(*this);
+
+    _history[0] = _zobrist_hash.get_key();
+    _history_counter = 1;
+}
+
 bool Position::operator==(const Position& other) const
 {
     // first check hashes
@@ -225,6 +253,18 @@ bool Position::enough_material() const
     return std::find(std::begin(notEnoughMaterialPCV),
                      std::end(notEnoughMaterialPCV),
                      get_pcv()) == std::end(notEnoughMaterialPCV);
+}
+
+bool Position::is_legal() const
+{
+    if (   _piece_count[W_KING] != 1
+        || _piece_count[B_KING] != 1
+        || KING_MASK[_piece_position[W_KING][0]] & square_bb(_piece_position[B_KING][0])
+        || (color() == WHITE && is_in_check(BLACK))
+        || (color() == BLACK && is_in_check(WHITE))
+        )
+        return false;
+    return true;
 }
 
 bool Position::move_is_quiet(Move move) const
