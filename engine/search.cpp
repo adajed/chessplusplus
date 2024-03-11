@@ -189,7 +189,7 @@ void Search::go()
     iter_search();
 
     ASSERT(_best_move != NO_MOVE);
-    sync_cout << "bestmove " << _position.uci(_best_move) << sync_endl;
+    logger_sync_out << "bestmove " << _position.uci(_best_move) << sync_endl;
 }
 
 void Search::init_search()
@@ -212,7 +212,7 @@ void Search::init_search()
 
 void Search::print_info(Value result, Depth depth, int64_t elapsed, Info* info)
 {
-    sync_cout << "info "
+    logger_sync_out << "info "
               << "depth " << depth << " "
               << "score " << score2str(result) << " "
               << "nodes " << _stats.nodes_searched << " "
@@ -231,10 +231,10 @@ void Search::print_info(Value result, Depth depth, int64_t elapsed, Info* info)
     for (int i = 0; i < info->_pv_list_length; ++i)
     {
         Move m = info->_pv_list[i];
-        std::cout << temp_position.uci(m) << " ";
+        logger << temp_position.uci(m) << " ";
         temp_position.do_move(m);
     }
-    std::cout << sync_endl;
+    logger << sync_endl;
 }
 
 void Search::iter_search()

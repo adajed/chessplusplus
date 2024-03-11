@@ -18,10 +18,6 @@ Uci::Uci() : search(nullptr), position(), quit(false), options(), polyglot(), po
     });
     options["Polyglot Sample"] = UciOption("random", {"random", "best"},
             [this](std::string option) {
-                if (option != "random" && option != "best")
-                {
-                    sync_cout << "Wrong value" << sync_endl;
-                }
                 this->polyglot_sample_random_move = option == "random";
             });
     options["Logfile"] = UciOption("", [](std::string path) {
@@ -34,7 +30,7 @@ Uci::Uci() : search(nullptr), position(), quit(false), options(), polyglot(), po
 
 void Uci::loop()
 {
-    sync_cout << "Chess engine by Adam Jedrych"
+    logger << IO_LOCK << LOGGER_OUTPUT << "Chess engine by Adam Jedrych"
               << " (build " << __DATE__ << " " << __TIME__ << ")" << sync_endl;
 
     position = Position();
@@ -49,7 +45,7 @@ void Uci::loop()
         if (line == "")
             continue;
 
-        logger.fout << line << std::endl;
+        logger << LOGGER_INPUT << line << std::endl;
         std::istringstream istream(line);
         istream >> token;
 
@@ -81,17 +77,17 @@ void Uci::loop()
 
         if (!b)
         {
-            sync_cout << "Unknown command" << sync_endl;
+            logger_sync_out << "Unknown command" << sync_endl;
         }
     }
 }
 
 bool Uci::uci_command(std::istringstream& /* istream */)
 {
-    sync_cout << "id name " << ENGINE_NAME << " "
+    logger_sync_out << "id name " << ENGINE_NAME << " "
               << CHESSPLUSPLUS_VERSION << sync_endl;
-    sync_cout << "id author Adam Jedrych" << sync_endl;
-    sync_cout << sync_endl;
+    logger_sync_out << "id author Adam Jedrych" << sync_endl;
+    logger << sync_endl;
 
     for (auto option_pair : options)
     {
@@ -99,31 +95,31 @@ bool Uci::uci_command(std::istringstream& /* istream */)
         UciOption option = option_pair.second;
         OptionType optiontype = option.get_type();
 
-        sync_cout << "option ";
-        std::cout << "name " << name << " ";
-        std::cout << "type " << optiontype_to_string(optiontype) << " ";
+        logger_sync_out << "option ";
+        logger << "name " << name << " ";
+        logger << "type " << optiontype_to_string(optiontype) << " ";
         if (optiontype == kCHECK)
-            std::cout << "default " << (option.get_check() ? "true" : "false")
-                      << " ";
+            logger << "default " << (option.get_check() ? "true" : "false")
+                   << " ";
         else if (optiontype == kSPIN)
         {
-            std::cout << "default " << option.get_spin_initial() << " ";
-            std::cout << "min " << option.get_spin_min() << " ";
-            std::cout << "max " << option.get_spin_max() << " ";
+            logger << "default " << option.get_spin_initial() << " ";
+            logger << "min " << option.get_spin_min() << " ";
+            logger << "max " << option.get_spin_max() << " ";
         }
         else if (optiontype == kCOMBO)
         {
-            std::cout << "default " << option.get_string() << " ";
+            logger << "default " << option.get_string() << " ";
             for (std::string s : option.get_combo_options())
-                std::cout << "var " << s << " ";
+                logger << "var " << s << " ";
         }
         else if (optiontype == kSTRING)
-            std::cout << "default " << option.get_string() << " ";
+            logger << "default " << option.get_string() << " ";
 
-        std::cout << sync_endl;
+        logger << sync_endl;
     }
 
-    sync_cout << "uciok" << sync_endl;
+    logger_sync_out << "uciok" << sync_endl;
     return true;
 }
 
@@ -137,7 +133,7 @@ bool Uci::ucinewgame_command(std::istringstream& /* istream */)
 
 bool Uci::isready_command(std::istringstream& /* istream */)
 {
-    sync_cout << "readyok" << sync_endl;
+    logger_sync_out << "readyok" << sync_endl;
     return true;
 }
 
@@ -219,11 +215,11 @@ bool Uci::position_command(std::istringstream& istream)
 
 bool Uci::staticeval_command(std::istringstream& /* istream */)
 {
-    sync_cout << position << std::endl << std::endl;
+    logger_sync_out << position << std::endl << std::endl;
 
     PositionScorer scorer;
     Value score = scorer.score(position);
-    std::cout << "Score: " << score2str(score) << sync_endl;
+    logger << "Score: " << score2str(score) << sync_endl;
     scorer.print_stats();
     return true;
 }
@@ -249,7 +245,7 @@ void start_searching(Uci* uci)
         Move move = uci->polyglot_sample_random_move 
             ? uci->polyglot.get_random_move(key, uci->position)
             : uci->polyglot.get_best_move(key, uci->position);
-        sync_cout << "bestmove " << uci->position.uci(move) << sync_endl;
+        logger_sync_out << "bestmove " << uci->position.uci(move) << sync_endl;
     }
     else
         uci->search->go();
@@ -320,13 +316,13 @@ bool Uci::quit_command(std::istringstream& /* istream */)
 
 bool Uci::printboard_command(std::istringstream& /* istream */)
 {
-    sync_cout << position << sync_endl;
+    logger_sync_out << position << sync_endl;
     return true;
 }
 
 bool Uci::hash_command(std::istringstream& /* istream */)
 {
-    sync_cout << "Hex: " << std::hex << position.hash() << std::dec
+    logger_sync_out << "Hex: " << std::hex << position.hash() << std::dec
               << sync_endl;
     return true;
 }
@@ -353,7 +349,7 @@ bool Uci::perft_command(std::istringstream& istream)
 
             position.undo_move(move, moveinfo);
 
-            sync_cout << position.uci(move) << ": " << n << sync_endl;
+            logger_sync_out << position.uci(move) << ": " << n << sync_endl;
             sum += n;
         }
     }
@@ -363,10 +359,10 @@ bool Uci::perft_command(std::istringstream& istream)
                             end_time - start_time)
                             .count();
 
-    sync_cout << sync_endl;
-    sync_cout << "Number of nodes: " << sum << sync_endl;
-    sync_cout << "Time: " << duration << "ms" << sync_endl;
-    sync_cout << "Speed: " << sum * 1000LL / (duration + 1) << "nps"
+    logger_sync_out << sync_endl;
+    logger_sync_out << "Number of nodes: " << sum << sync_endl;
+    logger_sync_out << "Time: " << duration << "ms" << sync_endl;
+    logger_sync_out << "Speed: " << sum * 1000LL / (duration + 1) << "nps"
               << sync_endl;
 
     return true;
