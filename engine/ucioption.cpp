@@ -1,5 +1,7 @@
 #include "ucioption.h"
 
+#include "logger.h"
+
 #include <algorithm>
 #include <cassert>
 
@@ -31,7 +33,17 @@ UciOption::UciOption(std::string initial, std::vector<std::string> options,
     : _type(kCOMBO),
       _combo_options(options),
       _string(initial),
-      _string_callback(callback)
+      _string_callback(
+            [this, callback](std::string value) {
+                if (std::find(_combo_options.begin(), _combo_options.end(), value) == _combo_options.end())
+                {
+                    logger_sync_out << "Wrong value: " << value << sync_endl;
+                }
+                else
+                {
+                    callback(value);
+                }
+              })
 {
     _string_callback(_string);
 }

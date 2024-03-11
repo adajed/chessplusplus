@@ -3,6 +3,7 @@
 #include "bitboard.h"
 #include "bithacks.h"
 #include "endgame.h"
+#include "logger.h"
 #include "position.h"
 #include "position_bitboards.h"
 #include "types.h"
@@ -629,30 +630,30 @@ void PositionScorer::print_stats()
 
     for (Rank rank = RANK_8; rank >= RANK_1; --rank)
     {
-        std::cout << horizontalLine << std::endl;
+        logger << horizontalLine << std::endl;
         for (File file = FILE_A; file <= FILE_H; ++file)
         {
             Piece piece = _square_scores[make_square(rank, file)].first;
-            std::cout << "|  " << sideColor[get_color(piece)]
+            logger << "|  " << sideColor[get_color(piece)]
                       << pieceKindColor[get_piece_kind(piece)]
                       << pieceChar[piece] << "  " << colorReset;
         }
-        std::cout << "|" << std::endl;
+        logger << "|" << std::endl;
         for (File file = FILE_A; file <= FILE_H; ++file)
         {
             const auto [piece, score] = _square_scores[make_square(rank, file)];
-            std::cout << "|" << sideColor[get_color(piece)]
+            logger << "|" << sideColor[get_color(piece)]
                       << pieceKindColor[get_piece_kind(piece)] << std::setw(5)
                       << std::setfill(' ')
                       << (piece != NO_PIECE ? std::to_string(combine(score))
                                             : "")
                       << colorReset;
         }
-        std::cout << "|" << std::endl;
+        logger << "|" << std::endl;
     }
-    std::cout << horizontalLine << std::endl;
+    logger << horizontalLine << std::endl;
 
-    std::cout << std::showpoint << std::noshowpos << std::fixed
+    logger << std::showpoint << std::noshowpos << std::fixed
               << std::setprecision(2)
               << "+---------+--------------+--------------+--------------+"
               << std::endl
