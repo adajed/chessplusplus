@@ -252,7 +252,7 @@ Score PositionScorer::score_pieces_for_side(const Position& position)
                      Value(popcount(control_bb & OPPONENT_RANKS_BB[side]));
 
             Bitboard file_bb = FILES_BB[file(sq)];
-            Bitboard rank_bb = FILES_BB[rank(sq)];
+            Bitboard rank_bb = RANKS_BB[rank(sq)];
             if (!(file_bb & position.pieces(PAWN)))
                 score += ROOK_OPEN_FILE_BONUS;
             if (!(file_bb & position.pieces(side, PAWN)) &&
