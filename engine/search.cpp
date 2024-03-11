@@ -223,7 +223,7 @@ void Search::print_info(Value result, Depth depth, int64_t elapsed, Info* info)
               << "qnonpvnodes " << _stats.quiescence_nonpv_nodes_searched << " "
 #endif
               << "nps " << (_stats.nodes_searched * 1000 / (elapsed + 1)) << " "
-              << "tbhits " << _stats.tb_hits << " "
+              /* << "tthits " << _stats.tt_hits << " " */
               << "hashfull " << _ttable.hashfull() << " "
               << "time " << elapsed << " "
               << "pv ";
@@ -390,7 +390,7 @@ Value Search::search(Position& position, Depth depth, Value alpha, Value beta,
     if (found && (entryPtr->value.depth >= depth) &&
         (std::find(begin, end, entryPtr->value.move) != end))
     {
-        _stats.tb_hits++;
+        _stats.tt_hits++;
         LOG_DEBUG("[%d] CACHE HIT score=%ld depth=%d flag=%d move=%s",
                   info->_ply, entryPtr->value.score, entryPtr->value.depth,
                   static_cast<int>(entryPtr->value.flag),

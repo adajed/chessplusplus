@@ -31,7 +31,7 @@ struct SearchStats
         , non_pv_nodes_searched(0)
         , quiescence_pv_nodes_searched(0)
         , quiescence_nonpv_nodes_searched(0)
-        , tb_hits(0)
+        , tt_hits(0)
     {
     }
 
@@ -58,7 +58,7 @@ struct SearchStats
     /**
      * @brief Number of ttable hits.
      */
-    uint64_t tb_hits;
+    uint64_t tt_hits;
 };
 
 class Search
