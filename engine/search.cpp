@@ -183,6 +183,11 @@ void Search::go()
     stop_search = false;
     _start_time = std::chrono::steady_clock::now();
 
+    if (_root_moves.size() == 0)
+    {
+        _search_depth = 1;
+    }
+
     // check if there is only one move to make
     if (_root_moves.size() == 1)
     {

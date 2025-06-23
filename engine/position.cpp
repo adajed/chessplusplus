@@ -784,6 +784,10 @@ int Position::no_nonpawns(Color c) const
 
 std::string Position::uci(Move move) const
 {
+    if (move == NO_MOVE)
+    {
+        return "(none)";
+    }
     const std::string files = "abcdefgh";
     const std::string ranks = "12345678";
     const std::string promotions = "  nbrq ";
