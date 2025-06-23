@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iostream>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -58,6 +59,35 @@ struct Args
     size_t seed;
 };
 
+namespace
+{
+int parse_time(std::string const& time_str)
+{
+    int time_ms = std::stoi(time_str);
+    if (!std::isdigit(time_str.back()))
+    {
+        auto time_unit = time_str.substr(time_str.find_first_not_of("0123456789"));
+        if (time_unit == "s")
+        {
+            time_ms *= 1000;
+        }
+        else if (time_unit == "m" || time_unit == "min")
+        {
+            time_ms *= 60 * 1000;
+        }
+        else if (time_unit == "h")
+        {
+            time_ms *= 60 * 60 * 1000;
+        }
+        else if (time_unit != "ms")
+        {
+            throw std::invalid_argument{"Unknown time unit: " + time_unit};
+        }
+    }
+
+    return time_ms;
+}
+
 std::pair<TimeFormat, int> parse_single_time_format(std::string str)
 {
     size_t pos = str.find(":");
@@ -65,8 +95,8 @@ std::pair<TimeFormat, int> parse_single_time_format(std::string str)
     int num_games = std::stoi(str.substr(pos + 1));
 
     pos = time_str.find("+");
-    int time_initial_ms = std::stoi(time_str.substr(0, pos)) * 60 * 1000;
-    int time_increment_ms = std::stoi(time_str.substr(pos + 1)) * 1000;
+    int time_initial_ms = parse_time(time_str.substr(0, pos));
+    int time_increment_ms = parse_time(time_str.substr(pos + 1));
 
     return {TimeFormat{time_initial_ms, time_increment_ms}, num_games};
 }
@@ -86,6 +116,8 @@ std::vector<std::pair<TimeFormat, int>> parse_game_format(std::string str)
     result.push_back(parse_single_time_format(str));
 
     return result;
+}
+
 }
 
 inline Args parse_args(int argc, char** argv)
